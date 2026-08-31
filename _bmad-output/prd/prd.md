@@ -1,7 +1,7 @@
 ---
 title: Product Requirements Document — Sleep Apnea Detection App
 status: final
-version: 1.2.0
+version: 1.3.0
 created: 2026-08-31
 updated: 2026-08-31
 author: Mary (Business Analyst)
@@ -153,6 +153,19 @@ sequenceDiagram
 | **CHART-02** | **FFT Frequency Spectrum Graph** | `victory-native` (`VictoryChart`, `VictoryLine`) | Fast Fourier Transform magnitude vs. Frequency (Hz). | Renders spectral peaks derived from raw airflow telemetry to compute exact respiration rates (BPM). |
 | **CHART-03** | **Circular Progress Metric Rings** | `react-native-circular-progress-indicator` | Sleep Quality Score %, Session Countdown timer, Calibration progress. | Animated stroke fill with dynamic status colors (Green: Optimal, Amber: Warning, Red: Apnea Threshold Breach). |
 | **CHART-04** | **Multi-Axis Historical Session Chart** | `victory-native` (`VictoryChart`, `VictoryAxis`) | Overnight AHI events, SpO2 trends, and Heart Rate over 8-hour sleep timelines. | Pinch-to-zoom and pan interactions across multi-hour sleep timelines with color-coded event markers for wake-up alerts & safety acknowledgements. |
+
+### 4.6 NFR-6: Clinical Standards, International Regulations & Cybersecurity
+
+* **NFR-6.1 (AASM Diagnostic Standard Alignment):** The evaluation engine shall classify respiratory events adhering to American Academy of Sleep Medicine (AASM) guidelines:
+  * **Apnea:** $\ge 90\%$ airflow reduction for $\ge 10$ seconds.
+  * **Hypopnea:** $\ge 30\%$ airflow reduction for $\ge 10$ seconds.
+  * **AHI Classification:** Normal ($<5$), Mild ($5–14.9$), Moderate ($15–29.9$), Severe ($\ge 30$ events/hour).
+* **NFR-6.2 (IEC 60601-1-8 Medical Alarm Hierarchy):** The application alarm design shall comply with IEC 60601-1-8 medical alarm prioritization standards:
+  * **High Priority (Apnea >20s / Unacknowledged):** Escalating audio (>75 dB), continuous haptics, Cloud Dispatch.
+  * **Medium Priority (Apnea 10–20s):** Low-decibel chime (40–55 dB), moderate haptic pulses.
+  * **Low Priority (BLE Drop / Battery):** Visual banner notification only (no sleep disturbance).
+* **NFR-6.3 (SaMD & Quality Management Framework):** The application codebase shall be developed under Software as a Medical Device (SaMD) principles aligning with **FDA 21 CFR Part 820** and **ISO 13485** Quality Management Systems to facilitate future 510(k) clinical clearance.
+* **NFR-6.4 (GDPR Article 9 & HIPAA Compliance):** All personal health information (PHI) shall be classified under GDPR Article 9 (Special Category Health Data) requiring explicit user consent, zero unencrypted local caching of PHI, and verifiable data erasure (Right to be Forgotten).
 
 ---
 
