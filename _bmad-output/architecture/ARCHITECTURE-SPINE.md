@@ -363,28 +363,28 @@ The Conceptual Data Model structures database entities around the 5 process phas
 
 | BPMN Activity ID & Name | UI Flow Specification (Screen, Visuals & User Actions) | Sequence Diagram Specification (Actors, Payload, Protocol & SLA) |
 | :--- | :--- | :--- |
-| **`Task_PatientRegister`**<br>`Register Patient Account` | **Screen ID:** `SCR_REGISTER_ACCOUNT`<br>**Visual Components:** Account creation form (Email, Password / Federated identity creation, Terms & HIPAA Consent checkbox).<br>**User Action:** Enter credentials & tap *"Create Account"*.<br>**Next UI State:** `SCR_USER_PROFILE` on success. | **Actors:** Patient $\rightarrow$ Mobile App $\rightarrow$ Authentication Service.<br>**Protocol:** HTTPS POST /v1/auth/register (TLS 1.3).<br>**Payload:** `{ email, password_hash, user_type: "PATIENT" }`.<br>**Processing:** Creates `PatientUser` authentication record.<br>**Latency SLA:** $< 400\text{ms}$ registration. |
-| **`Task_CreateUserProfile`**<br>`Create Patient Medical Profile` | **Screen ID:** `SCR_USER_PROFILE`<br>**Visual Components:** Patient medical profile form (Demographics: Age, Weight kg, Height cm, computed BMI; Emergency Caregiver Contact Name & Phone; Attending Physician NPI).<br>**User Action:** Fill medical profile details & tap *"Save Profile"*.<br>**Next UI State:** `SCR_REGISTER_PASSKEY` on success. | **Actors:** Patient $\rightarrow$ Mobile App UI $\rightarrow$ Patient Profile API $\rightarrow$ Platform DB.<br>**Protocol:** HTTPS POST /v1/patient/profile (TLS 1.3).<br>**Payload:** `{ user_id, full_name, age, weight_kg, height_cm, computed_bmi, emergency_contact_phone, doctor_npi }`.<br>**Processing:** Stores patient demographic & medical profile record in DB.<br>**Latency SLA:** $< 500\text{ms}$ profile save. |
-| **`Task_RegisterPasskey`**<br>`Register & Enroll FIDO2 Passkey` | **Screen ID:** `SCR_REGISTER_PASSKEY`<br>**Visual Components:** Passkey enrollment wizard screen. Text: *"Secure your account with biometric Passkey"*. TouchID/FaceID pulse animation.<br>**User Action:** Tap *"Enroll Passkey"* & scan Fingerprint/Face.<br>**Next UI State:** Dialog *"Passkey Enrolled ✓"*, then auto-advances to `SCR_PASSKEY_AUTH` or `SCR_CALIBRATION_STAGE1`. | **Actors:** Patient $\rightarrow$ Mobile App UI $\rightarrow$ OS Secure Enclave $\rightarrow$ Auth Service.<br>**Protocol:** WebAuthn FIDO2 Registration over HTTPS / TLS 1.3.<br>**Payload:** `{ user_id, passkey_credential_id, public_key_pem, device_hardware_id }`.<br>**Processing:** Binds hardware-backed public key to `PatientUser` record in DB.<br>**Latency SLA:** $< 600\text{ms}$ passkey enrollment. |
+| **`Task_PatientRegister`**<br>`Register Patient Account` | **Screen ID:** `MOB_REGISTER_ACCOUNT`<br>**Visual Components:** Account creation form (Email, Password / Federated identity creation, Terms & HIPAA Consent checkbox).<br>**User Action:** Enter credentials & tap *"Create Account"*.<br>**Next UI State:** `MOB_USER_PROFILE` on success. | **Actors:** Patient $\rightarrow$ Mobile App $\rightarrow$ Authentication Service.<br>**Protocol:** HTTPS POST /v1/auth/register (TLS 1.3).<br>**Payload:** `{ email, password_hash, user_type: "PATIENT" }`.<br>**Processing:** Creates `PatientUser` authentication record.<br>**Latency SLA:** $< 400\text{ms}$ registration. |
+| **`Task_CreateUserProfile`**<br>`Create Patient Medical Profile` | **Screen ID:** `MOB_USER_PROFILE`<br>**Visual Components:** Patient medical profile form (Demographics: Age, Weight kg, Height cm, computed BMI; Emergency Caregiver Contact Name & Phone; Attending Physician NPI).<br>**User Action:** Fill medical profile details & tap *"Save Profile"*.<br>**Next UI State:** `MOB_REGISTER_PASSKEY` on success. | **Actors:** Patient $\rightarrow$ Mobile App UI $\rightarrow$ Patient Profile API $\rightarrow$ Platform DB.<br>**Protocol:** HTTPS POST /v1/patient/profile (TLS 1.3).<br>**Payload:** `{ user_id, full_name, age, weight_kg, height_cm, computed_bmi, emergency_contact_phone, doctor_npi }`.<br>**Processing:** Stores patient demographic & medical profile record in DB.<br>**Latency SLA:** $< 500\text{ms}$ profile save. |
+| **`Task_RegisterPasskey`**<br>`Register & Enroll FIDO2 Passkey` | **Screen ID:** `MOB_REGISTER_PASSKEY`<br>**Visual Components:** Passkey enrollment wizard screen. Text: *"Secure your account with biometric Passkey"*. TouchID/FaceID pulse animation.<br>**User Action:** Tap *"Enroll Passkey"* & scan Fingerprint/Face.<br>**Next UI State:** Dialog *"Passkey Enrolled ✓"*, then auto-advances to `MOB_PASSKEY_AUTH` or `MOB_CALIBRATION_STAGE1`. | **Actors:** Patient $\rightarrow$ Mobile App UI $\rightarrow$ OS Secure Enclave $\rightarrow$ Auth Service.<br>**Protocol:** WebAuthn FIDO2 Registration over HTTPS / TLS 1.3.<br>**Payload:** `{ user_id, passkey_credential_id, public_key_pem, device_hardware_id }`.<br>**Processing:** Binds hardware-backed public key to `PatientUser` record in DB.<br>**Latency SLA:** $< 600\text{ms}$ passkey enrollment. |
 
 #### 🏊 Swimlane 2: Backoffice Operations Activities
 
 | BPMN Activity ID & Name | UI Flow Specification (Screen, Visuals & User Actions) | Sequence Diagram Specification (Actors, Payload, Protocol & SLA) |
 | :--- | :--- | :--- |
-| **`Task_VerifyPatientIdentity`**<br>`Verify Patient Identity & Eligibility` | **Screen ID:** `WEB_BACKOFFICE_VERIFICATION`<br>**Visual Components:** Backoffice verification queue showing new registrations, HIPAA consent status, and ID verification pill.<br>**User Action:** Backoffice admin clicks *"Approve Patient Eligibility"*.<br>**Next UI State:** Updates status to `ELIGIBILITY_VERIFIED`. | **Actors:** Admin $\rightarrow$ Backoffice Web Portal $\rightarrow$ Platform DB.<br>**Protocol:** HTTPS POST /v1/admin/patient/verify.<br>**Payload:** `{ user_id, admin_id, verification_status: "VERIFIED" }`.<br>**Processing:** Verifies identity & enables account medical monitoring tier.<br>**Latency SLA:** $< 300\text{ms}$ approval. |
-| **`Task_BindMedicalDevice`**<br>`Pair & Bind Hardware Sensor Serial` | **Screen ID:** `WEB_DEVICE_BINDING`<br>**Visual Components:** Hardware inventory binding modal. Input field for BLE Sensor MAC address & hardware serial number barcode scanner.<br>**User Action:** Admin scans sensor barcode & clicks *"Bind Device to Patient"*.<br>**Next UI State:** Displays `DEVICE_BOUND` badge. | **Actors:** Backoffice Admin $\rightarrow$ Device Management API $\rightarrow$ Platform DB.<br>**Protocol:** HTTPS POST /v1/admin/device/bind.<br>**Payload:** `{ user_id, device_hardware_id, ble_mac_address, sensor_serial_no }`.<br>**Processing:** Creates `DeviceBinding` record in Platform DB.<br>**Latency SLA:** $< 400\text{ms}$ binding operation. |
-| **`Task_LockEmergencyContacts`**<br>`Lock Caregiver Emergency Contacts` | **Screen ID:** `WEB_CAREGIVER_LOCK`<br>**Visual Components:** Caregiver emergency contact verification panel. Phone number validation badge and escalation tier selector.<br>**User Action:** Admin verifies phone number & clicks *"Lock Caregiver Contacts"*.<br>**Next UI State:** Account setup complete and ready for bedtime sleep monitoring. | **Actors:** Admin $\rightarrow$ Backoffice Operations API $\rightarrow$ Platform DB.<br>**Protocol:** HTTPS POST /v1/admin/caregiver/lock.<br>**Payload:** `{ user_id, caregiver_phone, emergency_escalation_tier }`.<br>**Processing:** Locks emergency contacts in `PatientUser` profile.<br>**Latency SLA:** $< 350\text{ms}$ lock operation. |
+| **`Task_VerifyPatientIdentity`**<br>`Handle Passkey Login Issue & Verify Identity` | **Screen ID:** `WEB_PASSKEY_RECOVERY`<br>**Visual Components:** Out-of-band Passkey support ticket queue. Patient identity verification checklist & SMS challenge button.<br>**User Action:** Support admin reviews out-of-band identity proof & clicks *"Verify Identity for Passkey Recovery"*.<br>**Next UI State:** `WEB_DEVICE_RESET` on verification success. | **Actors:** Support Admin $\rightarrow$ Backoffice Web Portal $\rightarrow$ Patient Profile Service.<br>**Protocol:** HTTPS POST /v1/admin/support/verify-identity (TLS 1.3).<br>**Payload:** `{ user_id, support_ticket_id, admin_id, verification_method: "OUT_OF_BAND_SMS" }`.<br>**Processing:** Validates patient identity & authorizes biometric Passkey reset.<br>**Latency SLA:** $< 300\text{ms}$ identity verification. |
+| **`Task_BindMedicalDevice`**<br>`Revoke Stale Passkey & Unbind Sensor Device` | **Screen ID:** `WEB_DEVICE_RESET`<br>**Visual Components:** Device & Passkey credential management panel. Lists active WebAuthn passkeys and BLE sensor MAC bindings with red *"REVOKE PASSKEY & UNBIND"* button.<br>**User Action:** Admin clicks *"Revoke Stale Passkey & Unbind Sensor"*.<br>**Next UI State:** `WEB_TOKEN_ISSUE` (Displays credential revocation confirmation badge). | **Actors:** Support Admin $\rightarrow$ Backoffice Web Portal $\rightarrow$ Auth Service $\rightarrow$ Device Service.<br>**Protocol:** HTTPS POST /v1/admin/passkey/revoke & POST /v1/admin/device/unbind.<br>**Payload:** `{ user_id, revoked_credential_id, device_hardware_id }`.<br>**Processing:** Revokes compromised FIDO2 keypair & unbinds lost sensor hardware.<br>**Latency SLA:** $< 400\text{ms}$ revocation operation. |
+| **`Task_LockEmergencyContacts`**<br>`Issue Emergency Passkey Recovery Token` | **Screen ID:** `WEB_TOKEN_ISSUE`<br>**Visual Components:** Temporary emergency token issuance modal. Expiration timer selector (15 mins) and automated SMS dispatch button.<br>**User Action:** Admin clicks *"Issue Emergency One-Time Passkey Recovery Token"*.<br>**Next UI State:** `WEB_SUPPORT_COMPLETE` (Token sent to patient phone via encrypted SMS). | **Actors:** Support Admin $\rightarrow$ Backoffice Operations $\rightarrow$ Auth Service $\rightarrow$ Twilio SMS Gateway.<br>**Protocol:** HTTPS POST /v1/admin/passkey/issue-recovery-token.<br>**Payload:** `{ user_id, phone_number, expiration_minutes: 15, single_use: true }`.<br>**Processing:** Generates 256-bit cryptographically secure single-use recovery link for mobile app re-enrollment.<br>**Latency SLA:** $< 350\text{ms}$ token dispatch. |
 
 #### 🏊 Swimlane 3: Patient Sleep Operations Activities
 
 | BPMN Activity ID & Name | UI Flow Specification (Screen, Visuals & User Actions) | Sequence Diagram Specification (Actors, Payload, Protocol & SLA) |
 | :--- | :--- | :--- |
-| **`Task_PasskeyAuth`**<br>`Authenticate via Passkey (FIDO2)` | **Screen ID:** `SCR_PASSKEY_AUTH`<br>**Visual Components:** Biometric prompt modal (FaceID / TouchID / Windows Hello), Passkey pulse graphic.<br>**User Action:** Fingerprint touch or Face scan.<br>**Next UI State:** `SCR_CALIBRATION_STAGE1` on success; error toast with retry button on failure. | **Actors:** Patient $\rightarrow$ Mobile App $\rightarrow$ Authentication Service Gateway.<br>**Protocol:** WebAuthn FIDO2 Assertion over HTTPS / TLS 1.3.<br>**Payload:** `{ user_id, passkey_credential_id, challenge_signature }`.<br>**Latency SLA:** $< 500\text{ms}$ authentication verification. |
-| **`Task_Stage1Cal`**<br>`Execute Stage 1 Idle Noise Calibration` | **Screen ID:** `SCR_CALIBRATION_STAGE1`<br>**Visual Components:** Full-screen step 1 wizard. Text: *"Place sensor on bedside table, remain silent"*. 10s circular progress ring + ambient sound wave indicator ($N_{\text{idle}}$ sampling).<br>**User Action:** Tap *"Start 10s Calibration"*.<br>**Next UI State:** Auto-advances to `SCR_CALIBRATION_STAGE2` upon 100% completion. | **Actors:** Mobile App Edge $\leftarrow$ BLE GATT Sensor (`0x2A37` characteristic).<br>**Protocol:** BLE GATT AES-128 Notification Stream @ 10Hz.<br>**Payload:** 100 differential pressure samples.<br>**Processing:** Local Dart Isolate computes $N_{\text{idle}}$ baseline noise floor.<br>**Latency SLA:** Exactly $10.0\text{s}$ window sampling. |
-| **`Task_Stage2Cal`**<br>`Execute Stage 2 Active Breath Calibration` | **Screen ID:** `SCR_CALIBRATION_STAGE2`<br>**Visual Components:** Step 2 wizard. Text: *"Attach mask/sensor and take 5 normal breaths"*. Real-time canvas rendering peak-to-trough breath wave ($V_{pp}$).<br>**User Action:** Breathe normally into sensor for 30s.<br>**Next UI State:** Dialog *"Baseline Verified ✓"*, then transitions to `SCR_SLEEP_MONITOR`. | **Actors:** Mobile App Edge $\leftarrow$ BLE GATT Sensor $\rightarrow$ Local Hive DB.<br>**Protocol:** BLE GATT notifications $\rightarrow$ FFT Signal Processing Isolate.<br>**Payload:** `{ idle_noise_floor, vpp_breath_baseline, apnea_threshold = 0.10 * vpp }`.<br>**Processing:** Calculates moving average peak-to-trough breathing baseline.<br>**Latency SLA:** $30.0\text{s}$ calibration window. |
-| **`Task_SleepMonitoring`**<br>`Sleep with Device Attached` | **Screen ID:** `SCR_SLEEP_MONITOR`<br>**Visual Components:** Low-power Night Mode (0-FPS locked black display `#000000` with subtle dim pulsing green heartbeat dot). Screen touch locked to prevent accidental keypresses.<br>**User Action:** None (User sleeps).<br>**Next UI State:** Remains dark until morning unlock OR pops `SCR_TIER1_ALARM` if airflow breach detected. | **Actors:** Patient $\rightarrow$ Sensor BLE GATT $\rightarrow$ Mobile Circular RAM Buffer.<br>**Protocol:** BLE GATT AES-128 @ 100ms interval.<br>**Payload:** 100ms bio-signal stream array.<br>**Processing:** 1-hour circular RAM ring buffer maintains sliding window.<br>**Latency SLA:** Continuous 10Hz stream processing. |
-| **`Task_TapSafe`**<br>`Tap 'I'm Safe' Button` | **Screen ID:** `SCR_TIER1_ALARM`<br>**Visual Components:** High-priority visual alert overlay (Flashing 100% brightness red/yellow `#FF3B30`, pulsating 120dB audio siren, haptic vibration). Large central button: *"I'M SAFE - DISMISS ALARM"*. 30s countdown timer display.<br>**User Action:** Single tap on *"I'm Safe"* button.<br>**Next UI State:** `SCR_ALARM_CANCELED` (Silences alarm, returns to `SCR_SLEEP_MONITOR`). | **Actors:** Patient $\rightarrow$ Mobile UI Driver $\rightarrow$ Local Audio Engine $\rightarrow$ Application DB.<br>**Protocol:** Local UI Touch Event + HTTPS POST cancellation payload.<br>**Payload:** `{ session_id, cancellation_token_id, acknowledged_at, tap_lat_long }`.<br>**Processing:** Cancels 30s cancellation token timer; updates `patient_acknowledged = true`.<br>**Latency SLA:** $< 50\text{ms}$ local audio/haptic shutdown. |
-| **`Task_EndSession`**<br>`Tap 'End Sleep Session'` | **Screen ID:** `SCR_SLEEP_SUMMARY`<br>**Visual Components:** Morning sleep summary dashboard. Displays total sleep hours (e.g., 7h 45m), overnight AHI score (e.g., AHI 3.2 - Normal), respiration wave timeline chart, and *"Share with Physician"* button.<br>**User Action:** Tap *"End Sleep Session"*.<br>**Next UI State:** Home Screen / Session Archive. | **Actors:** Patient $\rightarrow$ Mobile App $\rightarrow$ Cloud Session API.<br>**Protocol:** HTTPS POST /v1/session/end.<br>**Payload:** `{ session_id, end_time, total_duration_seconds, final_ahi_score }`.<br>**Processing:** Closes BLE connection, computes final AHI index, syncs report.<br>**Latency SLA:** $< 1.0\text{s}$ report generation. |
+| **`Task_PasskeyAuth`**<br>`Authenticate via Passkey (FIDO2)` | **Screen ID:** `MOB_PASSKEY_AUTH`<br>**Visual Components:** Biometric prompt modal (FaceID / TouchID / Windows Hello), Passkey pulse graphic.<br>**User Action:** Fingerprint touch or Face scan.<br>**Next UI State:** `MOB_CALIBRATION_STAGE1` on success; error toast with retry button on failure. | **Actors:** Patient $\rightarrow$ Mobile App $\rightarrow$ Authentication Service Gateway.<br>**Protocol:** WebAuthn FIDO2 Assertion over HTTPS / TLS 1.3.<br>**Payload:** `{ user_id, passkey_credential_id, challenge_signature }`.<br>**Latency SLA:** $< 500\text{ms}$ authentication verification. |
+| **`Task_Stage1Cal`**<br>`Execute Stage 1 Idle Noise Calibration` | **Screen ID:** `MOB_CALIBRATION_STAGE1`<br>**Visual Components:** Full-screen step 1 wizard. Text: *"Place sensor on bedside table, remain silent"*. 10s circular progress ring + ambient sound wave indicator ($N_{\text{idle}}$ sampling).<br>**User Action:** Tap *"Start 10s Calibration"*.<br>**Next UI State:** Auto-advances to `MOB_CALIBRATION_STAGE2` upon 100% completion. | **Actors:** Mobile App Edge $\leftarrow$ BLE GATT Sensor (`0x2A37` characteristic).<br>**Protocol:** BLE GATT AES-128 Notification Stream @ 10Hz.<br>**Payload:** 100 differential pressure samples.<br>**Processing:** Local Dart Isolate computes $N_{\text{idle}}$ baseline noise floor.<br>**Latency SLA:** Exactly $10.0\text{s}$ window sampling. |
+| **`Task_Stage2Cal`**<br>`Execute Stage 2 Active Breath Calibration` | **Screen ID:** `MOB_CALIBRATION_STAGE2`<br>**Visual Components:** Step 2 wizard. Text: *"Attach mask/sensor and take 5 normal breaths"*. Real-time canvas rendering peak-to-trough breath wave ($V_{pp}$).<br>**User Action:** Breathe normally into sensor for 30s.<br>**Next UI State:** Dialog *"Baseline Verified ✓"*, then transitions to `MOB_SLEEP_MONITOR`. | **Actors:** Mobile App Edge $\leftarrow$ BLE GATT Sensor $\rightarrow$ Local Hive DB.<br>**Protocol:** BLE GATT notifications $\rightarrow$ FFT Signal Processing Isolate.<br>**Payload:** `{ idle_noise_floor, vpp_breath_baseline, apnea_threshold = 0.10 * vpp }`.<br>**Processing:** Calculates moving average peak-to-trough breathing baseline.<br>**Latency SLA:** $30.0\text{s}$ calibration window. |
+| **`Task_SleepMonitoring`**<br>`Sleep with Device Attached` | **Screen ID:** `MOB_SLEEP_MONITOR`<br>**Visual Components:** Low-power Night Mode (0-FPS locked black display `#000000` with subtle dim pulsing green heartbeat dot). Screen touch locked to prevent accidental keypresses.<br>**User Action:** None (User sleeps).<br>**Next UI State:** Remains dark until morning unlock OR pops `MOB_TIER1_ALARM` if airflow breach detected. | **Actors:** Patient $\rightarrow$ Sensor BLE GATT $\rightarrow$ Mobile Circular RAM Buffer.<br>**Protocol:** BLE GATT AES-128 @ 100ms interval.<br>**Payload:** 100ms bio-signal stream array.<br>**Processing:** 1-hour circular RAM ring buffer maintains sliding window.<br>**Latency SLA:** Continuous 10Hz stream processing. |
+| **`Task_TapSafe`**<br>`Tap 'I'm Safe' Button` | **Screen ID:** `MOB_TIER1_ALARM`<br>**Visual Components:** High-priority visual alert overlay (Flashing 100% brightness red/yellow `#FF3B30`, pulsating 120dB audio siren, haptic vibration). Large central button: *"I'M SAFE - DISMISS ALARM"*. 30s countdown timer display.<br>**User Action:** Single tap on *"I'm Safe"* button.<br>**Next UI State:** `MOB_ALARM_CANCELED` (Silences alarm, returns to `MOB_SLEEP_MONITOR`). | **Actors:** Patient $\rightarrow$ Mobile UI Driver $\rightarrow$ Local Audio Engine $\rightarrow$ Application DB.<br>**Protocol:** Local UI Touch Event + HTTPS POST cancellation payload.<br>**Payload:** `{ session_id, cancellation_token_id, acknowledged_at, tap_lat_long }`.<br>**Processing:** Cancels 30s cancellation token timer; updates `patient_acknowledged = true`.<br>**Latency SLA:** $< 50\text{ms}$ local audio/haptic shutdown. |
+| **`Task_EndSession`**<br>`Tap 'End Sleep Session'` | **Screen ID:** `MOB_SLEEP_SUMMARY`<br>**Visual Components:** Morning sleep summary dashboard. Displays total sleep hours (e.g., 7h 45m), overnight AHI score (e.g., AHI 3.2 - Normal), respiration wave timeline chart, and *"Share with Physician"* button.<br>**User Action:** Tap *"End Sleep Session"*.<br>**Next UI State:** Home Screen / Session Archive. | **Actors:** Patient $\rightarrow$ Mobile App $\rightarrow$ Cloud Session API.<br>**Protocol:** HTTPS POST /v1/session/end.<br>**Payload:** `{ session_id, end_time, total_duration_seconds, final_ahi_score }`.<br>**Processing:** Closes BLE connection, computes final AHI index, syncs report.<br>**Latency SLA:** $< 1.0\text{s}$ report generation. |
 
 #### 🏊 Swimlane 4: Emergency Center Activities
 
@@ -399,14 +399,243 @@ The Conceptual Data Model structures database entities around the 5 process phas
 
 | BPMN Activity ID & Name | UI Flow Specification (Screen, Visuals & User Actions) | Sequence Diagram Specification (Actors, Payload, Protocol & SLA) |
 | :--- | :--- | :--- |
-| **`Task_DoctorSync`**<br>`Sync Morning Sleep Scores & AHI Reports` | **Screen ID:** `WEB_CLINIC_PORTAL`<br>**Visual Components:** Clinic dashboard alert badge updates with red counter *"Morning Sleep Reports Ready"*. Physician mobile app gets push notification.<br>**User Action:** Automated system trigger upon morning sleep session conclusion.<br>**Next UI State:** Physician inbox updates with sleep session audit link. | **Actors:** Cloud Session API $\rightarrow$ Clinic Portal Backend $\rightarrow$ Attending Physician Portal.<br>**Protocol:** HTTPS POST /v1/clinic/reports/sync (TLS 1.3).<br>**Payload:** `{ patient_id, session_id, total_sleep_duration, ahi_score, apnea_stop_count }`.<br>**Processing:** Updates clinic doctor assignment log and triggers mobile push.<br>**Latency SLA:** $< 1.0\text{s}$ report sync. |
-| **`Task_PhysicianReview`**<br>`Physician Reviews AHI Classification & Notes` | **Screen ID:** `WEB_PHYSICIAN_PATIENT_DETAIL`<br>**Visual Components:** Patient medical detail view. Renders 8-hour respiration wave graphs, AHI trend breakdown (Normal/Mild/Moderate/Severe), and clinical note entry box.<br>**User Action:** Physician reviews AHI graph, types clinical notes, & taps *"Sign & Save Diagnosis"*.<br>**Next UI State:** Diagnostic report locked & appended to patient medical chart. | **Actors:** Sleep Specialist Physician $\rightarrow$ Clinic Web Portal $\rightarrow$ Platform DB.<br>**Protocol:** HTTPS POST /v1/clinic/diagnosis/sign.<br>**Payload:** `{ session_id, doctor_npi, diagnostic_notes, prescription_adjustment }`.<br>**Processing:** Stores physician signature, diagnosis notes, and updates patient chart.<br>**Latency SLA:** $< 400\text{ms}$ diagnosis save. |
+| **`Task_PhysicianReview`**<br>`Physician Reviews AHI Classification & Signs Diagnosis` | **Screen ID:** `WEB_PHYSICIAN_PATIENT_DETAIL`<br>**Visual Components:** Patient medical detail view. Real-time alert badge *"Morning Sleep Report Ready"*, 8-hour respiration wave graphs, AHI trend breakdown (Normal/Mild/Moderate/Severe), and clinical note entry box.<br>**User Action:** Physician reviews AHI graph, inputs clinical notes, & taps *"Sign & Save Diagnosis"*.<br>**Next UI State:** `WEB_DIAGNOSIS_SIGNED` (Diagnostic report locked & appended to patient medical chart). | **Actors:** Cloud Session API $\rightarrow$ Attending Sleep Specialist Physician $\rightarrow$ Clinic Web Portal $\rightarrow$ Application DB.<br>**Protocol:** HTTPS POST /v1/clinic/diagnosis/sign (TLS 1.3).<br>**Payload:** `{ session_id, patient_id, doctor_npi, ahi_score, diagnostic_notes, prescription_adjustment }`.<br>**Processing:** Syncs morning report, stores physician signature & diagnostic notes, and updates patient chart.<br>**Latency SLA:** $< 400\text{ms}$ diagnosis save & sync. |
 
 #### 📖 Guidance for Downstream Workflows (PRD, UX & Code Implementation)
 > [!TIP]
 > **Traceability & UX Alignment:**  
-> 1. **UX Designers:** Must reference the Screen IDs (`SCR_PASSKEY_AUTH`, `SCR_CALIBRATION_STAGE1`, `SCR_TIER1_ALARM`, `WEB_COMMAND_DASHBOARD`) defined in Section 3.2 when constructing wireframes and Figma components.  
+> 1. **UX Designers:** Must reference the Screen IDs (`MOB_PASSKEY_AUTH`, `MOB_CALIBRATION_STAGE1`, `MOB_TIER1_ALARM`, `WEB_COMMAND_DASHBOARD`) defined in Section 3.2 when constructing wireframes and Figma components.  
 > 2. **Frontend Developers (Flutter & React):** Every UI screen must implement the exact state transitions and visual feedback mechanisms specified in the UI Flow tables.  
+
+---
+
+### 3.3 🧩 C4 Level 3: Component Diagram — Participant-to-Component Mapping
+
+The **C4 Level 3 Component Diagram** decomposes the C4 Level 2 Containers into granular software components, defining the internal structural units responsible for executing platform capabilities. 
+
+> [!IMPORTANT]
+> **Architectural Invariant AD-8 (Sequence Participant Traceability Rule):**  
+> Every participant line in the downstream **End-to-End Sequence Diagrams (Section 3.5)** MUST represent an explicit, deployable node or component defined in this C4 Component Diagram. No sequence diagram participant may exist without a corresponding 1-to-1 C4 Component definition.
+
+```plantuml
+@startuml C4_Level3_Component_Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title C4 Level 3: Component Diagram — Participant-to-Component Traceability
+
+Person(patient, "Patient", "At-home user wearing breathing device.")
+Person(dispatcher, "Emergency Dispatcher", "24/7 emergency command center operator.")
+Person(doctor, "Physician / Specialist", "Attending sleep clinician.")
+Person(admin, "Backoffice Admin", "Platform administrator managing verification, device binding, and caregiver locks.")
+
+Container_Boundary(mobile_edge, "Mobile Edge Client & Hardware (At-Home)") {
+    Component(hardware, "Small Breathing Device", "Embedded Hardware Sensor", "Captures raw airflow differential pressure; streams 100ms GATT packets via BLE.")
+    Component(app_ui, "Patient App UI", "Flutter Screen Controllers", "Renders MOB_REGISTER_ACCOUNT, MOB_USER_PROFILE, MOB_REGISTER_PASSKEY, MOB_PASSKEY_AUTH, MOB_CALIBRATION, MOB_SLEEP_MONITOR, MOB_TIER1_ALARM.")
+    Component(secure_enclave, "Secure Enclave", "OS Biometric Enclave", "Executes WebAuthn FIDO2 private key generation, challenge signing, and local biometric verification.")
+}
+
+Container_Boundary(cloud_services, "Backend Microservices Platform") {
+    Component(auth_svc, "Auth Service", "WebAuthn / FIDO2 Service", "Manages passwordless Passkey token enrollment, challenge nonces, and JWT session token generation.")
+    Component(profile_svc, "Patient Profile Service", "REST Microservice", "Manages patient demographics, computed BMI, and locked caregiver emergency contact records.")
+    Component(device_svc, "Device Management Service", "REST Microservice", "Manages hardware sensor bindings, barcode serial validation, and MAC address registration.")
+    Component(audit_svc, "Audit Service", "HIPAA Log Engine", "Receives asynchronous one-way audit streams and writes immutable entries to PhiAuditLog.")
+    Component(data_streaming_svc, "Data Streaming Service", "Event Ingestion Engine", "High-throughput webhook gateway ingesting 10s compressed bio-signal batches and 30s unacknowledged emergency pushes.")
+    Component(stream_workers, "Stream Processing Workers", "gRPC Container Workers", "Executes 2-stage noise/breath calibration isolate algorithms and AASM 90%/30% apnea breach detection rules.")
+    Component(telephony_svc, "Telephony Service", "Twilio Gateway Client", "Automates voice calls and priority SMS dispatch to locked caregiver emergency contacts.")
+    Component(ems_gateway, "EMS CAD Gateway", "911 REST Client", "Dispatches CAD emergency orders to local 911 dispatch centers upon Tier-2 escalation.")
+}
+
+Container_Boundary(web_portals, "Web Operations Portals") {
+    Component(backoffice_portal, "Backoffice Web Portal", "React / REST Dashboard", "Renders WEB_BACKOFFICE_VERIFICATION, WEB_DEVICE_BINDING, and WEB_CAREGIVER_LOCK panels.")
+    Component(command_portal, "Emergency Center Web Portal", "React / WSS Dashboard", "Displays real-time alert pop-up modals (WEB_COMMAND_DASHBOARD), Mapbox patient GPS, and dispatcher action controls.")
+    Component(clinic_portal, "Clinic & Physician Portal", "React / REST Dashboard", "Syncs morning sleep summaries, AHI trend graphs, and physician diagnostic notes.")
+}
+
+ContainerDb(app_db, "Application Database", "Relational / Document DB", "Stores PatientUser, HealthBaseline, DeviceBinding, SleepSession, ApneaEvent, EmergencyAlertQueue, CareDispatchRecord.")
+ContainerDb(timeseries_db, "Bio-Signal Time-Series Store", "Columnar Time-Series DB", "Stores compressed 100ms bio-signal telemetry streams.")
+
+Rel(patient, app_ui, "PatientUser credentials & HealthBaseline inputs")
+Rel(hardware, app_ui, "100ms BLE GATT AES-128 Notification Stream")
+Rel(app_ui, secure_enclave, "PatientUser passkey_credential_id & challenge nonces")
+Rel(app_ui, auth_svc, "PatientUser registration payload & passkey WebAuthn assertion")
+Rel(app_ui, profile_svc, "HealthBaseline (age, weight, height, BMI) & PatientUser caregiver_phone")
+Rel(app_ui, data_streaming_svc, "TelemetryStream 10s compressed batches & EmergencyAlertQueue 30s alarms")
+
+Rel(admin, backoffice_portal, "Patient eligibility approvals, sensor serial scans & caregiver lock commands")
+Rel(backoffice_portal, profile_svc, "PatientUser eligibility verification payload & caregiver lock requests")
+Rel(backoffice_portal, device_svc, "DeviceBinding hardware serial & BLE MAC address registration")
+Rel(device_svc, app_db, "Writes DeviceBinding records")
+Rel(device_svc, audit_svc, "PhiAuditLog (Device Binding Events)")
+
+Rel(auth_svc, audit_svc, "PhiAuditLog (Auth Events)")
+Rel(profile_svc, audit_svc, "PhiAuditLog (Profile Updates)")
+Rel(data_streaming_svc, stream_workers, "TelemetryStream batches & ApneaEvent triggers")
+Rel(stream_workers, timeseries_db, "TelemetryStream compressed bio-signal blobs")
+Rel(stream_workers, app_db, "SleepSession metrics, ApneaEvent records & EmergencyAlertQueue items")
+
+Rel(app_db, command_portal, "EmergencyAlertQueue items & CareDispatchRecord GPS coordinates")
+Rel(dispatcher, command_portal, "CareDispatchRecord dispatcher actions & EMS dispatch commands")
+Rel(command_portal, telephony_svc, "PatientUser caregiver_phone & CareDispatchRecord payloads")
+Rel(command_portal, ems_gateway, "CareDispatchRecord 911 CAD order & GPS coordinates")
+Rel(command_portal, audit_svc, "PhiAuditLog (Dispatch Audit Logs)")
+
+Rel(app_db, clinic_portal, "SleepSession morning summaries & HealthBaseline AHI trends")
+Rel(doctor, clinic_portal, "ClinicDoctorAssignment diagnostic notes & AHI reviews")
+
+@enduml
+```
+
+#### 📖 Participant-to-C4-Component Traceability Matrix
+
+| Sequence Diagram Participant Line | Parent C4 Container | C4 Component Node | Mapped Application Entity / Payload | Architectural Responsibility |
+| :--- | :--- | :--- | :--- | :--- |
+| **`User`** | External Actor | `Patient` / `Dispatcher` / `Physician` / `Backoffice Admin` | `PatientUser` / Human Actor | Human actor triggering UI events or reviewing healthcare dashboards. |
+| **`Small Breathing Device (Sensor)`** | Hardware Device | `Small Breathing Device` | Differential Pressure Stream | Embedded hardware sensor sampling differential pressure and streaming 100ms BLE GATT notifications. |
+| **`Backoffice Admin (Admin)`** | External Actor | `Backoffice Admin` | Human Administrator | Verifies patient identity, scans sensor barcodes, and locks caregiver contacts. |
+| **`Patient App UI (UI)`** | `Mobile Application` | `Patient App UI` | `PatientUser`, `HealthBaseline` | Renders Flutter onboarding, calibration, sleep monitoring, and Tier-1 alarm screens. |
+| **`Backoffice Web Portal (Admin UI)`** | `Web Operations Portals` | `Backoffice Web Portal` | `PatientUser`, `DeviceBinding` | Renders web panels for identity verification, device pairing, and caregiver contact locks. |
+| **`Secure Enclave (Enclave)`** | `Mobile Application` | `Secure Enclave` | `PatientUser (passkey_credential_id)` | OS biometrics module executing WebAuthn keypair generation and FIDO2 challenge signing. |
+| **`Auth Service (AuthSvc)`** | `Authentication Service` | `Auth Service` | `PatientUser` | WebAuthn FIDO2 microservice issuing enrollment/authentication challenges and JWT session tokens. |
+| **`Profile Service (ProfileSvc)`** | `Backend Platform Services` | `Patient Profile Service` | `HealthBaseline`, `PatientUser` | REST microservice capturing patient demographics, BMI, and locked caregiver emergency contacts. |
+| **`Device Management Service (DeviceSvc)`** | `Backend Platform Services` | `Device Management Service` | `DeviceBinding` | REST microservice managing BLE sensor MAC bindings, barcode serial validation, and device inventory. |
+| **`Audit Service (AuditSvc)`** | `Backend Platform Services` | `Audit Service` | `PhiAuditLog` | Non-blocking HIPAA compliance service writing write-once audit logs to `PhiAuditLog`. |
+| **`Data Streaming Service`** | `Data Streaming Service` | `Data Streaming Service` | `TelemetryStream`, `EmergencyAlertQueue` | High-throughput event ingestion engine handling 10s bio-signal batches and 30s emergency pushes. |
+| **`Stream Processing Workers`** | `Stream Processing Workers` | `Stream Processing Workers` | `TelemetryStream`, `ApneaEvent`, `SleepSession` | gRPC container workers executing calibration FFT analysis and AASM 90%/30% apnea breach detection rules. |
+| **`Emergency Center Web Portal`** | `Emergency Center Web Portal` | `Emergency Center Web Portal` | `EmergencyAlertQueue`, `CareDispatchRecord` | React WSS dashboard displaying alert pop-ups, Mapbox GPS geocoding, and dispatch action buttons. |
+| **`Telephony Service`** | `Backend Platform Services` | `Telephony Service` | `CareDispatchRecord`, `PatientUser` | Automated Twilio telephony client triggering voice calls and priority SMS to emergency contacts. |
+| **`EMS CAD Gateway`** | `Backend Platform Services` | `EMS CAD Gateway` | `CareDispatchRecord` | Integration gateway initiating 911 Computer-Aided Dispatch (CAD) emergency responder orders. |
+| **`Clinic Portal Backend`** | `Clinic & Physician Portal` | `Clinic & Physician Portal` | `SleepSession`, `ClinicDoctorAssignment` | Web backend syncing morning sleep scores, AHI trends, and physician diagnostic notes. |
+| **`Application Database (DB)`** | `Application Database` | `Application Database` | All Primary Application Entities | Relational/Document database persisting user state, health baselines, device bindings, and alert queues. |
+| **`Bio-Signal Time-Series Store`** | `Bio-Signal Time-Series Store` | `Bio-Signal Time-Series Store` | `TelemetryStream` | Columnar database storing compressed high-frequency bio-signal streams. |ime-Series Store` | `Bio-Signal Time-Series Store` | `TelemetryStream` | Columnar database storing compressed high-frequency bio-signal streams. |
+
+---
+
+### 3.2.6 📊 Application Entity-Relationship (ER) Model
+
+The **Application Entity-Relationship (ER) Model** formalizes the physical relational and document schema relationships governing data persistence across the `Application Database` and `Bio-Signal Time-Series Store`. 
+
+```plantuml
+@startuml Application_ER_Diagram
+skinparam backgroundColor #FFFFFF
+skinparam classAttributeIconSize 0
+hide circle
+
+entity "PatientUser" as patient_user {
+    * user_id : VARCHAR(36) <<PK>>
+    --
+    passkey_credential_id : VARCHAR(255)
+    encrypted_full_name : VARCHAR(512)
+    encrypted_phone : VARCHAR(256)
+    registered_at : TIMESTAMP
+}
+
+entity "HealthBaseline" as health_baseline {
+    * baseline_id : VARCHAR(36) <<PK>>
+    --
+    * user_id : VARCHAR(36) <<FK>>
+    age : INT
+    gender : VARCHAR(16)
+    weight_kg : DECIMAL(5,2)
+    height_cm : DECIMAL(5,2)
+    computed_bmi : DECIMAL(4,2)
+    idle_noise_floor : DOUBLE
+    vpp_breath_baseline : DOUBLE
+}
+
+entity "DeviceBinding" as device_binding {
+    * binding_id : VARCHAR(36) <<PK>>
+    --
+    * user_id : VARCHAR(36) <<FK>>
+    device_hardware_id : VARCHAR(128)
+    ble_mac_address : VARCHAR(64)
+    status : VARCHAR(32)
+    bound_at : TIMESTAMP
+}
+
+entity "SleepSession" as sleep_session {
+    * session_id : VARCHAR(36) <<PK>>
+    --
+    * user_id : VARCHAR(36) <<FK>>
+    start_time : TIMESTAMP
+    end_time : TIMESTAMP
+    ahi_score : DECIMAL(4,1)
+    total_apnea_events : INT
+    quality_score : INT
+}
+
+entity "TelemetryStream" as telemetry_stream {
+    * stream_id : VARCHAR(36) <<PK>>
+    --
+    * session_id : VARCHAR(36) <<FK>>
+    sequence_number : INT
+    compressed_bio_signals : BLOB
+    battery_pct : INT
+    timestamp : TIMESTAMP
+}
+
+entity "ApneaEvent" as apnea_event {
+    * event_id : VARCHAR(36) <<PK>>
+    --
+    * session_id : VARCHAR(36) <<FK>>
+    triggered_at : TIMESTAMP
+    apnea_duration_seconds : INT
+    threshold_breach_margin : DOUBLE
+}
+
+entity "EmergencyAlertQueue" as alert_queue {
+    * alert_id : VARCHAR(36) <<PK>>
+    --
+    * session_id : VARCHAR(36) <<FK>>
+    cancellation_token_id : VARCHAR(128)
+    patient_acknowledged : BOOLEAN
+    alert_priority : VARCHAR(32)
+    timeout_at : TIMESTAMP
+}
+
+entity "CareDispatchRecord" as dispatch_record {
+    * dispatch_id : VARCHAR(36) <<PK>>
+    --
+    * alert_id : VARCHAR(36) <<FK>>
+    dispatcher_id : VARCHAR(36)
+    caregiver_phone : VARCHAR(64)
+    gps_location : VARCHAR(128)
+    ems_dispatched : BOOLEAN
+    dispatched_at : TIMESTAMP
+}
+
+entity "ClinicDoctorAssignment" as doctor_assignment {
+    * assignment_id : VARCHAR(36) <<PK>>
+    --
+    * user_id : VARCHAR(36) <<FK>>
+    clinic_id : VARCHAR(36)
+    doctor_npi_number : VARCHAR(32) [Future Phase 2]
+    doctor_name : VARCHAR(128)
+}
+
+entity "PhiAuditLog" as audit_log {
+    * audit_id : VARCHAR(36) <<PK>>
+    --
+    * user_id : VARCHAR(36) <<FK>>
+    action_type : VARCHAR(64)
+    accessed_entity : VARCHAR(64)
+    ip_address : VARCHAR(45)
+    timestamp : TIMESTAMP
+}
+
+patient_user ||--|| health_baseline : "1 : 1 (possesses)"
+patient_user ||--|{ device_binding : "1 : N (owns)"
+patient_user ||--|{ sleep_session : "1 : N (records)"
+sleep_session ||--|{ telemetry_stream : "1 : N (streams)"
+sleep_session ||--|{ apnea_event : "1 : N (flags)"
+sleep_session ||--|{ alert_queue : "1 : N (triggers)"
+alert_queue ||--o| dispatch_record : "1 : 0..1 (escalates)"
+patient_user ||--|{ doctor_assignment : "1 : N (assigned_to)"
+patient_user ||--|{ audit_log : "1 : N (generates)"
+
+@enduml
+```
 
 ---
 
@@ -442,7 +671,7 @@ participant "Audit Service\n(HIPAA Audit)" as AuditSvc
 end box
 
 == Phase 1: Patient Account Registration (Task_PatientRegister) ==
-User -> UI: 1. Enter Email, Password & Accept Terms (SCR_REGISTER_ACCOUNT)
+User -> UI: 1. Enter Email, Password & Accept Terms (MOB_REGISTER_ACCOUNT)
 activate UI
 UI --> AuthSvc: 2. Async Registration: POST /v1/auth/register\n{ email, password_hash, user_type: "PATIENT" }
 activate AuthSvc
@@ -451,10 +680,10 @@ activate AuditSvc
 deactivate AuditSvc
 AuthSvc --> UI: 4. 201 Created Response { user_id, session_token }
 deactivate AuthSvc
-UI -> UI: 5. Auto-advance to SCR_USER_PROFILE
+UI -> UI: 5. Auto-advance to MOB_USER_PROFILE
 
 == Phase 2: Medical Profile & Caregiver Setup (Task_CreateUserProfile) ==
-User -> UI: 6. Fill Demographics & Caregiver Contact (SCR_USER_PROFILE)
+User -> UI: 6. Fill Demographics & Caregiver Contact (MOB_USER_PROFILE)
 UI --> ProfileSvc: 7. Async Profile Save: POST /v1/patient/profile\n{ user_id, age, weight_kg, height_cm, bmi, caregiver_phone }
 activate ProfileSvc
 ProfileSvc --> AuditSvc: 8. Audit Log Profile Update
@@ -462,10 +691,10 @@ activate AuditSvc
 deactivate AuditSvc
 ProfileSvc --> UI: 9. 200 OK Profile Saved Response
 deactivate ProfileSvc
-UI -> UI: 10. Auto-advance to SCR_REGISTER_PASSKEY
+UI -> UI: 10. Auto-advance to MOB_REGISTER_PASSKEY
 
 == Phase 3: FIDO2 Biometric Passkey Enrollment (Task_RegisterPasskey) ==
-User -> UI: 11. Tap "Enroll Passkey" (SCR_REGISTER_PASSKEY)
+User -> UI: 11. Tap "Enroll Passkey" (MOB_REGISTER_PASSKEY)
 UI --> AuthSvc: 12. Fetch Creation Challenge: POST /v1/auth/passkey/enroll-challenge
 activate AuthSvc
 AuthSvc --> UI: 13. 200 OK Challenge { creation_challenge_nonce }
@@ -497,20 +726,107 @@ deactivate UI
 The **Patient Onboarding Journey** (`Task_PatientRegister` $\rightarrow$ `Task_CreateUserProfile` $\rightarrow$ `Task_RegisterPasskey`) establishes a HIPAA-compliant patient identity, captures essential demographic & emergency contact parameters, and registers a hardware-isolated FIDO2 Passkey prior to bedtime sleep monitoring:
 
 1. **Phase 1: Patient Account Registration (`Task_PatientRegister`):**  
-   The onboarding journey begins when the patient launches the mobile application for the first time and enters their email, password, and accepts HIPAA privacy terms on `SCR_REGISTER_ACCOUNT`. The App UI sends an asynchronous HTTPS POST request (`/v1/auth/register`) to the **Auth Service**. The Auth Service provisions the account, emits an audit log event to the **Audit Service**, and returns HTTP 201 Created with a session token. The App UI automatically transitions to `SCR_USER_PROFILE`.
+   The onboarding journey begins when the patient launches the mobile application for the first time and enters their email, password, and accepts HIPAA privacy terms on `MOB_REGISTER_ACCOUNT`. The App UI sends an asynchronous HTTPS POST request (`/v1/auth/register`) to the **Auth Service**. The Auth Service provisions the account, emits an audit log event to the **Audit Service**, and returns HTTP 201 Created with a session token. The App UI automatically transitions to `MOB_USER_PROFILE`.
 
 2. **Phase 2: Medical Profile & Caregiver Setup (`Task_CreateUserProfile`):**  
-   The patient inputs demographic metadata (age, height, weight, computed BMI) and caregiver emergency contact numbers on `SCR_USER_PROFILE`. The App UI sends an asynchronous POST request (`/v1/patient/profile`) to the **Profile Service**. The Profile Service validates emergency contact phone formats, stores the profile in the database, emits a HIPAA audit entry, and returns HTTP 200 OK. The App UI automatically advances to `SCR_REGISTER_PASSKEY`.
+   The patient inputs demographic metadata (age, height, weight, computed BMI) and caregiver emergency contact numbers on `MOB_USER_PROFILE`. The App UI sends an asynchronous POST request (`/v1/patient/profile`) to the **Profile Service**. The Profile Service validates emergency contact phone formats, stores the profile in the database, emits a HIPAA audit entry, and returns HTTP 200 OK. The App UI automatically advances to `MOB_REGISTER_PASSKEY`.
 
 3. **Phase 3: FIDO2 Biometric Passkey Enrollment (`Task_RegisterPasskey`):**  
-   The patient taps "Enroll Passkey" on `SCR_REGISTER_PASSKEY`. The App UI fetches a cryptographic WebAuthn enrollment challenge from the Auth Service (`POST /v1/auth/passkey/enroll-challenge`) and invokes the OS **Secure Enclave**. The OS prompts the user for biometric touch/scan (`FaceID / TouchID`). Upon verification, the Secure Enclave generates a public/private keypair inside hardware, signs the challenge, and returns the public key payload to the App UI. The App UI POSTs the payload to `/v1/auth/passkey/enroll-verify`. The Auth Service binds the public key to the user's account and returns HTTP 200 OK.
+   The patient taps "Enroll Passkey" on `MOB_REGISTER_PASSKEY`. The App UI fetches a cryptographic WebAuthn enrollment challenge from the Auth Service (`POST /v1/auth/passkey/enroll-challenge`) and invokes the OS **Secure Enclave**. The OS prompts the user for biometric touch/scan (`FaceID / TouchID`). Upon verification, the Secure Enclave generates a public/private keypair inside hardware, signs the challenge, and returns the public key payload to the App UI. The App UI POSTs the payload to `/v1/auth/passkey/enroll-verify`. The Auth Service binds the public key to the user's account and returns HTTP 200 OK.
 
 4. **Phase 4: Onboarding Complete & Return to User:**  
    The App UI renders "Onboarding Complete ✓", deactivates its setup loading state, and advances the patient to the Bedtime Sleep Session Ready state.
 
 ---
 
-#### 3.3.2 🔐 End-to-End Sequence Diagram 2: Passkey Authentication (FIDO2) Flow (`Task_PasskeyAuth`)
+#### 3.3.2 🏢 End-to-End Sequence Diagram 2: Backoffice Operations Journey Flow (`Task_VerifyPatientIdentity`, `Task_BindMedicalDevice`, `Task_LockEmergencyContacts`)
+
+This end-to-end sequence diagram models the multi-stage **Backoffice Operations Journey** focused on **Passkey Login Rescue & Recovery Operations**, encapsulating out-of-band identity verification (`Task_VerifyPatientIdentity`), stale Passkey credential revocation & sensor unbinding (`Task_BindMedicalDevice`), and emergency one-time Passkey recovery token issuance (`Task_LockEmergencyContacts`).
+
+```plantuml
+@startuml Backoffice_Operations_Journey_Sequence_Diagram
+autonumber
+scale 0.7
+
+actor "Support Admin" as Admin
+box "Web Operations Portals (React / Next.js)"
+participant "Backoffice Web Portal\n(WEB_PASSKEY_RECOVERY)" as AdminUI
+end box
+
+box "Backend Platform Services (Cloud Microservices)"
+participant "Auth Service\n(WebAuthn FIDO2)" as AuthSvc
+participant "Profile Service\n(Demographics)" as ProfileSvc
+participant "Device Service\n(Hardware Inventory)" as DeviceSvc
+participant "Audit Service\n(HIPAA Audit)" as AuditSvc
+end box
+
+== Phase 1: Handle Passkey Login Issue & Verify Patient Identity (Task_VerifyPatientIdentity) ==
+Admin -> AdminUI: 1. Review Passkey Support Ticket & Verify Patient Identity (WEB_PASSKEY_RECOVERY)
+activate AdminUI
+AdminUI --> ProfileSvc: 2. Async Verify Identity: POST /v1/admin/support/verify-identity\n{ user_id, support_ticket_id, admin_id, verification_method: "OUT_OF_BAND_SMS" }
+activate ProfileSvc
+ProfileSvc --> AuditSvc: 3. Emit Support Identity Verification Audit Event
+activate AuditSvc
+deactivate AuditSvc
+ProfileSvc --> AdminUI: 4. 200 OK Identity Verified Response
+deactivate ProfileSvc
+AdminUI -> AdminUI: 5. Auto-advance to WEB_DEVICE_RESET
+
+== Phase 2: Revoke Stale Passkey & Unbind Sensor Device (Task_BindMedicalDevice) ==
+Admin -> AdminUI: 6. Click "Revoke Stale Passkey & Unbind Device" (WEB_DEVICE_RESET)
+AdminUI --> AuthSvc: 7. Revoke FIDO2 Credential: POST /v1/admin/passkey/revoke\n{ user_id, revoked_credential_id }
+activate AuthSvc
+AuthSvc --> AuditSvc: 8. Record Passkey Revocation Audit Event
+activate AuditSvc
+deactivate AuditSvc
+AuthSvc --> AdminUI: 9. 200 OK Passkey Revoked
+deactivate AuthSvc
+
+AdminUI --> DeviceSvc: 10. Unbind Sensor: POST /v1/admin/device/unbind\n{ user_id, device_hardware_id }
+activate DeviceSvc
+DeviceSvc --> AuditSvc: 11. Record Device Unbind Audit Event
+activate AuditSvc
+deactivate AuditSvc
+DeviceSvc --> AdminUI: 12. 200 OK Device Unbound Response
+deactivate DeviceSvc
+AdminUI -> AdminUI: 13. Auto-advance to WEB_TOKEN_ISSUE
+
+== Phase 3: Issue Emergency Recovery Token & SMS Link (Task_LockEmergencyContacts) ==
+Admin -> AdminUI: 14. Click "Issue One-Time Recovery Token" (WEB_TOKEN_ISSUE)
+AdminUI --> AuthSvc: 15. Generate Recovery Token: POST /v1/admin/passkey/issue-recovery-token\n{ user_id, phone_number, expiration_minutes: 15 }
+activate AuthSvc
+AuthSvc --> AuditSvc: 16. Record Recovery Token Issuance Audit Event
+activate AuditSvc
+deactivate AuditSvc
+AuthSvc --> AdminUI: 17. 200 OK Token Generated & Dispatched via SMS
+deactivate AuthSvc
+
+== Phase 4: Passkey Recovery Complete & Patient Notified ==
+AdminUI -> Admin: 18. Render "Emergency Passkey Recovery Token Sent via SMS ✓"
+deactivate AdminUI
+
+@enduml
+```
+
+#### 📖 Detailed End-to-End Execution Flow Narrative (`Backoffice Operations Journey`)
+
+The **Backoffice Operations Journey** (`Task_VerifyPatientIdentity` $\rightarrow$ `Task_BindMedicalDevice` $\rightarrow$ `Task_LockEmergencyContacts`) handles **Passkey Login Rescue & Recovery Operations** when a patient loses biometric authentication access, experiences a broken FIDO2 token, or changes mobile hardware:
+
+1. **Phase 1: Handle Passkey Login Issue & Verify Patient Identity (`Task_VerifyPatientIdentity`):**  
+   A backoffice support administrator opens an incoming Passkey support ticket on `WEB_PASSKEY_RECOVERY`, performs out-of-band identity verification (validating government ID & SMS challenge code), and clicks *"Verify Identity for Passkey Recovery"*. The Backoffice Web Portal sends an asynchronous HTTPS POST request (`/v1/admin/support/verify-identity`) to the **Patient Profile Service**. The Profile Service verifies the identity proof, records a HIPAA audit log entry in the **Audit Service**, and returns HTTP 200 OK. The Portal UI automatically transitions to `WEB_DEVICE_RESET`.
+
+2. **Phase 2: Revoke Stale Passkey & Unbind Sensor Device (`Task_BindMedicalDevice`):**  
+   The support administrator reviews active WebAuthn credentials and bound BLE hardware sensors on `WEB_DEVICE_RESET` and clicks *"Revoke Stale Passkey & Unbind Sensor"*. The Portal UI calls `/v1/admin/passkey/revoke` on the **Auth Service** to invalidate the stale FIDO2 credential, and calls `/v1/admin/device/unbind` on the **Device Management Service** to unbind lost hardware. Both services emit HIPAA audit events and return HTTP 200 OK. The Portal UI automatically advances to `WEB_TOKEN_ISSUE`.
+
+3. **Phase 3: Issue Emergency Passkey Recovery Token (`Task_LockEmergencyContacts`):**  
+   The support administrator configures a 15-minute expiration window on `WEB_TOKEN_ISSUE` and clicks *"Issue Emergency One-Time Passkey Recovery Token"*. The Portal UI POSTs to `/v1/admin/passkey/issue-recovery-token` on the **Auth Service**. The Auth Service generates a cryptographically secure 256-bit single-use recovery token, dispatches an encrypted SMS link to the patient's verified phone number via Twilio, and records an audit log event.
+
+4. **Phase 4: Passkey Recovery Complete & Patient Notified:**  
+   The Backoffice Web Portal renders *"Emergency Passkey Recovery Token Sent via SMS ✓"*, allowing the patient to tap the SMS recovery link on their mobile device and seamlessly re-enroll a new FIDO2 Passkey (`MOB_REGISTER_PASSKEY`).
+
+---
+
+#### 3.5.3 🔐 End-to-End Sequence Diagram 3: Passkey Authentication (FIDO2) Flow (`Task_PasskeyAuth`)
 
 This end-to-end sequence diagram models the execution of **`Task_PasskeyAuth`** (`Authenticate via Passkey (FIDO2)`), establishing secure biometric authentication before entering sleep calibration.
 
@@ -521,7 +837,7 @@ scale 0.7
 
 actor "User" as User
 box "Mobile Client Edge (Flutter / Mobile OS)" 
-participant "Patient App UI\n(SCR_PASSKEY_AUTH)" as UI 
+participant "Patient App UI\n(MOB_PASSKEY_AUTH)" as UI 
 participant "Secure Enclave\n(Biometrics)" as Enclave
 end box
 
@@ -604,6 +920,299 @@ The **Passkey Authentication (FIDO2) Flow** (`Task_PasskeyAuth`) models the end-
 * **Payload Harmonization:** Matches Task 1.1 payload `{ user_id, passkey_credential_id, challenge_signature }` and `PatientUser` conceptual entity attributes (`user_id`, `passkey_credential_id`).
 * **Decoupled Architecture:** Utilizes a standalone **`Authentication Service`** microservice (to be detailed in Infrastructure & Deployment Architecture) ensuring zero vendor lock-in.
 * **Latency SLA:** Complete end-to-end FIDO2 assertion & JWT token issuance completed in $< 500\text{ms}$.
+
+---
+
+#### 3.5.4 🌙 End-to-End Sequence Diagram 4: Patient Sleep Operations Journey Flow (`Task_PasskeyAuth`, `Task_Stage1Cal`, `Task_Stage2Cal`, `Task_SleepMonitoring`, `Task_TapSafe`, `Task_EndSession`)
+
+This end-to-end sequence diagram models the execution of **Patient Sleep Operations** (`Lane_PatientAtHome` / Swimlane 3), encapsulating biometric passkey authentication, 2-stage noise/breath sensor calibration, 10Hz continuous bio-signal telemetry streaming, real-time AASM apnea breach detection, local Tier-1 alarm & 30s countdown safety tap ("I'm Safe"), and morning sleep report sync.
+
+```plantuml
+@startuml Patient_Sleep_Operations_Journey_Sequence_Diagram
+autonumber
+scale 0.7
+
+actor "Patient" as Patient
+box "Mobile Edge & Hardware (At-Home Patient)"
+participant "Small Breathing Device\n(Hardware Sensor)" as Sensor
+participant "Patient App UI\n(MOB_SLEEP_OPERATIONS)" as UI
+participant "Secure Enclave\n(Biometrics)" as Enclave
+end box
+
+box "Backend Platform Services (Cloud Microservices)"
+participant "Auth Service\n(WebAuthn FIDO2)" as AuthSvc
+participant "Data Streaming Service\n(Event Ingestion)" as StreamingSvc
+participant "Stream Processing Workers\n(AASM Engine)" as StreamWorkers
+participant "Audit Service\n(HIPAA Audit)" as AuditSvc
+end box
+
+box "Persistence Tiers (Cloud Data Stores)"
+database "Application Database\n(App DB)" as AppDB
+database "Bio-Signal Time-Series Store\n(Timeseries DB)" as TimeseriesDB
+end box
+
+== Phase 1: Passkey Biometric Login (Task_PasskeyAuth) ==
+Patient -> UI: 1. Launch Night App & Tap "Start Bedtime Monitoring" (MOB_PASSKEY_AUTH)
+activate UI
+UI --> AuthSvc: 2. Fetch Challenge Nonce: POST /v1/auth/passkey/challenge
+activate AuthSvc
+AuthSvc --> UI: 3. 200 OK Challenge Nonce { challenge_nonce }
+deactivate AuthSvc
+UI --> Enclave: 4. Prompt Biometric Scan & Pass Challenge Nonce
+activate Enclave
+Enclave --> Patient: 5. Display OS Biometric Scan Prompt (FaceID / TouchID)
+Patient -> Enclave: 6. User Verified (Fingerprint / Face Scan)
+Enclave --> Enclave: 7. Sign Nonce with Private Passkey
+Enclave --> UI: 8. Return FIDO2 Assertion Signature { challenge_signature }
+deactivate Enclave
+UI --> AuthSvc: 9. Verify Assertion: POST /v1/auth/passkey/verify
+activate AuthSvc
+AuthSvc --> AuditSvc: 10. Record Auth Event (PhiAuditLog)
+activate AuditSvc
+deactivate AuditSvc
+AuthSvc --> UI: 11. 200 OK Session Token Authorized ✓
+deactivate AuthSvc
+UI -> UI: 12. Auto-advance to MOB_CALIBRATION_STAGE1
+
+== Phase 2: Stage 1 Idle Noise Calibration (Task_Stage1Cal) ==
+Patient -> UI: 13. Tap "Start 10s Idle Calibration" (MOB_CALIBRATION_STAGE1)
+UI --> Sensor: 14. Open BLE Connection & Subscribe GATT Notification (0x2A37)
+activate Sensor
+Sensor --> UI: 15. Stream 10s Ambient Noise Packets (10Hz BLE Stream)
+deactivate Sensor
+UI -> UI: 16. Compute Idle Noise Baseline (N_idle) via Dart FFT Isolate
+UI -> UI: 17. Auto-advance to MOB_CALIBRATION_STAGE2
+
+== Phase 3: Stage 2 Active Breath Calibration (Task_Stage2Cal) ==
+Patient -> UI: 18. Attach Sensor Mask & Take 5 Normal Breaths (MOB_CALIBRATION_STAGE2)
+UI --> Sensor: 19. Sample 30s Breathing Waveform
+activate Sensor
+Sensor --> UI: 20. Stream 30s Peak-to-Trough Pressure Packets
+deactivate Sensor
+UI -> UI: 21. Compute Baseline Breathing Amplitude (Vpp) & Threshold (0.10 * Vpp)
+UI --> AppDB: 22. Save Calibration Metrics (HealthBaseline)
+activate AppDB
+AppDB --> UI: 23. 200 OK Baseline Saved
+deactivate AppDB
+UI -> UI: 24. Auto-advance to MOB_SLEEP_MONITOR
+
+== Phase 4: Continuous Sleep Monitoring & Bio-Signal Streaming (Task_SleepMonitoring) ==
+UI -> UI: 25. Enter Night Mode (0-FPS Locked Black Display #000000)
+Sensor --> UI: 26. Continuous 100ms Bio-Signal Telemetry Stream
+UI --> StreamingSvc: 27. Async Flush 10s Compressed Telemetry Batches: POST /v1/telemetry/stream
+activate StreamingSvc
+StreamingSvc --> StreamWorkers: 28. Forward Telemetry Stream Batches (gRPC)
+activate StreamWorkers
+StreamWorkers --> TimeseriesDB: 29. Write Compressed Bio-Signal Blobs (TelemetryStream)
+activate TimeseriesDB
+deactivate TimeseriesDB
+StreamWorkers --> StreamWorkers: 30. Evaluate AASM Apnea Rules (90% Drop for >= 10s)
+deactivate StreamWorkers
+deactivate StreamingSvc
+
+== Phase 5: Apnea Breach Detection & Tier-1 Local Alarm / Tap 'I'm Safe' (Task_TapSafe) ==
+Sensor --> UI: 31. Airflow Signal Drops below Threshold (< 0.10 * Vpp for 30s)
+UI -> UI: 32. Trigger Tier-1 Local Siren & High-Priority Visual Overlay (MOB_TIER1_ALARM)
+UI --> StreamingSvc: 33. Push Emergency Alert & 30s Countdown Token
+activate StreamingSvc
+StreamingSvc --> AppDB: 34. Create EmergencyAlertQueue Item (patient_acknowledged = false)
+activate AppDB
+deactivate AppDB
+deactivate StreamingSvc
+
+alt Patient Acknowledges Alarm (Within 30s Countdown)
+    Patient -> UI: 35. Tap "I'M SAFE - DISMISS ALARM" Button
+    UI -> UI: 36. Silence Local Siren & Transition to MOB_ALARM_CANCELED
+    UI --> AppDB: 37. Cancel Countdown Token & Set patient_acknowledged = true
+    activate AppDB
+    AppDB --> UI: 38. 200 OK Alarm Dismissed ✓
+    deactivate AppDB
+else 30s Countdown Expires (No Tap)
+    UI --> StreamingSvc: 39. 30s Timeout Expired -> Trigger Tier-2 Command Center Escalation
+end
+
+== Phase 6: Morning Session Conclusion & Sleep Report Sync (Task_EndSession) ==
+Patient -> UI: 40. Wake Up & Tap "End Sleep Session" (MOB_SLEEP_SUMMARY)
+UI --> Sensor: 41. Disconnect BLE GATT Channel
+UI --> StreamingSvc: 42. End Session API: POST /v1/session/end\n{ session_id, end_time, total_duration_seconds, final_ahi_score }
+activate StreamingSvc
+StreamingSvc --> AppDB: 43. Finalize SleepSession Record & Update AHI Score
+activate AppDB
+AppDB --> AuditSvc: 44. Record Sleep Session Concluded Audit Event
+activate AuditSvc
+deactivate AuditSvc
+AppDB --> StreamingSvc: 45. 200 OK Session Finalized
+deactivate AppDB
+StreamingSvc --> UI: 46. Return Morning AHI Report Summary Payload
+deactivate StreamingSvc
+UI -> Patient: 47. Render Morning Sleep Summary Dashboard (MOB_SLEEP_SUMMARY)
+deactivate UI
+
+@enduml
+```
+
+#### 📖 Detailed End-to-End Execution Flow Narrative (`Patient Sleep Operations Journey`)
+
+The **Patient Sleep Operations Journey** (`Lane_PatientAtHome` / Swimlane 3) models the complete nocturnal lifecycle from biometric login through morning report generation across 6 sequential phases:
+
+1. **Phase 1: Passkey Biometric Login (`Task_PasskeyAuth`):**  
+   The patient launches the app at bedtime on `MOB_PASSKEY_AUTH`. The Patient App UI fetches a WebAuthn challenge nonce from the **Auth Service**, prompts the OS **Secure Enclave** for biometric scan (`FaceID / TouchID`), signs the nonce in hardware, and sends the assertion payload (`POST /v1/auth/passkey/verify`) to the Auth Service. Upon verification and non-blocking audit logging by the **Audit Service**, the App UI receives HTTP 200 OK with a session token and auto-advances to `MOB_CALIBRATION_STAGE1`.
+
+2. **Phase 2: Stage 1 Idle Noise Calibration (`Task_Stage1Cal`):**  
+   The patient places the sensor on the bedside table and taps *"Start 10s Calibration"* on `MOB_CALIBRATION_STAGE1`. The App UI opens a BLE GATT channel to the **Small Breathing Device** (`0x2A37` characteristic) and samples ambient differential pressure for 10s. The local Dart FFT isolate computes $N_{\text{idle}}$ baseline noise floor and advances to `MOB_CALIBRATION_STAGE2`.
+
+3. **Phase 3: Stage 2 Active Breath Calibration (`Task_Stage2Cal`):**  
+   The patient attaches the sensor mask and breathes normally for 30s on `MOB_CALIBRATION_STAGE2`. The App UI processes 30s peak-to-trough pressure waves, calculates moving average breathing amplitude ($V_{pp}$), computes apnea threshold ($0.10 \times V_{pp}$), saves baseline metrics to the **Application Database**, and auto-advances to `MOB_SLEEP_MONITOR`.
+
+4. **Phase 4: Continuous Sleep Monitoring & Bio-Signal Streaming (`Task_SleepMonitoring`):**  
+   The App UI locks the screen in 0-FPS Night Mode (`#000000` with pulsing green heartbeat dot). The **Small Breathing Device** streams 100ms bio-signal GATT notifications over BLE. The App UI buffers data in a local 1-hour circular RAM ring buffer and asynchronously flushes 10s compressed telemetry batches to the **Data Streaming Service** (`POST /v1/telemetry/stream`). The Streaming Service forwards batches via gRPC to **Stream Processing Workers**, which store compressed blobs in the **Bio-Signal Time-Series Store** and evaluate AASM 90% airflow drop rules.
+
+5. **Phase 5: Apnea Breach Detection & Tier-1 Local Alarm / Safety Tap (`Task_TapSafe`):**  
+   When airflow drops below threshold ($< 0.10 \times V_{pp}$ for $\ge 10\text{s}$), the App UI immediately pops `MOB_TIER1_ALARM`, triggering a local 120dB siren and flashing visual overlay in $<200\text{ms}$. Simultaneously, a 30s cancellation token is pushed to the **Application Database**. If the patient taps *"I'M SAFE - DISMISS ALARM"* within 30s, the App UI silences the siren, updates `patient_acknowledged = true`, and transitions to `MOB_ALARM_CANCELED`. If the 30s timer expires without a tap, the system triggers Tier-2 Command Center escalation.
+
+6. **Phase 6: Morning Session Conclusion & Sleep Report Sync (`Task_EndSession`):**  
+   In the morning, the patient taps *"End Sleep Session"* on `MOB_SLEEP_SUMMARY`. The App UI closes the BLE GATT connection and sends a session end payload (`POST /v1/session/end`) to the **Data Streaming Service**. The backend updates the `SleepSession` record in the **Application Database**, computes overnight AHI index, records an audit log entry in the **Audit Service**, and returns the report summary payload to render on `MOB_SLEEP_SUMMARY`.
+
+---
+
+#### 🔬 Scientific & Mathematical Algorithm Specifications (PRD FR-1.4 – FR-1.8, FR-2.2, FR-2.3 & NFR-6.1 Aligned)
+
+To guarantee clinical precision and satisfy PRD requirements (FR-1.4 through FR-1.8, FR-2.2, FR-2.3, NFR-3, NFR-5, and NFR-6.1 AASM diagnostic standards), the execution of idle calibration, active breathing calibration, continuous monitoring, and real-time apnea detection enforces the following mathematical and scientific signal processing algorithms:
+
+##### 1. Stage 1: Idle Sensor Noise Floor Calibration Algorithm ($N_{\text{idle}}$ Sampling) — PRD FR-1.4
+Prior to attaching the breathing device, the patient places the sensor on a stationary surface for a mandatory 10-second sampling phase ($M = 100$ samples @ 10Hz BLE stream rate) to compute the ambient environmental differential pressure noise floor $N_{\text{idle}}$:
+
+$$\mu_{\text{idle}} = \frac{1}{M} \sum_{i=1}^{M} V_{\text{raw}}(t_i)$$
+
+$$\sigma_{\text{idle}}^2 = \frac{1}{M-1} \sum_{i=1}^{M} \left( V_{\text{raw}}(t_i) - \mu_{\text{idle}} \right)^2$$
+
+$$N_{\text{idle}} = \mu_{\text{idle}} + 2 \cdot \sigma_{\text{idle}}$$
+
+* **Net Airflow Deduction (PRD FR-1.6):** For all subsequent pressure samples, instantaneous net respiratory airflow $V_{\text{net}}(t)$ is derived by subtracting the calibrated idle noise floor:
+  $$V_{\text{net}}(t) = \max\left(0, \, V_{\text{raw}}(t) - N_{\text{idle}}\right)$$
+
+##### 2. Stage 2: Active Breathing Calibration Algorithm ($V_{pp}$ Baseline & Dynamic Thresholds) — PRD FR-1.5, FR-1.7, FR-1.8
+After attaching the sensor mask, the patient breathes normally for 30 seconds ($N = 300$ samples @ 10Hz). A peak-valley detection algorithm identifies local inhalation maxima ($V_{\max, j}$) and exhalation minima ($V_{\min, j}$) across $k$ complete respiratory cycles:
+
+* **Mean Peak-to-Trough Breathing Amplitude ($V_{pp}$):**
+  $$V_{pp} = \frac{1}{k} \sum_{j=1}^{k} \left( V_{\max, j} - V_{\min, j} \right)$$
+
+* **Dynamic Obstructive Apnea Threshold Binding (PRD FR-1.7 & NFR-6.1):**  
+  Following AASM guidelines ($\ge 90\%$ airflow drop), the session's zero-airflow apnea threshold $\text{Threshold}_{\text{apnea}}$ is set dynamically to 10% of the patient's calibrated breathing amplitude:
+  $$\text{Threshold}_{\text{apnea}} = 0.10 \times V_{pp}$$
+
+* **Dynamic Hypopnea Threshold Binding (PRD NFR-6.1):**  
+  Following AASM guidelines ($\ge 30\%$ airflow drop), the hypopnea threshold $\text{Threshold}_{\text{hypopnea}}$ is set dynamically to 70% of the calibrated breathing amplitude:
+  $$\text{Threshold}_{\text{hypopnea}} = 0.70 \times V_{pp}$$
+
+* **Wear Verification Guardrail (PRD FR-1.8):**  
+  To prevent invalid sleep recordings if the mask is detached or improperly worn, the application enforces a wear verification check. Sleep recording initiation is blocked if:
+  $$\Delta V = \left( V_{\max} - V_{\min} \right) < \text{Threshold}_{\min} = 1.5 \times N_{\text{idle}}$$
+
+##### 3. Nocturnal Sleep Monitoring & Apnea Event Detection Algorithm (FFT & AASM Rules) — PRD FR-2.2, FR-2.3 & NFR-6.1
+During continuous 8+ hour sleep monitoring, raw 100ms BLE telemetry streams are processed in real time by background Dart Isolates (NFR-3) to maintain 0-FPS display battery efficiency (<8% total battery drain):
+
+* **Digital Bandpass Filtering & Fast Fourier Transform (FFT) Respiration Rate (PRD NFR-5 / CHART-02):**  
+  Raw net airflow samples $V_{\text{net}}[n]$ pass through a 4th-order digital Butterworth bandpass filter ($0.10\text{Hz} - 0.75\text{Hz}$, corresponding to human respiration rates of 6 to 45 BPM). A 256-point Fast Fourier Transform (FFT) is computed every 2.5s:
+  $$X(f) = \sum_{n=0}^{N-1} V_{\text{net}}[n] \cdot e^{-j 2\pi f n / N}$$
+  The instantaneous respiration rate $f_{\text{resp}}$ (in BPM) is extracted from the spectral magnitude peak:
+  $$f_{\text{resp}} = 60 \times \arg\max_{f \in [0.10, 0.75]} |X(f)|$$
+
+* **Sliding Window RMS Airflow Evaluator (PRD FR-2.2):**  
+  Every 100ms, the Root Mean Square (RMS) airflow magnitude is evaluated across a sliding 10-second window ($W = 100$ samples):
+  $$V_{\text{RMS}}(t) = \sqrt{\frac{1}{W} \sum_{i=0}^{W-1} \left( V_{\text{net}}(t - i \cdot 0.1\text{s}) \right)^2}$$
+
+* **AASM Obstructive Apnea Classification Rule (PRD FR-2.3 & NFR-6.1):**  
+  An **Obstructive Apnea Event** is flagged, triggering the Tier-1 local alarm (`MOB_TIER1_ALARM`), whenever net RMS airflow drops below the calibrated apnea threshold continuously for 10 seconds or longer:
+  $$\text{Flag Obstructive Apnea} \iff V_{\text{RMS}}(t) < \text{Threshold}_{\text{apnea}} \quad \forall t \in [t_0, \, t_0 + \Delta t], \quad \Delta t \ge 10.0\text{s}$$
+
+* **AASM Hypopnea Classification Rule (PRD NFR-6.1):**  
+  A **Hypopnea Event** is flagged whenever net RMS airflow drops below the hypopnea threshold for 10 seconds or longer:
+  $$\text{Flag Hypopnea} \iff \text{Threshold}_{\text{apnea}} \le V_{\text{RMS}}(t) < \text{Threshold}_{\text{hypopnea}} \quad \forall t \in [t_0, \, t_0 + \Delta t], \quad \Delta t \ge 10.0\text{s}$$
+
+* **Overnight AHI Score Computation (PRD FR-4.1):**  
+  Upon morning session conclusion (`Task_EndSession`), the total Apnea-Hypopnea Index (AHI) is computed and stored in `SleepSession`:
+  $$\text{AHI Score} = \frac{\text{Total Apnea Events} + \text{Total Hypopnea Events}}{\text{Total Sleep Duration (Hours)}}$$
+---
+
+#### 3.5.5 🩺 End-to-End Sequence Diagram 5: Clinic & Physician Journey Flow (`Task_PhysicianReview`)
+
+This end-to-end sequence diagram models the execution of **Clinic & Physician Activities** (`Swimlane 5`), encapsulating morning sleep report retrieval, 8-hour respiration waveform & AHI trend review, physician clinical note entry, digital signature signing (`Task_PhysicianReview`), and non-blocking HIPAA audit event logging.
+
+```plantuml
+@startuml Clinic_Physician_Journey_Sequence_Diagram
+autonumber
+scale 0.7
+
+actor "Attending Physician" as Doctor
+box "Web Operations Portals (React / Next.js)"
+participant "Clinic Web Portal\n(WEB_PHYSICIAN_PATIENT_DETAIL)" as ClinicUI
+end box
+
+box "Backend Platform Services (Cloud Microservices)"
+participant "Clinic Portal Backend\n(EHR Service)" as ClinicSvc
+participant "Audit Service\n(HIPAA Audit)" as AuditSvc
+end box
+
+box "Persistence Tiers (Cloud Data Stores)"
+database "Application Database\n(App DB)" as AppDB
+end box
+
+== Phase 1: Morning Sleep Session Alert Notification & Patient Record Retrieval (Task_PhysicianReview) ==
+Doctor -> ClinicUI: 1. Login to Portal & Click "Morning Sleep Reports Ready" Notification (WEB_PHYSICIAN_PATIENT_DETAIL)
+activate ClinicUI
+ClinicUI --> ClinicSvc: 2. Fetch Unreviewed Session Summary: GET /v1/clinic/patient/{user_id}/session/latest
+activate ClinicSvc
+ClinicSvc --> AppDB: 3. Query SleepSession, HealthBaseline & ClinicDoctorAssignment
+activate AppDB
+AppDB --> ClinicSvc: 4. Return Session Telemetry Summary { session_id, ahi_score, total_apnea_events, vpp_baseline }
+deactivate AppDB
+ClinicSvc --> ClinicUI: 5. 200 OK Patient Detail Payload
+deactivate ClinicSvc
+ClinicUI -> Doctor: 6. Render 8-Hour Respiration Graph, AHI Severity Pill & Diagnostic Note Editor
+
+== Phase 2: Clinical Respiration Waveform & AHI Severity Review ==
+Doctor -> ClinicUI: 7. Inspect Respiration Waveform & AHI Breakdown (AHI 18.5 - Moderate Apnea)
+ClinicUI -> ClinicUI: 8. Auto-populate Pre-diagnostic Classification (Moderate Obstructive Sleep Apnea)
+
+== Phase 3: Diagnostic Note Signing & EHR Integration ==
+Doctor -> ClinicUI: 9. Enter Clinical Notes & Click "Sign & Save Diagnosis"
+ClinicUI --> ClinicSvc: 10. Async Sign Diagnosis: POST /v1/clinic/diagnosis/sign\n{ session_id, patient_id, doctor_npi, ahi_score, diagnostic_notes, prescription_adjustment }
+activate ClinicSvc
+ClinicSvc --> AppDB: 11. Persist Diagnosis Notes & Update ClinicDoctorAssignment Record
+activate AppDB
+AppDB --> ClinicSvc: 12. 200 OK Diagnosis Persisted
+deactivate AppDB
+
+ClinicSvc --> AuditSvc: 13. Emit HIPAA PHI Export Audit Event (PhiAuditLog)
+activate AuditSvc
+deactivate AuditSvc
+
+ClinicSvc --> ClinicUI: 14. 200 OK Diagnosis Signed & Chart Appended ✓
+deactivate ClinicSvc
+
+== Phase 4: Diagnosis Signed & Chart Locked ==
+ClinicUI -> Doctor: 15. Render "Diagnosis Signed & Medical Chart Locked ✓" (WEB_DIAGNOSIS_SIGNED)
+deactivate ClinicUI
+
+@enduml
+```
+
+#### 📖 Detailed End-to-End Execution Flow Narrative (`Clinic & Physician Journey`)
+
+The **Clinic & Physician Journey** (`Swimlane 5` / `Task_PhysicianReview`) completes the clinical diagnostic loop by providing attending sleep specialists with an integrated WebAuthn/EHR dashboard to review nocturnal telemetry and sign official medical charts:
+
+1. **Phase 1: Morning Sleep Session Alert Notification & Patient Record Retrieval (`Task_PhysicianReview`):**  
+   Upon morning sleep session conclusion, the attending physician receives an in-portal notification ("Morning Sleep Reports Ready") on `WEB_PHYSICIAN_PATIENT_DETAIL`. Tapping the notification triggers an asynchronous HTTPS GET request (`/v1/clinic/patient/{user_id}/session/latest`) to the **Clinic Portal Backend**. The backend queries the `SleepSession`, `HealthBaseline`, and `ClinicDoctorAssignment` records in the **Application Database** and returns HTTP 200 OK with the patient's nocturnal summary payload.
+
+2. **Phase 2: Clinical Respiration Waveform & AHI Severity Review:**  
+   The **Clinic Web Portal** renders an interactive 8-hour respiration wave chart, overnight AHI score breakdown (e.g., AHI 18.5 - Moderate Apnea), and pre-diagnostic severity classification pills for clinical review.
+
+3. **Phase 3: Diagnostic Note Signing & EHR Integration:**  
+   The attending physician inputs formal clinical notes, adjusts prescription recommendations, and clicks *"Sign & Save Diagnosis"*. The Portal UI POSTs the payload (`/v1/clinic/diagnosis/sign`) containing `{ session_id, patient_id, doctor_npi, ahi_score, diagnostic_notes, prescription_adjustment }` to the **Clinic Portal Backend**. The backend updates the patient chart in the **Application Database** and emits a non-blocking HIPAA PHI access/export audit log entry to the **Audit Service**.
+
+4. **Phase 4: Diagnosis Signed & Chart Locked:**  
+   The Clinic Web Portal renders *"Diagnosis Signed & Medical Chart Locked ✓"* (`WEB_DIAGNOSIS_SIGNED`), locking diagnostic notes against retrospective tampering in compliance with HIPAA §164.312(b) audit standards.
 
 ---
 
