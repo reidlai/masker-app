@@ -1,7 +1,7 @@
 ---
 title: Product Requirements Document — Sleep Apnea Detection App
 status: final
-version: 1.0.0
+version: 1.1.0
 created: 2026-08-31
 updated: 2026-08-31
 author: Mary (Business Analyst)
@@ -137,6 +137,17 @@ sequenceDiagram
 ### 4.4 NFR-4: Security & Data Privacy
 * **Encrypted Telemetry:** BLE data packets shall be encrypted in transit using AES-128.
 * **Cloud Encryption:** All stored sleep telemetry and emergency payload logs in the cloud backend shall be encrypted at rest (AES-256) and compliant with HIPAA/GDPR health privacy standards.
+
+### 4.5 NFR-5: Real-Time Data Visualization & Chart Specifications
+
+To ensure high-performance, responsive visual feedback, the application shall implement the following chart types and rendering engines (analyzed from `dennis-masker` repository patterns):
+
+| Chart Identifier | Visual Chart Type | Underlying Library | Data Rendered | Rendering & Performance Spec |
+| :--- | :--- | :--- | :--- | :--- |
+| **CHART-01** | **Live Airflow Telemetry Line Chart** | `victory-native` / `fl_chart` (Skia GPU Accelerated) | Real-time continuous respiratory airflow wave ($V_{\text{net}}$) vs. Time (seconds). | **60 FPS render loop.** 100ms stream updates with cubic spline interpolation smoothing. Dynamic Y-axis auto-scaling with zero-baseline reference indicator. |
+| **CHART-02** | **FFT Frequency Spectrum Graph** | `victory-native` (`VictoryChart`, `VictoryLine`) | Fast Fourier Transform magnitude vs. Frequency (Hz). | Renders spectral peaks derived from raw airflow telemetry to compute exact respiration rates (BPM). |
+| **CHART-03** | **Circular Progress Metric Rings** | `react-native-circular-progress-indicator` | Sleep Quality Score %, Session Countdown timer, Calibration progress. | Animated stroke fill with dynamic status colors (Green: Optimal, Amber: Warning, Red: Apnea Threshold Breach). |
+| **CHART-04** | **Multi-Axis Historical Session Chart** | `victory-native` (`VictoryChart`, `VictoryAxis`) | Overnight AHI events, SpO2 trends, and Heart Rate over 8-hour sleep timelines. | Pinch-to-zoom and pan interactions across multi-hour sleep timelines with color-coded event markers for wake-up alerts. |
 
 ---
 
