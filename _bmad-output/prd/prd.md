@@ -1,7 +1,7 @@
 ---
 title: Product Requirements Document — Sleep Apnea Detection App
 status: final
-version: 1.1.0
+version: 1.2.0
 created: 2026-08-31
 updated: 2026-08-31
 author: Mary (Business Analyst)
@@ -18,12 +18,12 @@ author: Mary (Business Analyst)
 The **Sleep Apnea Detection App** is a specialized consumer health mobile application designed to interface wirelessly via **Bluetooth Low Energy (BLE)** with a **small breathing device** used comfortably at home during sleep. 
 
 The application transforms raw overnight bio-signals into actionable sleep apnea insights, eliminating the need for expensive, uncomfortable hospital sleep lab visits. When severe or prolonged breathing stops are detected during sleep, the application initiates an active **Two-Tier Emergency Response**:
-1. **Tier-1 Local Wake-Up Alert:** Escalating haptic vibrations and audio alarms to wake the patient and restore breathing.
-2. **Tier-2 Cloud Emergency Dispatch:** Real-time signal transmission to the cloud backend to notify designated emergency contacts or caregivers.
+1. **Tier-1 Primary App & Device Wake-Up Alert:** Escalating smartphone audio alarms & haptics (and future device micro-electrical stimulation) to wake the patient and restore breathing.
+2. **Tier-2 Cloud Emergency Dispatch & Safety Acknowledgement:** Real-time signal transmission to the cloud backend. If the patient acknowledges the alert via the app ("I'm Safe"), the cloud logs a safety event; if unacknowledged after 30 seconds, emergency notifications are dispatched to caregivers.
 
 ### 1.2 Strategic Business Goals
 * **At-Home Accessibility:** Provide a comfortable, non-invasive alternative to clinical polysomnography (hospital sleep studies).
-* **Proactive Safety:** Move from passive morning data logging to active overnight intervention during critical apnea episodes.
+* **Proactive Patient Safety:** Move from passive morning data logging to active overnight intervention during critical apnea episodes.
 * **Signal Accuracy:** Eliminate false positives/negatives through a mandatory **Two-Stage Pre-Sleep Calibration Routine** that learns device noise floors and personalized breathing thresholds.
 
 ---
@@ -35,7 +35,7 @@ The application transforms raw overnight bio-signals into actionable sleep apnea
 * **Profile:** Suffers from severe loud snoring, morning fatigue, and unmonitored nocturnal breathing pauses. Sleeps at home with his spouse.
 * **Core Need:** A comfortable, reliable at-home breathing monitor that wakes him during dangerous apnea stops and alerts his spouse if he does not respond.
 
-### 2.2 User Journey 1 (UJ-1): Bedtime Calibration, Overnight Telemetry & Emergency Alert
+### 2.2 User Journey 1 (UJ-1): Bedtime Calibration, Overnight Telemetry & Safety Acknowledgement Alert
 
 ```mermaid
 sequenceDiagram
@@ -62,11 +62,17 @@ sequenceDiagram
     BLE->>App: Stream: Airflow drops below calibrated Apnea Threshold
     
     rect rgb(255, 230, 230)
-        Note over App, Contact: Two-Tier Emergency Intervention
-        App->>BLE: Tier 1: Escalating Haptic Vibration & Audio Alarm
-        BLE-->>David: Wakes David Up (Restores Breathing Airflow)
-        App->>Cloud: Tier 2: Real-time Cloud Emergency Event Dispatch
-        Cloud-->>Contact: Sends Emergency SMS / Push Alert
+        Note over App, Contact: Tier-1 Wake-Up & Safety Acknowledgement
+        App->>App: Primary Mobile Alarm: Escalating Audio & Haptics
+        BLE-->>David: Wakes David Up (Restores Breathing)
+        alt Option A: Patient Taps "I'm Safe" (within 30s)
+            David->>App: Taps "I'm Safe" / Acknowledges Alert
+            App->>Cloud: Sends "Patient Awake & Safe" Status Payload
+            Cloud-->>Contact: Logged Safe (No Emergency Dispatch Needed)
+        else Option B: Unacknowledged (>30s)
+            App->>Cloud: Tier-2 Cloud Emergency Payload Dispatch
+            Cloud-->>Contact: Sends Emergency SMS / Push Alert to Caregiver
+        end
     end
 
     Note over David, App: 07:00 AM — Morning Summary
@@ -98,12 +104,13 @@ sequenceDiagram
 
 ---
 
-### 3.3 FR-3: Two-Tier Emergency Response & Intervention System
+### 3.3 FR-3: Primary App Alarm, Patient Safety Acknowledgement & Cloud Dispatch
 
-* **FR-3.1 (Tier-1 Escalating Local Alarm):** Upon flagging a critical apnea event (>10s breathing stop), the application shall immediately trigger local haptic vibrations (via phone/device) and an escalating audio alarm to wake the user.
-* **FR-3.2 (Local Alarm Dismissal):** The local wake-up alarm shall automatically silence upon detecting restored active breathing airflow ($V_{\text{net}} > \text{Threshold}_{\text{normal}}$) or manual user tap.
-* **FR-3.3 (Tier-2 Cloud Emergency Dispatch):** Simultaneously with Tier-1 activation, the application shall transmit an emergency alert payload (User ID, timestamp, GPS location, apnea duration) over HTTPS/WebSocket to the cloud backend.
-* **FR-3.4 (Cloud Caregiver Notification):** The cloud backend shall dispatch multi-channel emergency alerts (Push Notification, SMS, Email) to designated emergency contacts if the local alarm is unacknowledged after 30 seconds.
+* **FR-3.1 (Primary Mobile App Alarm):** Upon flagging a critical apnea event (>10s breathing stop), the smartphone application shall trigger high-priority escalating audio tones (40 dB → 75+ dB) and full-screen haptic vibration pulses to wake the patient.
+* **FR-3.2 (Patient "I'm Safe" Acknowledgement Action):** The application shall render a prominent, large touch target button (**"I'm Safe / I'm Awake"**) on the screen during an alarm event.
+* **FR-3.3 (Patient Safety Signal to Cloud):** If the patient taps "I'm Safe" within 30 seconds of alarm initiation, the application shall silence the alarm and immediately transmit a **"Patient Awake & Safe"** status signal to the cloud platform.
+* **FR-3.4 (Automatic Alarm Silence on Breathing Restoration):** If normal respiratory airflow is restored ($V_{\text{net}} > \text{Threshold}_{\text{normal}}$) continuously for 5 seconds without manual tap, the app shall auto-silence the alarm and record a self-resolved event.
+* **FR-3.5 (Tier-2 Cloud Emergency Dispatch on Timeout):** If the alarm remains unacknowledged and breathing is not restored after 30 seconds, the application shall transmit a high-priority **Emergency Dispatch Payload** to the cloud backend to alert designated caregivers via SMS/Push Notification.
 
 ---
 
@@ -112,9 +119,9 @@ sequenceDiagram
 * **FR-4.1 (Morning Sleep Summary):** Upon session termination, the application shall calculate and display:
   * Total Sleep Duration (hours/minutes)
   * Estimated AHI (Apnea-Hypopnea Index — events per hour)
-  * Count of Triggered Wake-Up Interventions
+  * Count of Triggered Wake-Up Interventions & Patient Safety Acknowledgements
   * Overall Sleep Breathing Quality Score (0–100)
-* **FR-4.2 (Interactive Respiration Timeline):** The application shall render an interactive overnight respiration wave graph with color-coded markers for flagged apnea episodes and wake-up events.
+* **FR-4.2 (Interactive Respiration Timeline):** The application shall render an interactive overnight respiration wave graph with color-coded markers for flagged apnea episodes, wake-up alarms, and safety acknowledgement timestamps.
 * **FR-4.3 (Calendar & History Filter):** Users shall be able to filter historical sleep sessions by day, week, or month using an interactive calendar strip.
 * **FR-4.4 (Educational Library):** The application shall provide integrated articles and video guides on sleep hygiene, obstructive sleep apnea signs, and physician consultation guidance.
 
@@ -127,8 +134,8 @@ sequenceDiagram
 * **Data Recovery:** If BLE disconnection persists, the application shall buffer up to 1 hour of telemetry in device local storage and sync upon reconnection.
 
 ### 4.2 NFR-2: Performance & Alert Latency
-* **Local Alert Trigger:** Tier-1 local haptic/audio alarms shall trigger within **< 200 milliseconds** of detecting an apnea threshold breach.
-* **Cloud Signal Latency:** Tier-2 cloud emergency payload transmission shall complete within **< 1.5 seconds** under standard 4G/5G/Wi-Fi conditions.
+* **Local Alert Trigger:** Primary smartphone audio/haptic alarms shall trigger within **< 200 milliseconds** of detecting an apnea threshold breach.
+* **Cloud Signal Latency:** Safety acknowledgement and Tier-2 emergency signal payloads shall transmit to the cloud backend within **< 1.5 seconds** under standard 4G/5G/Wi-Fi conditions.
 
 ### 4.3 NFR-3: Battery Efficiency & Thermal Safety
 * **Overnight Battery Consumption:** Continuous 8-hour background telemetry and stream processing shall consume **< 12% total phone battery**.
@@ -140,14 +147,12 @@ sequenceDiagram
 
 ### 4.5 NFR-5: Real-Time Data Visualization & Chart Specifications
 
-To ensure high-performance, responsive visual feedback, the application shall implement the following chart types and rendering engines (analyzed from `dennis-masker` repository patterns):
-
 | Chart Identifier | Visual Chart Type | Underlying Library | Data Rendered | Rendering & Performance Spec |
 | :--- | :--- | :--- | :--- | :--- |
 | **CHART-01** | **Live Airflow Telemetry Line Chart** | `victory-native` / `fl_chart` (Skia GPU Accelerated) | Real-time continuous respiratory airflow wave ($V_{\text{net}}$) vs. Time (seconds). | **60 FPS render loop.** 100ms stream updates with cubic spline interpolation smoothing. Dynamic Y-axis auto-scaling with zero-baseline reference indicator. |
 | **CHART-02** | **FFT Frequency Spectrum Graph** | `victory-native` (`VictoryChart`, `VictoryLine`) | Fast Fourier Transform magnitude vs. Frequency (Hz). | Renders spectral peaks derived from raw airflow telemetry to compute exact respiration rates (BPM). |
 | **CHART-03** | **Circular Progress Metric Rings** | `react-native-circular-progress-indicator` | Sleep Quality Score %, Session Countdown timer, Calibration progress. | Animated stroke fill with dynamic status colors (Green: Optimal, Amber: Warning, Red: Apnea Threshold Breach). |
-| **CHART-04** | **Multi-Axis Historical Session Chart** | `victory-native` (`VictoryChart`, `VictoryAxis`) | Overnight AHI events, SpO2 trends, and Heart Rate over 8-hour sleep timelines. | Pinch-to-zoom and pan interactions across multi-hour sleep timelines with color-coded event markers for wake-up alerts. |
+| **CHART-04** | **Multi-Axis Historical Session Chart** | `victory-native` (`VictoryChart`, `VictoryAxis`) | Overnight AHI events, SpO2 trends, and Heart Rate over 8-hour sleep timelines. | Pinch-to-zoom and pan interactions across multi-hour sleep timelines with color-coded event markers for wake-up alerts & safety acknowledgements. |
 
 ---
 
@@ -156,15 +161,16 @@ To ensure high-performance, responsive visual feedback, the application shall im
 | Metric | Target | Verification Method |
 | :--- | :--- | :--- |
 | **Emergency Intervention Success** | 99.9% reliable trigger on true apnea stops | Automated signal simulation tests |
+| **Safety Acknowledgement Dispatch** | < 1.5s signal transmission to cloud | End-to-end cloud status verification |
 | **Pre-Sleep Calibration Completion** | >95% first-attempt success rate | In-app event telemetry |
-| **Cloud Alert Latency** | < 1.5 seconds | End-to-end cloud dispatch monitoring |
 | **Overnight Battery Efficiency** | < 12% drain over 8 hours | Battery profiling benchmarks |
 | **False Positive Apnea Rate** | < 2% per session | Baseline noise floor verification |
 
 ---
 
-## 6. Future Expansion Roadmap
+## 6. Future Expansion & Hardware Enhancement Roadmap
 
+* **⚡ HW-ENHANCEMENT-1 (Device Micro-Electrical Stimulation - EMS/TENS):** Future hardware revisions of the small breathing device may integrate mild micro-electrical stimulation (safe EMS micro-pulses) delivered directly via the device hardware to gently stimulate airway muscles and wake the patient.
 * **Doctor-Ready PDF Export:** One-tap export of 8-hour overnight breathing graphs formatted for sleep medical specialists.
 * **Smart Home IoT Action Triggers:** Automated cloud integration to turn on bedroom lights or raise bed incline during severe apnea alerts.
 * **Positional Sleep Tracking:** Correlating nocturnal apnea episodes with body sleeping posture (back vs. side).
