@@ -420,6 +420,7 @@ The **C4 Level 3 Component Diagram** decomposes the C4 Level 2 Containers into g
 ```plantuml
 @startuml C4_Level3_Component_Diagram
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+scale 0.7
 
 LAYOUT_WITH_LEGEND()
 
