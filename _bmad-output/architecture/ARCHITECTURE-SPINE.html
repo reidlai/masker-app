@@ -133,261 +133,197 @@
 <!-- NOTE: This ID is also referenced in src/webview/scroll-sync-webview.ts (applyPendingBodyUpdate). -->
 <div id="preview-content">
 <hr>
-<h2 id="title-business-data-architecture-specification-sleep-apnea-detection-app-status-final-version-200-created-2026-08-31-updated-2026-08-31-author-winston-system-architect-mary-business-analyst">title: Business &amp; Data Architecture Specification — Sleep Apnea Detection App
+<h2 id="title-enterprise-architecture-specification-c4-models-bpmn-plantuml-data-architecture-status-final-version-500-created-2026-08-31-updated-2026-08-31-author-winston-system-architect-mary-business-analyst">title: Enterprise Architecture Specification — C4 Models, BPMN &amp; PlantUML Data Architecture
 status: final
-version: 2.0.0
+version: 5.0.0
 created: 2026-08-31
 updated: 2026-08-31
 author: Winston (System Architect) &amp; Mary (Business Analyst)</h2>
-<h1 id="business-data-architecture-specification">🏛️ Business &amp; Data Architecture Specification</h1>
-<h2 id="sleep-apnea-detection-app">Sleep Apnea Detection App</h2>
+<h1 id="enterprise-architecture-specification">🏛️ Enterprise Architecture Specification</h1>
+<h2 id="sleep-apnea-detection-app-emergency-command-platform">Sleep Apnea Detection App &amp; Emergency Command Platform</h2>
 <blockquote>
-<p><strong>Architecture Paradigm:</strong> Vendor-Agnostic Enterprise Architecture (Business &amp; Data Focus)<br>
-<strong>Backend Decoupling Strategy:</strong> Abstract Repository Pattern (Supports Supabase, Firebase, AWS, or Custom Backend)</p>
+<p><strong>Architecture Framework:</strong> C4 Model (Level 1 Context &amp; Level 2 Container) + BPMN 2.0 Process Model + PlantUML Conceptual Data Architecture<br>
+<strong>Target Scope:</strong> Global Platform Scaling to Millions of Concurrent Devices</p>
 </blockquote>
 <hr>
-<h2 id="1-business-architecture">1. Business Architecture</h2>
-<div class="mermaid-diagram" data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":false}'><pre class="mermaid">graph TD
-    subgraph ValueStream [&quot;🛣️ Patient Value Stream Pipeline&quot;]
-        VS1[1. Bedtime Onboarding &amp; Passkey Auth] --&gt; VS2[2. Two-Stage Pre-Sleep Calibration]
-        VS2 --&gt; VS3[3. Overnight Bio-Signal Telemetry Logging]
-        VS3 --&gt; VS4[4. Real-Time Apnea Detection &amp; Tier-1 Wake-Up]
-        VS4 --&gt;|Option A: Tap I'm Safe| VS5[5. Log Patient Safe Status]
-        VS4 --&gt;|Option B: Timeout 30s| VS6[6. Tier-2 Cloud Emergency Dispatch]
-        VS5 --&gt; VS7[7. Morning AHI &amp; Sleep Score Analytics]
-        VS6 --&gt; VS7
+<h2 id="1-c4-architecture-model">1. 📐 C4 Architecture Model</h2>
+<h3 id="11-c4-level-1-system-context-diagram">1.1 C4 Level 1: System Context Diagram</h3>
+<div class="mermaid-diagram" data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":false}'><pre class="mermaid">C4Context
+    title C4 Level 1: System Context Diagram — Sleep Apnea Detection Platform
+
+    Person(patient, &quot;Patient / At-Home User&quot;, &quot;Wears small breathing device at home during sleep; authenticates via Passkey.&quot;)
+    Person(caregiver, &quot;Caregiver / Family Member&quot;, &quot;Receives Tier-2 emergency SMS/Voice calls when patient apnea alarm is unacknowledged.&quot;)
+    Person(dispatcher, &quot;Emergency Center Dispatcher&quot;, &quot;Monitors 24/7 real-time emergency dashboard for unacknowledged 30s apnea alerts.&quot;)
+    Person(doctor, &quot;Attending Physician / Clinic&quot;, &quot;Reviews morning AHI scores, respiration wave graphs, and clinical sleep health summaries.&quot;)
+
+    System(system, &quot;Sleep Apnea Detection System&quot;, &quot;Monitors nocturnal breathing airflow, executes 2-stage calibration, triggers Tier-1 local alarms, and dispatches Tier-2 cloud emergency alerts.&quot;)
+
+    System_Ext(telecom, &quot;External Telecom &amp; SMS Gateway&quot;, &quot;Twilio / AWS SNS SMS and automated voice call dispatch platform.&quot;)
+    System_Ext(ehr, &quot;External Clinic EHR / EMR Platform&quot;, &quot;HL7 FHIR compliant Electronic Health Record systems.&quot;)
+
+    Rel(patient, system, &quot;Interfaces via BLE &amp; Mobile App (Passkey, Calibration, 'I'm Safe' Tap)&quot;)
+    Rel(system, caregiver, &quot;Sends Tier-2 Emergency SMS &amp; Voice Alerts&quot;, &quot;HTTPS / Telephony&quot;)
+    Rel(system, dispatcher, &quot;Broadcasts Sub-1.5s High-Priority Apnea Alarms&quot;, &quot;WSS / SSE WebSockets&quot;)
+    Rel(system, doctor, &quot;Delivers Morning Sleep Summaries &amp; Clinical Reports&quot;, &quot;HTTPS / HL7 FHIR&quot;)
+    Rel(system, telecom, &quot;Triggers Automated SMS &amp; Voice Payloads&quot;, &quot;REST API&quot;)
+    Rel(system, ehr, &quot;Synchronizes Health Records &amp; AHI Trends&quot;, &quot;HL7 FHIR API&quot;)
+</pre></div>
+<hr>
+<h3 id="12-c4-level-2-container-diagram">1.2 C4 Level 2: Container Diagram</h3>
+<div class="mermaid-diagram" data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":false}'><pre class="mermaid">C4Container
+    title C4 Level 2: Container Diagram — Sleep Apnea Detection System
+
+    Person(patient, &quot;Patient&quot;, &quot;At-home user.&quot;)
+    Person(dispatcher, &quot;Emergency Dispatcher&quot;, &quot;24/7 monitoring operator.&quot;)
+    Person(doctor, &quot;Physician&quot;, &quot;Sleep specialist.&quot;)
+
+    Container(hardware, &quot;Small Breathing Device&quot;, &quot;Embedded Firmware&quot;, &quot;Captures raw airflow differential pressure; streams 100ms GATT packets via BLE.&quot;)
+    
+    Container(mobile_app, &quot;Mobile Application&quot;, &quot;Flutter (iOS &amp; Android)&quot;, &quot;Handles Passkey auth, 2-stage calibration, 100ms signal evaluation, 0-FPS locked display, and Tier-1 audio/haptic alarms.&quot;)
+
+    Container(firebase_auth, &quot;Firebase Auth&quot;, &quot;FIDO2 / WebAuthn Service&quot;, &quot;Manages passwordless Passkey tokens and JWT session verification.&quot;)
+
+    Container(pubsub, &quot;Cloud Pub/Sub Webhook Gateway&quot;, &quot;GCP Cloud Pub/Sub&quot;, &quot;Ingests 10s telemetry batches and high-priority emergency webhook payloads scaling to millions of devices.&quot;)
+
+    Container(stream_workers, &quot;Stream Processing Workers&quot;, &quot;GCP Cloud Run (Go / Dart)&quot;, &quot;Processes incoming telemetry streams, computes moving averages, and evaluates AASM apnea/hypopnea rules.&quot;)
+
+    ContainerDb(bigtable, &quot;Bio-Signal Time-Series Store&quot;, &quot;GCP Cloud Bigtable&quot;, &quot;Stores compressed, encrypted high-frequency bio-signal streams (AES-256).&quot;)
+
+    ContainerDb(firestore, &quot;Application Database&quot;, &quot;Firebase Cloud Firestore&quot;, &quot;Stores user profiles, health baselines, device bindings, sleep metrics, and alert queues (AES-256).&quot;)
+
+    Container(command_portal, &quot;Emergency Center Web Portal&quot;, &quot;React / Next.js Web App&quot;, &quot;Real-time WebSocket dashboard displaying unacknowledged apnea stops, patient GPS, and caregiver contact info.&quot;)
+
+    Container(clinic_portal, &quot;Clinic &amp; Physician Portal&quot;, &quot;React / Next.js Web App&quot;, &quot;Web dashboard rendering morning sleep scores, AHI trends, and PDF graph exports.&quot;)
+
+    Rel(hardware, mobile_app, &quot;Streams Raw Telemetry Packets (100ms)&quot;, &quot;BLE / AES-128&quot;)
+    Rel(patient, mobile_app, &quot;Interacts via Touch UI &amp; Passkey Biometrics&quot;)
+    Rel(mobile_app, firebase_auth, &quot;Authenticates Session &amp; WebAuthn Credentials&quot;, &quot;HTTPS / TLS 1.3&quot;)
+    Rel(mobile_app, pubsub, &quot;Posts Telemetry Webhook Batches &amp; Emergency Payloads&quot;, &quot;HTTPS / TLS 1.3&quot;)
+    Rel(pubsub, stream_workers, &quot;Pushes Ingested Webhook Stream Messages&quot;, &quot;gRPC / Push&quot;)
+    Rel(stream_workers, bigtable, &quot;Writes Compressed Bio-Signal Time Series&quot;, &quot;gRPC&quot;)
+    Rel(stream_workers, firestore, &quot;Updates Sleep Session Metrics &amp; Alert Queues&quot;, &quot;gRPC&quot;)
+    Rel(firestore, command_portal, &quot;Pushes High-Priority Unacknowledged Alerts&quot;, &quot;WSS / WebSockets&quot;)
+    Rel(firestore, clinic_portal, &quot;Syncs Morning Sleep Reports &amp; AHI Graphs&quot;, &quot;HTTPS / REST&quot;)
+    Rel(dispatcher, command_portal, &quot;Manages Real-Time Emergency Escalations&quot;)
+    Rel(doctor, clinic_portal, &quot;Reviews Patient AHI Trends &amp; Sleep Summaries&quot;)
+</pre></div>
+<hr>
+<h2 id="2-bpmn-20-business-process-model">2. 🔄 BPMN 2.0 Business Process Model</h2>
+<p>The business process connects four primary participant pools: <strong>Patient at Home</strong>, <strong>Mobile App Engine</strong>, <strong>GCP/Firebase Ingestion Engine</strong>, and <strong>Emergency Command Center &amp; Clinic Specialists</strong>.</p>
+<div class="mermaid-diagram" data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":false}'><pre class="mermaid">sequenceDiagram
+    autonumber
+    actor Patient as 👤 Patient at Home
+    participant Mobile as 📱 Mobile App (Flutter)
+    participant Cloud as ☁️ GCP / Firebase Cloud Pipeline
+    participant Command as 🏢 Emergency Command Center
+    actor Doctor as 🩺 Clinic / Physician
+
+    Note over Patient, Mobile: Phase 1: Onboarding, Passkey Auth &amp; 2-Stage Calibration
+    Patient-&gt;&gt;Mobile: Opens App &amp; Authenticates via Passkey (FIDO2)
+    Mobile-&gt;&gt;Cloud: Authenticates Session via Firebase Auth
+    Patient-&gt;&gt;Mobile: Executes Stage 1 (Idle Noise) &amp; Stage 2 (Active Breath) Calibration
+    Mobile-&gt;&gt;Cloud: Webhook: Register Session &amp; Device Baseline (POST /api/v1/sessions/start)
+
+    Note over Patient, Mobile: Phase 2: Overnight Sleep Monitoring &amp; Continuous Telemetry
+    loop Every 10 Seconds
+        Mobile-&gt;&gt;Cloud: Telemetry Webhook: Batch Respiratory Stream &amp; Heartbeat (GCP Pub/Sub)
+        Cloud-&gt;&gt;Cloud: Stream Processor evaluates AASM Apnea/Hypopnea thresholds
     end
+
+    Note over Patient, Command: Phase 3: Nocturnal Apnea Event &amp; Tier-1 Local Alarm
+    Mobile-&gt;&gt;Mobile: Detects Airflow Stop &gt;10s -&gt; Triggers Tier-1 Escalating Alarm (&lt;200ms)
+    Mobile-&gt;&gt;Mobile: Spawns 30-Second Cancellation Token Timer
+    
+    alt Option A: Patient Taps &quot;I'm Safe&quot; (within 30s)
+        Patient-&gt;&gt;Mobile: Taps &quot;I'm Safe&quot; Button
+        Mobile-&gt;&gt;Cloud: Webhook: Cancel Emergency Dispatch Payload
+        Cloud-&gt;&gt;Cloud: Logs &quot;Patient Safe &amp; Awake&quot; (No Emergency Dispatch)
+    else Option B: Unacknowledged (&gt;30s Timeout)
+        Mobile-&gt;&gt;Cloud: High-Priority Emergency Webhook: Apnea Alert Breach
+        Cloud-&gt;&gt;Command: Real-Time SSE/WSS Broadcast to Emergency Dashboard (&lt;1.5s)
+        
+        rect rgb(255, 230, 230)
+            Note over Command, Doctor: Phase 4: Emergency Center &amp; Clinic Escalation
+            Command-&gt;&gt;Command: Dispatcher verifies Alert &amp; Location Metadata
+            Command-&gt;&gt;Patient: Automated High-Priority Voice Call &amp; SMS Alert to Caregiver
+            Command-&gt;&gt;Doctor: Dispatches Clinical Notification Payload to Attending Physician
+            Command-&gt;&gt;Command: Optional EMS / 911 Dispatch if Unresponsive
+        end
+    end
+
+    Note over Patient, Doctor: Phase 5: Morning Analytics &amp; Doctor Report Export
+    Patient-&gt;&gt;Mobile: Taps &quot;End Sleep Session&quot;
+    Mobile-&gt;&gt;Cloud: Webhook: Close Session &amp; Compute Final AHI
+    Cloud--&gt;&gt;Doctor: Syncs Morning Sleep Summary &amp; Respiration Graph to Clinic Portal
 </pre></div>
-<h3 id="11-business-capabilities-map-bc-1-to-bc-6">1.1 Business Capabilities Map (BC-1 to BC-6)</h3>
+<hr>
+<h2 id="3-plantuml-conceptual-data-model-bpmn-aligned">3. 🗄️ PlantUML Conceptual Data Model (BPMN Aligned)</h2>
+<p>The high-level Conceptual Data Model is specified below in <strong>PlantUML Class Diagram &amp; ERD syntax</strong>, mapping directly to the data produced across all 5 phases of the BPMN process model:</p>
+<div class="plantuml-diagram" data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":false}'><div style="border:1px solid #f66;background:#fff0f0;padding:0.5em 1em;border-radius:4px;color:#c00;font-size:0.9em;text-align:left;">The local PlantUML server failed to start. See the "PlantUML Markdown Preview" channel in the Output panel for details.</div></div>
+<hr>
+<h3 id="31-data-traceability-matrix-bpmn-process-data-requirements-rightarrow-plantuml-entities">3.1 Data Traceability Matrix: BPMN Process Data Requirements <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.3669em;"></span><span class="mrel">→</span></span></span></span> PlantUML Entities</h3>
 <table>
 <thead>
 <tr>
-<th style="text-align:left">Capability ID</th>
-<th style="text-align:left">Business Capability Name</th>
-<th style="text-align:left">Capability Description</th>
-<th style="text-align:left">Key Business Service</th>
+<th style="text-align:left">BPMN Process Phase</th>
+<th style="text-align:left">Data Produced / Transformed in Workflow</th>
+<th style="text-align:left">Derived PlantUML Conceptual Entity</th>
+<th style="text-align:left">Key Data Attributes</th>
+<th style="text-align:left">HIPAA Safeguard Level</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align:left"><strong>BC-1</strong></td>
-<td style="text-align:left"><strong>Patient Identity &amp; Access Governance</strong></td>
-<td style="text-align:left">Provides frictionless passwordless authentication using native OS Passkeys (FIDO2/WebAuthn).</td>
-<td style="text-align:left"><code>AuthenticatePatientService</code></td>
+<td style="text-align:left"><strong>Phase 1: Onboarding &amp; Calibration</strong></td>
+<td style="text-align:left">Passkey FIDO2 token, age, weight, height, computed BMI, <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.109em;">N</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.109em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">idle</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> noise floor, <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">pp</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span> breath baseline, BLE MAC address.</td>
+<td style="text-align:left"><code>PatientUser</code>, <code>HealthBaseline</code>, <code>DeviceBinding</code></td>
+<td style="text-align:left"><code>user_id</code>, <code>passkey_credential_id</code>, <code>age</code>, <code>weight_kg</code>, <code>height_cm</code>, <code>computed_bmi</code>, <code>idle_noise_floor</code>, <code>device_hardware_id</code>.</td>
+<td style="text-align:left"><strong>Level 1 (PHI)</strong> — AES-256 Encryption at Rest.</td>
 </tr>
 <tr>
-<td style="text-align:left"><strong>BC-2</strong></td>
-<td style="text-align:left"><strong>Pre-Sleep Signal Calibration</strong></td>
-<td style="text-align:left">Establishes zero-noise baselines (<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.109em;">N</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.109em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">idle</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>) and personalized breathing thresholds (<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">pp</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span>) before sleep.</td>
-<td style="text-align:left"><code>CalibrateBaselineService</code></td>
+<td style="text-align:left"><strong>Phase 2: Overnight Telemetry</strong></td>
+<td style="text-align:left">100ms raw airflow samples, 10s webhook stream batch, sequence number, heartbeats, battery level.</td>
+<td style="text-align:left"><code>SleepSession</code>, <code>TelemetryStream</code></td>
+<td style="text-align:left"><code>session_id</code>, <code>user_id</code>, <code>start_time</code>, <code>sequence_number</code>, <code>compressed_bio_signals</code>, <code>battery_pct</code>.</td>
+<td style="text-align:left"><strong>Level 1 (PHI)</strong> — Compressed AES-256 Time-Series Blob.</td>
 </tr>
 <tr>
-<td style="text-align:left"><strong>BC-3</strong></td>
-<td style="text-align:left"><strong>Overnight Telemetry &amp; Apnea Detection</strong></td>
-<td style="text-align:left">Continuously logs 100ms respiratory streams and flags obstructive apnea stops (&gt;10s) adhering to AASM standards.</td>
-<td style="text-align:left"><code>EvaluateApneaStreamService</code></td>
+<td style="text-align:left"><strong>Phase 3: Apnea &amp; Tier-1 Alarm</strong></td>
+<td style="text-align:left">Airflow stop timestamp, apnea duration (&gt;10s), peak-to-trough breach margin, 30s cancellation token, &quot;I'm Safe&quot; tap timestamp.</td>
+<td style="text-align:left"><code>ApneaEvent</code>, <code>EmergencyAlertQueue</code></td>
+<td style="text-align:left"><code>event_id</code>, <code>session_id</code>, <code>triggered_at</code>, <code>apnea_duration_seconds</code>, <code>patient_acknowledged</code>, <code>cancellation_token_id</code>.</td>
+<td style="text-align:left"><strong>Level 1 (PHI)</strong> — Real-Time Alert Event Queue.</td>
 </tr>
 <tr>
-<td style="text-align:left"><strong>BC-4</strong></td>
-<td style="text-align:left"><strong>Two-Tier Active Emergency Response</strong></td>
-<td style="text-align:left">Triggers Tier-1 local mobile alarms (&lt;200ms), manages 30s &quot;I'm Safe&quot; patient acknowledgements, and dispatches Tier-2 cloud caregiver alerts (&lt;1.5s).</td>
-<td style="text-align:left"><code>ManageEmergencyAlertService</code></td>
+<td style="text-align:left"><strong>Phase 4: Emergency Center &amp; Caregiver</strong></td>
+<td style="text-align:left">GPS coordinates, address, emergency contact phone, dispatcher action log, SMS/Voice call dispatch timestamp, EMS status.</td>
+<td style="text-align:left"><code>CareDispatchRecord</code>, <code>ClinicDoctorAssignment</code></td>
+<td style="text-align:left"><code>dispatch_id</code>, <code>alert_id</code>, <code>dispatcher_id</code>, <code>caregiver_phone</code>, <code>gps_location</code>, <code>ems_dispatched</code>, <code>doctor_npi_number</code>.</td>
+<td style="text-align:left"><strong>Level 1 (PHI)</strong> — Role-Based Access Control (RBAC).</td>
 </tr>
 <tr>
-<td style="text-align:left"><strong>BC-5</strong></td>
-<td style="text-align:left"><strong>Morning Clinical Health Analytics</strong></td>
-<td style="text-align:left">Calculates total sleep duration, estimated AHI score, intervention count, quality score, and exports doctor reports.</td>
-<td style="text-align:left"><code>GenerateSleepSummaryService</code></td>
+<td style="text-align:left"><strong>Phase 5: Morning Analytics &amp; Doctor</strong></td>
+<td style="text-align:left">Session end time, total sleep duration, final AHI score, total apnea stops, quality score (0–100), doctor share payload.</td>
+<td style="text-align:left"><code>SleepSession</code>, <code>ClinicDoctorAssignment</code></td>
+<td style="text-align:left"><code>end_time</code>, <code>total_duration_hours</code>, <code>ahi_score</code>, <code>quality_score</code>, <code>doctor_npi_number</code>.</td>
+<td style="text-align:left"><strong>Level 1 (PHI)</strong> — HL7 FHIR Export Stream.</td>
 </tr>
 <tr>
-<td style="text-align:left"><strong>BC-6</strong></td>
-<td style="text-align:left"><strong>Hardware Binding &amp; Fleet Lifecycle</strong></td>
-<td style="text-align:left">Associates physical breathing devices to patient cloud accounts and verifies skin-contact compliance.</td>
-<td style="text-align:left"><code>BindDeviceHardwareService</code></td>
+<td style="text-align:left"><strong>All Phases</strong></td>
+<td style="text-align:left">User ID, action performed, accessed table/entity, IP address, timestamp.</td>
+<td style="text-align:left"><code>PhiAuditLog</code></td>
+<td style="text-align:left"><code>audit_id</code>, <code>user_id</code>, <code>action_type</code>, <code>accessed_entity</code>, <code>ip_address</code>, <code>timestamp</code>.</td>
+<td style="text-align:left"><strong>Level 2 (Audit)</strong> — Immutable Write-Once Log.</td>
 </tr>
 </tbody>
 </table>
 <hr>
-<h3 id="12-non-functional-service-level-agreements-slas">1.2 Non-Functional Service Level Agreements (SLAs)</h3>
+<h2 id="4-architectural-summary">4. 🏁 Architectural Summary</h2>
 <ul>
-<li><strong>SLA-1 (Emergency Alert Latency):</strong> Tier-1 mobile audio/haptic alarm shall trigger within <strong>&lt; 200 milliseconds</strong> of an apnea breach. Tier-2 cloud caregiver notification payloads shall transmit within <strong>&lt; 1.5 seconds</strong>.</li>
-<li><strong>SLA-2 (Battery &amp; Thermal Efficiency):</strong> Continuous 8-to-10 hour background telemetry logging shall consume <strong>&lt; 8.0% total phone battery</strong> (utilizing 0-FPS display throttling when screen is locked).</li>
-<li><strong>SLA-3 (BLE Reconnect Resilience):</strong> Connection drops during sleep shall auto-reconnect within <strong>&lt; 3.0 seconds</strong> without terminating the active sleep session.</li>
-<li><strong>SLA-4 (HIPAA PHI Privacy &amp; Security):</strong> 100% compliance with 45 CFR Part 164. All PHI shall be encrypted with AES-256 at rest and AES-128/TLS 1.3 in transit.</li>
+<li><strong>C4 Architecture Model:</strong> C4 Level 1 Context Diagram &amp; C4 Level 2 Container Diagram showing interactions between Flutter Mobile App, BLE Device, Firebase Auth, GCP Pub/Sub, Cloud Run Stream Workers, Cloud Bigtable, Cloud Firestore, Emergency Center Portals, and Clinic Portals.</li>
+<li><strong>BPMN 2.0 Process Model:</strong> Complete 5-phase operational workflow linking Patient <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.3669em;"></span><span class="mrel">→</span></span></span></span> Mobile App <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.3669em;"></span><span class="mrel">→</span></span></span></span> GCP Cloud <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.3669em;"></span><span class="mrel">→</span></span></span></span> 24/7 Command Center <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.3669em;"></span><span class="mrel">→</span></span></span></span> Doctor.</li>
+<li><strong>PlantUML Conceptual Data Model:</strong> PlantUML <code>@startuml</code> class diagram establishing all entities, PK/FK attributes, relationships, and HIPAA Level 1 (PHI) vs. Level 2 (PII) data classification.</li>
 </ul>
-<hr>
-<h2 id="2-vendor-agnostic-data-architecture">2. Vendor-Agnostic Data Architecture</h2>
-<h3 id="21-conceptual-data-model">2.1 Conceptual Data Model</h3>
-<div class="mermaid-diagram" data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":false}'><pre class="mermaid">erDiagram
-    PATIENT_USER ||--o| HEALTH_PROFILE : &quot;possesses&quot;
-    PATIENT_USER ||--o{ DEVICE_BINDING : &quot;owns&quot;
-    DEVICE_BINDING }|--|| BREATHING_DEVICE : &quot;pairs&quot;
-    PATIENT_USER ||--o{ EMERGENCY_CONTACT : &quot;designates&quot;
-    PATIENT_USER ||--o{ SLEEP_SESSION : &quot;records&quot;
-    SLEEP_SESSION ||--o{ APNEA_EVENT : &quot;contains&quot;
-    SLEEP_SESSION ||--o{ EMERGENCY_ALERT : &quot;triggers&quot;
-    PATIENT_USER ||--o{ PHI_AUDIT_LOG : &quot;generates&quot;
-</pre></div>
-<hr>
-<h3 id="22-data-classification-hipaa-governance-matrix">2.2 Data Classification &amp; HIPAA Governance Matrix</h3>
-<table>
-<thead>
-<tr>
-<th style="text-align:left">Model Attribute</th>
-<th style="text-align:left">Classification Level</th>
-<th style="text-align:left">HIPAA PHI Category</th>
-<th style="text-align:left">Storage Encryption Rule</th>
-<th style="text-align:left">Vendor Abstraction</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left"><code>user_profile.full_name</code></td>
-<td style="text-align:left"><strong>Level 1 — Direct PHI</strong></td>
-<td style="text-align:left">Patient Identity</td>
-<td style="text-align:left">AES-256 Column Encryption</td>
-<td style="text-align:left"><code>AuthRepository</code></td>
-</tr>
-<tr>
-<td style="text-align:left"><code>user_profile.phone_number</code></td>
-<td style="text-align:left"><strong>Level 1 — Direct PHI</strong></td>
-<td style="text-align:left">Contact Endpoint</td>
-<td style="text-align:left">AES-256 Column Encryption</td>
-<td style="text-align:left"><code>AuthRepository</code></td>
-</tr>
-<tr>
-<td style="text-align:left"><code>health_profile.weight_kg</code></td>
-<td style="text-align:left"><strong>Level 1 — Direct PHI</strong></td>
-<td style="text-align:left">Health Baseline</td>
-<td style="text-align:left">AES-256 Column Encryption</td>
-<td style="text-align:left"><code>HealthProfileRepository</code></td>
-</tr>
-<tr>
-<td style="text-align:left"><code>health_profile.height_cm</code></td>
-<td style="text-align:left"><strong>Level 1 — Direct PHI</strong></td>
-<td style="text-align:left">Health Baseline</td>
-<td style="text-align:left">AES-256 Column Encryption</td>
-<td style="text-align:left"><code>HealthProfileRepository</code></td>
-</tr>
-<tr>
-<td style="text-align:left"><code>health_profile.computed_bmi</code></td>
-<td style="text-align:left"><strong>Level 1 — Direct PHI</strong></td>
-<td style="text-align:left">Derived Metric</td>
-<td style="text-align:left">AES-256 Column Encryption</td>
-<td style="text-align:left"><code>HealthProfileRepository</code></td>
-</tr>
-<tr>
-<td style="text-align:left"><code>emergency_contact.phone</code></td>
-<td style="text-align:left"><strong>Level 1 — Direct PHI</strong></td>
-<td style="text-align:left">Emergency Endpoint</td>
-<td style="text-align:left">AES-256 Column Encryption</td>
-<td style="text-align:left"><code>EmergencyContactRepository</code></td>
-</tr>
-<tr>
-<td style="text-align:left"><code>sleep_session.ahi_score</code></td>
-<td style="text-align:left"><strong>Level 1 — Direct PHI</strong></td>
-<td style="text-align:left">Clinical Metric</td>
-<td style="text-align:left">AES-256 Column Encryption</td>
-<td style="text-align:left"><code>TelemetryRepository</code></td>
-</tr>
-<tr>
-<td style="text-align:left"><code>sleep_session.telemetry_blob</code></td>
-<td style="text-align:left"><strong>Level 1 — Direct PHI</strong></td>
-<td style="text-align:left">Bio-Signal Time Series</td>
-<td style="text-align:left">Compressed AES-256 Blob</td>
-<td style="text-align:left"><code>TelemetryRepository</code></td>
-</tr>
-<tr>
-<td style="text-align:left"><code>device_binding.device_mac</code></td>
-<td style="text-align:left"><strong>Level 2 — PII / Technical</strong></td>
-<td style="text-align:left">Hardware Identifier</td>
-<td style="text-align:left">Standard Column Encryption</td>
-<td style="text-align:left"><code>DeviceBindingRepository</code></td>
-</tr>
-<tr>
-<td style="text-align:left"><code>phi_audit_log.*</code></td>
-<td style="text-align:left"><strong>Level 2 — Security Audit</strong></td>
-<td style="text-align:left">Compliance Audit</td>
-<td style="text-align:left">Immutable Insert-Only</td>
-<td style="text-align:left"><code>AuditLogRepository</code></td>
-</tr>
-</tbody>
-</table>
-<hr>
-<h3 id="23-logical-data-model-abstract-entities">2.3 Logical Data Model (Abstract Entities)</h3>
-<div class="mermaid-diagram" data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":false}'><pre class="mermaid">classDiagram
-    class UserProfileEntity {
-        +String user_id
-        +String auth_token
-        +String full_name
-        +String phone_number
-        +DateTime created_at
-    }
-
-    class HealthProfileEntity {
-        +String profile_id
-        +String user_id
-        +int age
-        +String gender
-        +double weight_kg
-        +double height_cm
-        +double computed_bmi
-    }
-
-    class DeviceBindingEntity {
-        +String binding_id
-        +String user_id
-        +String device_hardware_id
-        +String ble_mac_address
-        +DateTime bound_at
-    }
-
-    class SleepSessionEntity {
-        +String session_id
-        +String user_id
-        +DateTime start_time
-        +DateTime end_time
-        +double ahi_score
-        +int total_apnea_events
-        +int quality_score
-        +byte[] compressed_bio_signals
-    }
-
-    UserProfileEntity &quot;1&quot; -- &quot;1&quot; HealthProfileEntity
-    UserProfileEntity &quot;1&quot; -- &quot;*&quot; DeviceBindingEntity
-    UserProfileEntity &quot;1&quot; -- &quot;*&quot; SleepSessionEntity
-</pre></div>
-<hr>
-<h3 id="24-abstract-data-access-layer-vendor-agnostic-repository-pattern">2.4 Abstract Data Access Layer (Vendor-Agnostic Repository Pattern)</h3>
-<p>To guarantee that the application can switch cloud database vendors (from Supabase to Firebase, AWS, GCP, or a custom backend) with zero changes to business logic or UI code, data access is decoupled via Dart abstract interfaces:</p>
-<pre class="hljs"><code class="language-dart"><span class="hljs-comment">// Abstract Device Binding Interface (Vendor Independent)</span>
-<span class="hljs-keyword">abstract</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">DeviceBindingRepository</span> </span>{
-  Future&lt;<span class="hljs-keyword">void</span>&gt; bindDevice({
-    <span class="hljs-keyword">required</span> <span class="hljs-built_in">String</span> userId,
-    <span class="hljs-keyword">required</span> <span class="hljs-built_in">String</span> deviceHardwareId,
-    <span class="hljs-keyword">required</span> <span class="hljs-built_in">String</span> bleMacAddress,
-  });
-
-  Future&lt;DeviceBindingEntity?&gt; fetchActiveBinding(<span class="hljs-built_in">String</span> userId);
-}
-
-<span class="hljs-comment">// Concrete Provider 1: Supabase Implementation</span>
-<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SupabaseDeviceBindingRepository</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">DeviceBindingRepository</span> </span>{ ... }
-
-<span class="hljs-comment">// Concrete Provider 2: Firebase Firestore Implementation</span>
-<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">FirebaseDeviceBindingRepository</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">DeviceBindingRepository</span> </span>{ ... }
-
-<span class="hljs-comment">// Concrete Provider 3: Local Mock / Testing Implementation</span>
-<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MockDeviceBindingRepository</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">DeviceBindingRepository</span> </span>{ ... }
-</code></pre>
-<hr>
-<h2 id="3-deferred-architecture-phases">3. Deferred Architecture Phases</h2>
-<p>The following architecture domains are explicitly deferred to subsequent phases per project strategy:</p>
-<ol>
-<li><strong>Phase 2A — Application Architecture:</strong> UI component trees, BLoC state transition diagrams, and Flutter navigation routers.</li>
-<li><strong>Phase 2B — Infrastructure Architecture:</strong> Cloud hosting provider selection (Supabase vs. Firebase vs. AWS ECS), Terraform IaC scripts, and CI/CD pipelines.</li>
-<li><strong>Phase 2C — Physical Security Architecture:</strong> SSL Certificate pinning configuration files and KMS key rotation automation.</li>
-</ol>
 
 </div>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
