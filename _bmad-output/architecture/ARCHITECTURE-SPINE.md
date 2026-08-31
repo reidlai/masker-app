@@ -1,7 +1,7 @@
 ---
 title: Technical Architecture Spine — Sleep Apnea Detection App
 status: final
-version: 1.0.0
+version: 1.1.0
 created: 2026-08-31
 updated: 2026-08-31
 author: Winston (System Architect)
@@ -46,6 +46,7 @@ graph TD
     subgraph Layer5 ["☁️ Cloud Backend & Caregiver Alert Pipeline"]
         CancelCloud -->|HTTPS POST| Backend[Cloud REST API / WebSockets]
         CloudGateway -->|High-Priority Payload| Backend
+        Backend -->|Log Safe Event| DB[(PostgreSQL Database)]
         Backend -->|Dispatch SMS / Push| Caregiver[Remote Caregiver Endpoint]
     end
 ```
@@ -103,6 +104,15 @@ graph TD
   1. BLE data packets shall be encrypted using AES-128 transit encryption.
   2. Cloud REST/WebSocket communication shall mandate TLS 1.3 HTTPS with certificate pinning.
   3. Stored cloud logs and caregiver contacts shall be encrypted at rest (AES-256) compliant with HIPAA Security Rule and GDPR Article 9.
+
+### AD-7: Hardware Air Freight & International Customs Compliance
+* **Binds:** `hardware/specifications/customs_compliance_manifest.json`
+* **Prevents:** Customs delays, impoundment, or air freight dangerous goods rejection during mass production shipment.
+* **Rule:**
+  1. **UN 38.3 & IATA PI 967 Section II:** The breathing device internal battery capacity shall be bound to **< 2.7 Wh (<700 mAh)** pre-installed inside the enclosure, ensuring compliance under Section II of IATA PI 967 for unrestricted passenger and cargo air freight.
+  2. **IEC 62133-2:** Mandates secondary lithium-ion cell safety certification.
+  3. **ISO 10993-5 / ISO 10993-10:** Requires medical-grade biocompatible silicone/plastic testing for skin contact.
+  4. **Wireless Spectrum:** Employs pre-certified BLE modules meeting FCC (USA), CE RED (EU), TELEC (Japan), SRRC (China), KC (Korea), and Bluetooth SIG QDID.
 
 ---
 

@@ -1,10 +1,10 @@
 ---
 title: Product Requirements Document — Sleep Apnea Detection App
 status: final
-version: 1.4.0
+version: 1.5.0
 created: 2026-08-31
 updated: 2026-08-31
-author: Mary (Business Analyst)
+author: Mary (Business Analyst) & Winston (System Architect)
 ---
 
 # 🫁 Product Requirements Document (PRD)
@@ -158,18 +158,18 @@ sequenceDiagram
 | **CHART-03** | **Circular Progress Metric Rings** | `react-native-circular-progress-indicator` | Sleep Quality Score %, Session Countdown timer, Calibration progress. | Animated stroke fill with dynamic status colors (Green: Optimal, Amber: Warning, Red: Apnea Threshold Breach). |
 | **CHART-04** | **Multi-Axis Historical Session Chart** | `victory-native` (`VictoryChart`, `VictoryAxis`) | Overnight AHI events, SpO2 trends, and Heart Rate over 8-hour sleep timelines. | Pinch-to-zoom and pan interactions across multi-hour sleep timelines with color-coded event markers for wake-up alerts & safety acknowledgements. |
 
-### 4.6 NFR-6: Clinical Standards, International Regulations & Cybersecurity
+### 4.6 NFR-6: Clinical Standards, International Regulations & Hardware Air Freight Customs
 
-* **NFR-6.1 (AASM Diagnostic Standard Alignment):** The evaluation engine shall classify respiratory events adhering to American Academy of Sleep Medicine (AASM) guidelines:
-  * **Apnea:** $\ge 90\%$ airflow reduction for $\ge 10$ seconds.
-  * **Hypopnea:** $\ge 30\%$ airflow reduction for $\ge 10$ seconds.
-  * **AHI Classification:** Normal ($<5$), Mild ($5–14.9$), Moderate ($15–29.9$), Severe ($\ge 30$ events/hour).
-* **NFR-6.2 (IEC 60601-1-8 Medical Alarm Hierarchy):** The application alarm design shall comply with IEC 60601-1-8 medical alarm prioritization standards:
-  * **High Priority (Apnea >20s / Unacknowledged):** Escalating audio (>75 dB), continuous haptics, Cloud Dispatch.
-  * **Medium Priority (Apnea 10–20s):** Low-decibel chime (40–55 dB), moderate haptic pulses.
-  * **Low Priority (BLE Drop / Battery):** Visual banner notification only (no sleep disturbance).
-* **NFR-6.3 (SaMD & Quality Management Framework):** The application codebase shall be developed under Software as a Medical Device (SaMD) principles aligning with **FDA 21 CFR Part 820** and **ISO 13485** Quality Management Systems to facilitate future 510(k) clinical clearance.
-* **NFR-6.4 (GDPR Article 9 & HIPAA Compliance):** All personal health information (PHI) shall be classified under GDPR Article 9 (Special Category Health Data) requiring explicit user consent, zero unencrypted local caching of PHI, and verifiable data erasure (Right to be Forgotten).
+* **NFR-6.1 (AASM Diagnostic Standard Alignment):** The evaluation engine shall classify respiratory events adhering to American Academy of Sleep Medicine (AASM) guidelines (Apnea $\ge 90\%$ drop $\ge 10\text{s}$, Hypopnea $\ge 30\%$ drop $\ge 10\text{s}$).
+* **NFR-6.2 (IEC 60601-1-8 Medical Alarm Hierarchy):** Alarm prioritization follows High (>20s unacknowledged), Medium (10–20s), and Low (BLE drop) priority levels to eliminate alarm fatigue.
+* **NFR-6.3 (SaMD & Quality Management Framework):** Developed under Software as a Medical Device (SaMD) principles (FDA 21 CFR Part 820 / ISO 13485).
+* **NFR-6.4 (GDPR Article 9 & HIPAA Compliance):** PHI encryption (AES-128 transit / AES-256 rest) with explicit user consent.
+* **NFR-6.5 (Hardware Air Freight & Customs Compliance — UN 38.3 / IATA PI 967 / ISO 10993):** The paired hardware device shall mandate:
+  * **UN 38.3 Certification:** Battery safety testing (thermal, shock, vibration, altitude simulation).
+  * **IATA PI 967 Section II (Pre-Installed Battery):** Pre-installed battery under **2.7 Wh (<700 mAh)** for unrestricted global passenger & cargo air freight.
+  * **IEC 62133-2:** Global safety standard for secondary lithium cells in portable medical wearables.
+  * **ISO 10993-5 / ISO 10993-10:** Biocompatibility testing for skin contact (cytotoxicity, irritation, sensitization).
+  * **Global Wireless Certification:** Modular pre-certified BLE chips meeting FCC (USA), CE RED (EU), TELEC (Japan), SRRC (China), KC (Korea), and Bluetooth SIG QDID.
 
 ---
 
@@ -179,9 +179,9 @@ sequenceDiagram
 | :--- | :--- | :--- |
 | **Emergency Intervention Success** | 99.9% reliable trigger on true apnea stops | Automated signal simulation tests |
 | **Overnight Battery Efficiency** | **< 8.0% drain over 8 hours** | Battery profiling benchmarks |
+| **Air Freight Customs Approval** | 100% first-pass customs clearance | UN 38.3 & IATA PI 967 test summaries |
 | **Safety Acknowledgement Dispatch** | < 1.5s signal transmission to cloud | End-to-end cloud status verification |
 | **Pre-Sleep Calibration Completion** | >95% first-attempt success rate | In-app event telemetry |
-| **False Positive Apnea Rate** | < 2% per session | Baseline noise floor verification |
 
 ---
 
