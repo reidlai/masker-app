@@ -1,7 +1,7 @@
 ---
-title: Enterprise Architecture Specification — PlantUML C4 & Data Models + Mermaid BPMN
+title: Enterprise Architecture Specification — BPMN.js XML & PlantUML Data Architecture
 status: final
-version: 8.0.0
+version: 10.0.0
 created: 2026-08-31
 updated: 2026-08-31
 author: Winston (System Architect) & Mary (Business Analyst)
@@ -10,7 +10,7 @@ author: Winston (System Architect) & Mary (Business Analyst)
 # 🏛️ Enterprise Architecture Specification
 ## Sleep Apnea Detection App & Emergency Command Platform
 
-> **Diagramming Format:** PlantUML (`plantuml`) for C4 Context, C4 Container & Conceptual Data Models; **Mermaid.js** (`mermaid`) for BPMN 2.0 Process Workflows.  
+> **Diagramming Standard:** Standard **BPMN 2.0 XML (BPMN.js / Camunda compatible)** for Section 2 Process Modeling + **PlantUML** for C4 Context, C4 Container & Conceptual Data Models.  
 > **Target Scope:** Global Platform Scaling to Millions of Concurrent Devices  
 
 ---
@@ -98,59 +98,123 @@ Rel(doctor, clinic_portal, "Reviews Patient AHI Trends & Sleep Summaries")
 
 ---
 
-## 2. 🔄 BPMN 2.0 Business Process Model (Mermaid.js Preview)
+## 2. 🔄 BPMN 2.0 Business Process Model (BPMN.js XML Standard)
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Patient as 👤 Patient at Home
-    participant Mobile as 📱 Mobile App (Flutter)
-    participant Cloud as ☁️ GCP / Firebase Cloud Pipeline
-    participant Command as 🏢 Emergency Command Center
-    actor Doctor as 🩺 Clinic / Physician
+The standard BPMN 2.0 process specification below is written in **BPMN 2.0 XML schema** for rendering via **BPMN.js** (Camunda / bpmn.io toolkit):
 
-    Note over Patient, Mobile: Phase 1: Onboarding, Passkey Auth & 2-Stage Calibration
-    Patient->>Mobile: Opens App & Authenticates via Passkey (FIDO2)
-    Mobile->>Cloud: Authenticates Session Token via Firebase Auth
-    Patient->>Mobile: Executes Stage 1 (Idle Noise) & Stage 2 (Active Breath) Calibration
-    Mobile->>Cloud: Webhook: Register Session & Device Baseline (POST /api/v1/sessions/start)
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  id="Definitions_SleepApneaProcess"
+                  targetNamespace="http://bpmn.io/schema/bpmn"
+                  exporter="BPMN.js Model Platform"
+                  exporterVersion="11.0.0">
 
-    Note over Patient, Mobile: Phase 2: Overnight Sleep Monitoring & Continuous Telemetry
-    loop Every 10 Seconds
-        Mobile->>Cloud: Telemetry Webhook: Batch Respiratory Stream (GCP Pub/Sub)
-        Cloud->>Cloud: Stream Worker evaluates AASM Apnea/Hypopnea thresholds
-    end
-
-    Note over Patient, Command: Phase 3: Nocturnal Apnea Event & Tier-1 Local Alarm
-    Mobile->>Mobile: Detects Airflow Stop >10s -> Triggers Tier-1 Alarm (<200ms)
-    Mobile->>Mobile: Spawns 30-Second Cancellation Token Timer
+  <!-- Collaboration: 4 Organizational Pools -->
+  <bpmn:collaboration id="Collaboration_SleepApnea">
+    <bpmn:participant id="Participant_Patient" name="Patient at Home" processRef="Process_Patient" />
+    <bpmn:participant id="Participant_MobileApp" name="Mobile Application Engine" processRef="Process_MobileApp" />
+    <bpmn:participant id="Participant_CloudEngine" name="GCP / Firebase Cloud Engine" processRef="Process_CloudEngine" />
+    <bpmn:participant id="Participant_EmergencyCenter" name="24/7 Emergency Command Center &amp; Clinic" processRef="Process_EmergencyCenter" />
     
-    alt Option A: Patient Taps "I'm Safe" (within 30s)
-        Patient->>Mobile: Taps "I'm Safe" Button
-        Mobile->>Cloud: Webhook: Cancel Pending Emergency Dispatch
-        Cloud->>Cloud: Logs "Patient Safe & Awake" (No Emergency Dispatch)
-    else Option B: Unacknowledged (>30s Timeout)
-        Mobile->>Cloud: High-Priority Emergency Webhook: Apnea Breach
-        Cloud->>Command: Real-Time SSE/WSS Broadcast to Emergency Dashboard (<1.5s)
-        
-        rect rgb(255, 230, 230)
-            Note over Command, Doctor: Phase 4: Emergency Center & Clinic Escalation
-            Command->>Command: Dispatcher verifies Alert & Location Metadata
-            Command->>Patient: Automated High-Priority Voice Call & SMS Alert to Caregiver
-            Command->>Doctor: Dispatches Clinical Notification Payload to Attending Physician
-            Command->>Command: Optional EMS / 911 Dispatch if Unresponsive
-        end
-    end
+    <!-- Inter-Pool Message Flows -->
+    <bpmn:messageFlow id="Flow_BLE_Stream" sourceRef="Participant_Patient" targetRef="Participant_MobileApp" name="100ms BLE Telemetry Stream" />
+    <bpmn:messageFlow id="Flow_Webhook_Stream" sourceRef="Participant_MobileApp" targetRef="Participant_CloudEngine" name="10s Batch Telemetry Webhook" />
+    <bpmn:messageFlow id="Flow_Emergency_Dispatch" sourceRef="Participant_MobileApp" targetRef="Participant_CloudEngine" name="High-Priority Emergency Payload" />
+    <bpmn:messageFlow id="Flow_Command_WSS" sourceRef="Participant_CloudEngine" targetRef="Participant_EmergencyCenter" name="Sub-1.5s WSS Dashboard Alert" />
+  </bpmn:collaboration>
 
-    Note over Patient, Doctor: Phase 5: Morning Analytics & Doctor Report Sync
-    Patient->>Mobile: Taps "End Sleep Session"
-    Mobile->>Cloud: Webhook: Close Session & Compute Final AHI
-    Cloud-->>Doctor: Syncs Morning Sleep Summary & Respiration Graph to Clinic Portal
+  <!-- Process 1: Patient at Home -->
+  <bpmn:process id="Process_Patient" isExecutable="true">
+    <bpmn:startEvent id="Start_Bedtime" name="Start: Bedtime Onboarding">
+      <bpmn:outgoing>Flow_P1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_PasskeyAuth" name="1.1 Authenticate via Passkey (FIDO2)">
+      <bpmn:incoming>Flow_P1</bpmn:incoming>
+      <bpmn:outgoing>Flow_P2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_Stage1Cal" name="1.2 Execute Stage 1 Idle Noise Calibration">
+      <bpmn:incoming>Flow_P2</bpmn:incoming>
+      <bpmn:outgoing>Flow_P3</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_Stage2Cal" name="1.3 Execute Stage 2 Active Breath Calibration">
+      <bpmn:incoming>Flow_P3</bpmn:incoming>
+      <bpmn:outgoing>Flow_P4</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_SleepMonitoring" name="1.4 Sleep with Device Attached">
+      <bpmn:incoming>Flow_P4</bpmn:incoming>
+      <bpmn:outgoing>Flow_P5</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_Tier1Alarm" name="Tier-1 Mobile Alarm Triggered?">
+      <bpmn:incoming>Flow_P5</bpmn:incoming>
+      <bpmn:outgoing>Flow_AlarmNo</bpmn:outgoing>
+      <bpmn:outgoing>Flow_AlarmYes</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_AlarmNo" sourceRef="Gateway_Tier1Alarm" targetRef="Task_SleepMonitoring" />
+    <bpmn:exclusiveGateway id="Gateway_PatientAwake" name="Patient Awake within 30s?">
+      <bpmn:incoming>Flow_AlarmYes</bpmn:incoming>
+      <bpmn:outgoing>Flow_AwakeYes</bpmn:outgoing>
+      <bpmn:outgoing>Flow_AwakeNo</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_TapSafe" name="1.5 Tap 'I'm Safe' Button">
+      <bpmn:incoming>Flow_AwakeYes</bpmn:incoming>
+      <bpmn:outgoing>Flow_P6</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_EndSession" name="1.6 Tap 'End Sleep Session'">
+      <bpmn:incoming>Flow_P6</bpmn:incoming>
+      <bpmn:outgoing>Flow_P7</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_SessionComplete" name="End: Session Complete">
+      <bpmn:incoming>Flow_P7</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_P1" sourceRef="Start_Bedtime" targetRef="Task_PasskeyAuth" />
+    <bpmn:sequenceFlow id="Flow_P2" sourceRef="Task_PasskeyAuth" targetRef="Task_Stage1Cal" />
+    <bpmn:sequenceFlow id="Flow_P3" sourceRef="Task_Stage1Cal" targetRef="Task_Stage2Cal" />
+    <bpmn:sequenceFlow id="Flow_P4" sourceRef="Task_Stage2Cal" targetRef="Task_SleepMonitoring" />
+    <bpmn:sequenceFlow id="Flow_P5" sourceRef="Task_SleepMonitoring" targetRef="Gateway_Tier1Alarm" />
+    <bpmn:sequenceFlow id="Flow_P6" sourceRef="Task_TapSafe" targetRef="Task_EndSession" />
+    <bpmn:sequenceFlow id="Flow_P7" sourceRef="Task_EndSession" targetRef="End_SessionComplete" />
+  </bpmn:process>
+
+  <!-- Process 2: Mobile Application Engine -->
+  <bpmn:process id="Process_MobileApp" isExecutable="true">
+    <bpmn:serviceTask id="Task_RegisterSession" name="2.1 Register Session &amp; Baseline Payload" />
+    <bpmn:serviceTask id="Task_StreamWebhooks" name="2.2 Stream 10s Respiratory Webhook Batches" />
+    <bpmn:exclusiveGateway id="Gateway_AirflowBreach" name="Airflow Stop &gt; 10s?" />
+    <bpmn:serviceTask id="Task_TriggerAlarm" name="2.3 Trigger Tier-1 Audio &amp; Haptics (&lt;200ms)" />
+    <bpmn:serviceTask id="Task_SpawnTimer" name="2.4 Spawn 30s Cancellation Token Timer" />
+    <bpmn:serviceTask id="Task_SendEmergencyWebhook" name="2.5 Transmit High-Priority Emergency Payload" />
+  </bpmn:process>
+
+  <!-- Process 3: GCP / Firebase Cloud Engine -->
+  <bpmn:process id="Process_CloudEngine" isExecutable="true">
+    <bpmn:serviceTask id="Task_PubSubIngest" name="3.1 GCP Pub/Sub Webhook Ingestion" />
+    <bpmn:serviceTask id="Task_CloudRunWorker" name="3.2 Cloud Run Stream Processing Worker" />
+    <bpmn:serviceTask id="Task_WriteBigtable" name="3.3 Write Bio-Signals to Bigtable &amp; Firestore" />
+    <bpmn:serviceTask id="Task_QueueEmergency" name="3.4 Queue High-Priority Emergency Alert" />
+    <bpmn:serviceTask id="Task_BroadcastCommand" name="3.5 Broadcast Sub-1.5s WSS to Command Center" />
+  </bpmn:process>
+
+  <!-- Process 4: Emergency Center & Clinic Endpoint -->
+  <bpmn:process id="Process_EmergencyCenter" isExecutable="true">
+    <bpmn:userTask id="Task_DashboardAlert" name="4.1 Command Center Dashboard Alert Pop-up" />
+    <bpmn:userTask id="Task_VerifyGPS" name="4.2 Dispatcher Verifies Location &amp; Patient GPS" />
+    <bpmn:serviceTask id="Task_CaregiverCall" name="4.3 Trigger Voice Call &amp; SMS to Caregiver" />
+    <bpmn:serviceTask id="Task_DoctorSync" name="4.4 Push Notification Payload to Attending Physician" />
+    <bpmn:exclusiveGateway id="Gateway_EMSDispatch" name="Caregiver / Patient Responds?" />
+    <bpmn:serviceTask id="Task_DispatchEMS" name="4.5 Dispatch Local EMS / 911 Responders" />
+    <bpmn:endEvent id="End_EventResolved" name="End: Emergency Resolved &amp; Documented" />
+  </bpmn:process>
+
+</bpmn:definitions>
 ```
 
 ---
 
-## 3. 🗄️ PlantUML Conceptual Data Model (PlantUML)
+## 3. 🗄️ PlantUML Conceptual Data Model (BPMN Aligned)
 
 ```plantuml
 @startuml Conceptual_Data_Model_PlantUML
@@ -289,6 +353,6 @@ PatientUser "1" -- "*" PhiAuditLog : generates >
 
 ## 4. 🏁 Architectural Summary
 
-* **PlantUML C4 & Conceptual Data Models:** Uses native ```plantuml code blocks for C4 Context, C4 Container, and Conceptual Data Models (`@startuml`).
-* **Mermaid BPMN 2.0 Process Model:** Uses native ```mermaid sequence diagram code blocks for the BPMN workflow, ensuring it renders **100% cleanly in IDE Markdown previews** without throwing local PlantUML server errors!
+* **Standard BPMN 2.0 XML (BPMN.js):** Section 2 is written in standard `<bpmn:definitions>` XML format, rendering natively with **BPMN.js** (Camunda / bpmn.io viewer).
+* **PlantUML C4 & Conceptual Data Models:** Uses ```plantuml code blocks for C4 Level 1 System Context, C4 Level 2 Container, and Conceptual Data Architecture (`@startuml`).
 * **100% Traceability:** Fully links business process requirements to data architecture entities under HIPAA Level 1 (PHI) vs. Level 2 (PII) security rules.
