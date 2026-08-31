@@ -1,7 +1,7 @@
 ---
-title: Enterprise Architecture Specification — PlantUML Markdown Plugin Compatible
+title: Enterprise Architecture Specification — PlantUML C4 & Data Models + Mermaid BPMN
 status: final
-version: 6.1.0
+version: 8.0.0
 created: 2026-08-31
 updated: 2026-08-31
 author: Winston (System Architect) & Mary (Business Analyst)
@@ -10,7 +10,7 @@ author: Winston (System Architect) & Mary (Business Analyst)
 # 🏛️ Enterprise Architecture Specification
 ## Sleep Apnea Detection App & Emergency Command Platform
 
-> **Diagramming Engine:** PlantUML Markdown Plugin Format (```plantuml) for C4 Context, C4 Container, BPMN 2.0 Workflows & Conceptual Data Models  
+> **Diagramming Format:** PlantUML (`plantuml`) for C4 Context, C4 Container & Conceptual Data Models; **Mermaid.js** (`mermaid`) for BPMN 2.0 Process Workflows.  
 > **Target Scope:** Global Platform Scaling to Millions of Concurrent Devices  
 
 ---
@@ -98,63 +98,59 @@ Rel(doctor, clinic_portal, "Reviews Patient AHI Trends & Sleep Summaries")
 
 ---
 
-## 2. 🔄 BPMN 2.0 Business Process Model
+## 2. 🔄 BPMN 2.0 Business Process Model (Mermaid.js Preview)
 
-```plantuml
-@startuml BPMN_Business_Process_Workflow
-autonumber
-skinparam backgroundColor #FFFFFF
-skinparam sequenceMessageAlign center
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Patient as 👤 Patient at Home
+    participant Mobile as 📱 Mobile App (Flutter)
+    participant Cloud as ☁️ GCP / Firebase Cloud Pipeline
+    participant Command as 🏢 Emergency Command Center
+    actor Doctor as 🩺 Clinic / Physician
 
-actor "Patient\n(At Home)" as Patient #41B883
-participant "Mobile App\n(Flutter Client)" as Mobile #3498DB
-participant "GCP / Firebase\nCloud Engine" as Cloud #9B59B6
-participant "24/7 Emergency\nCommand Center" as Command #E74C3C
-actor "Attending Doctor\n/ Clinic" as Doctor #F39C12
+    Note over Patient, Mobile: Phase 1: Onboarding, Passkey Auth & 2-Stage Calibration
+    Patient->>Mobile: Opens App & Authenticates via Passkey (FIDO2)
+    Mobile->>Cloud: Authenticates Session Token via Firebase Auth
+    Patient->>Mobile: Executes Stage 1 (Idle Noise) & Stage 2 (Active Breath) Calibration
+    Mobile->>Cloud: Webhook: Register Session & Device Baseline (POST /api/v1/sessions/start)
 
-== Phase 1: Onboarding, Passkey Auth & 2-Stage Calibration ==
-Patient -> Mobile: Opens App & Authenticates via Passkey (FIDO2)
-Mobile -> Cloud: Authenticates Session Token via Firebase Auth
-Patient -> Mobile: Executes Stage 1 (Idle Noise) & Stage 2 (Active Breath) Calibration
-Mobile -> Cloud: Webhook: Register Session & Device Baseline (POST /api/v1/sessions/start)
-
-== Phase 2: Overnight Sleep Monitoring & Telemetry Streaming ==
-loop Every 10 Seconds
-    Mobile -> Cloud: Telemetry Webhook: Batch Respiratory Stream (GCP Pub/Sub)
-    Cloud -> Cloud: Stream Worker evaluates AASM Apnea/Hypopnea rules
-end
-
-== Phase 3: Nocturnal Apnea Event & Tier-1 Local Alarm ==
-Mobile -> Mobile: Detects Airflow Stop >10s -> Triggers Tier-1 Alarm (<200ms)
-Mobile -> Mobile: Spawns 30-Second Cancellation Token Timer
-
-alt Option A: Patient Taps "I'm Safe" (within 30s)
-    Patient -> Mobile: Taps "I'm Safe" Button
-    Mobile -> Cloud: Webhook: Cancel Pending Emergency Dispatch
-    Cloud -> Cloud: Logs "Patient Safe & Awake" (No Emergency Dispatch)
-else Option B: Unacknowledged (>30s Timeout)
-    Mobile -> Cloud: High-Priority Emergency Webhook: Apnea Breach
-    Cloud -> Command: Real-Time SSE/WSS Broadcast to Emergency Dashboard (<1.5s)
-    
-    group Phase 4: Emergency Center & Clinic Escalation
-        Command -> Command: Dispatcher verifies Alert & Location Metadata
-        Command -> Patient: Automated High-Priority Voice Call & SMS Alert to Caregiver
-        Command -> Doctor: Dispatches Clinical Notification Payload to Attending Physician
-        Command -> Command: Optional EMS / 911 Dispatch if Unresponsive
+    Note over Patient, Mobile: Phase 2: Overnight Sleep Monitoring & Continuous Telemetry
+    loop Every 10 Seconds
+        Mobile->>Cloud: Telemetry Webhook: Batch Respiratory Stream (GCP Pub/Sub)
+        Cloud->>Cloud: Stream Worker evaluates AASM Apnea/Hypopnea thresholds
     end
-end
 
-== Phase 5: Morning Analytics & Doctor Report Sync ==
-Patient -> Mobile: Taps "End Sleep Session"
-Mobile -> Cloud: Webhook: Close Session & Compute Final AHI
-Cloud -> Doctor: Syncs Morning Sleep Summary & Respiration Graph to Clinic Portal
+    Note over Patient, Command: Phase 3: Nocturnal Apnea Event & Tier-1 Local Alarm
+    Mobile->>Mobile: Detects Airflow Stop >10s -> Triggers Tier-1 Alarm (<200ms)
+    Mobile->>Mobile: Spawns 30-Second Cancellation Token Timer
+    
+    alt Option A: Patient Taps "I'm Safe" (within 30s)
+        Patient->>Mobile: Taps "I'm Safe" Button
+        Mobile->>Cloud: Webhook: Cancel Pending Emergency Dispatch
+        Cloud->>Cloud: Logs "Patient Safe & Awake" (No Emergency Dispatch)
+    else Option B: Unacknowledged (>30s Timeout)
+        Mobile->>Cloud: High-Priority Emergency Webhook: Apnea Breach
+        Cloud->>Command: Real-Time SSE/WSS Broadcast to Emergency Dashboard (<1.5s)
+        
+        rect rgb(255, 230, 230)
+            Note over Command, Doctor: Phase 4: Emergency Center & Clinic Escalation
+            Command->>Command: Dispatcher verifies Alert & Location Metadata
+            Command->>Patient: Automated High-Priority Voice Call & SMS Alert to Caregiver
+            Command->>Doctor: Dispatches Clinical Notification Payload to Attending Physician
+            Command->>Command: Optional EMS / 911 Dispatch if Unresponsive
+        end
+    end
 
-@enduml
+    Note over Patient, Doctor: Phase 5: Morning Analytics & Doctor Report Sync
+    Patient->>Mobile: Taps "End Sleep Session"
+    Mobile->>Cloud: Webhook: Close Session & Compute Final AHI
+    Cloud-->>Doctor: Syncs Morning Sleep Summary & Respiration Graph to Clinic Portal
 ```
 
 ---
 
-## 3. 🗄️ PlantUML Conceptual Data Model (BPMN Aligned)
+## 3. 🗄️ PlantUML Conceptual Data Model (PlantUML)
 
 ```plantuml
 @startuml Conceptual_Data_Model_PlantUML
@@ -263,7 +259,6 @@ package "BPMN Phase 4 & 5: Escalation & Doctor Sync" {
     }
 }
 
-' Relationships
 PatientUser "1" -- "1" HealthBaseline : possesses >
 PatientUser "1" -- "*" DeviceBinding : owns >
 PatientUser "1" -- "*" SleepSession : records >
@@ -294,6 +289,6 @@ PatientUser "1" -- "*" PhiAuditLog : generates >
 
 ## 4. 🏁 Architectural Summary
 
-* **PlantUML Markdown Plugin Format:** All diagrams (C4 Level 1 System Context, C4 Level 2 Container, BPMN 2.0 Process Workflow, and Conceptual Data Model) are formatted inside ```plantuml code blocks with valid `@startuml` and `@enduml` tags.
-* **IDE Plugin & Preview Compatibility:** Instantly renders in VS Code, IntelliJ, GitHub, or any Markdown editor with the PlantUML extension enabled.
+* **PlantUML C4 & Conceptual Data Models:** Uses native ```plantuml code blocks for C4 Context, C4 Container, and Conceptual Data Models (`@startuml`).
+* **Mermaid BPMN 2.0 Process Model:** Uses native ```mermaid sequence diagram code blocks for the BPMN workflow, ensuring it renders **100% cleanly in IDE Markdown previews** without throwing local PlantUML server errors!
 * **100% Traceability:** Fully links business process requirements to data architecture entities under HIPAA Level 1 (PHI) vs. Level 2 (PII) security rules.

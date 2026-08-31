@@ -133,83 +133,27 @@
 <!-- NOTE: This ID is also referenced in src/webview/scroll-sync-webview.ts (applyPendingBodyUpdate). -->
 <div id="preview-content">
 <hr>
-<h2 id="title-enterprise-architecture-specification-c4-models-bpmn-plantuml-data-architecture-status-final-version-500-created-2026-08-31-updated-2026-08-31-author-winston-system-architect-mary-business-analyst">title: Enterprise Architecture Specification — C4 Models, BPMN &amp; PlantUML Data Architecture
+<h2 id="title-enterprise-architecture-specification-plantuml-c4-data-models-mermaid-bpmn-status-final-version-800-created-2026-08-31-updated-2026-08-31-author-winston-system-architect-mary-business-analyst">title: Enterprise Architecture Specification — PlantUML C4 &amp; Data Models + Mermaid BPMN
 status: final
-version: 5.0.0
+version: 8.0.0
 created: 2026-08-31
 updated: 2026-08-31
 author: Winston (System Architect) &amp; Mary (Business Analyst)</h2>
 <h1 id="enterprise-architecture-specification">🏛️ Enterprise Architecture Specification</h1>
 <h2 id="sleep-apnea-detection-app-emergency-command-platform">Sleep Apnea Detection App &amp; Emergency Command Platform</h2>
 <blockquote>
-<p><strong>Architecture Framework:</strong> C4 Model (Level 1 Context &amp; Level 2 Container) + BPMN 2.0 Process Model + PlantUML Conceptual Data Architecture<br>
+<p><strong>Diagramming Format:</strong> PlantUML (<code>plantuml</code>) for C4 Context, C4 Container &amp; Conceptual Data Models; <strong>Mermaid.js</strong> (<code>mermaid</code>) for BPMN 2.0 Process Workflows.<br>
 <strong>Target Scope:</strong> Global Platform Scaling to Millions of Concurrent Devices</p>
 </blockquote>
 <hr>
-<h2 id="1-c4-architecture-model">1. 📐 C4 Architecture Model</h2>
+<h2 id="1-c4-architecture-model-plantuml">1. 📐 C4 Architecture Model (PlantUML)</h2>
 <h3 id="11-c4-level-1-system-context-diagram">1.1 C4 Level 1: System Context Diagram</h3>
-<div class="mermaid-diagram" data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":false}'><pre class="mermaid">C4Context
-    title C4 Level 1: System Context Diagram — Sleep Apnea Detection Platform
-
-    Person(patient, &quot;Patient / At-Home User&quot;, &quot;Wears small breathing device at home during sleep; authenticates via Passkey.&quot;)
-    Person(caregiver, &quot;Caregiver / Family Member&quot;, &quot;Receives Tier-2 emergency SMS/Voice calls when patient apnea alarm is unacknowledged.&quot;)
-    Person(dispatcher, &quot;Emergency Center Dispatcher&quot;, &quot;Monitors 24/7 real-time emergency dashboard for unacknowledged 30s apnea alerts.&quot;)
-    Person(doctor, &quot;Attending Physician / Clinic&quot;, &quot;Reviews morning AHI scores, respiration wave graphs, and clinical sleep health summaries.&quot;)
-
-    System(system, &quot;Sleep Apnea Detection System&quot;, &quot;Monitors nocturnal breathing airflow, executes 2-stage calibration, triggers Tier-1 local alarms, and dispatches Tier-2 cloud emergency alerts.&quot;)
-
-    System_Ext(telecom, &quot;External Telecom &amp; SMS Gateway&quot;, &quot;Twilio / AWS SNS SMS and automated voice call dispatch platform.&quot;)
-    System_Ext(ehr, &quot;External Clinic EHR / EMR Platform&quot;, &quot;HL7 FHIR compliant Electronic Health Record systems.&quot;)
-
-    Rel(patient, system, &quot;Interfaces via BLE &amp; Mobile App (Passkey, Calibration, 'I'm Safe' Tap)&quot;)
-    Rel(system, caregiver, &quot;Sends Tier-2 Emergency SMS &amp; Voice Alerts&quot;, &quot;HTTPS / Telephony&quot;)
-    Rel(system, dispatcher, &quot;Broadcasts Sub-1.5s High-Priority Apnea Alarms&quot;, &quot;WSS / SSE WebSockets&quot;)
-    Rel(system, doctor, &quot;Delivers Morning Sleep Summaries &amp; Clinical Reports&quot;, &quot;HTTPS / HL7 FHIR&quot;)
-    Rel(system, telecom, &quot;Triggers Automated SMS &amp; Voice Payloads&quot;, &quot;REST API&quot;)
-    Rel(system, ehr, &quot;Synchronizes Health Records &amp; AHI Trends&quot;, &quot;HL7 FHIR API&quot;)
-</pre></div>
+<div class="plantuml-diagram" data-has-include data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":false}'><div style="border:1px solid #f66;background:#fff0f0;padding:0.5em 1em;border-radius:4px;color:#c00;font-size:0.9em;text-align:left;">The local PlantUML server failed to start. See the "PlantUML Markdown Preview" channel in the Output panel for details.</div></div>
 <hr>
 <h3 id="12-c4-level-2-container-diagram">1.2 C4 Level 2: Container Diagram</h3>
-<div class="mermaid-diagram" data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":false}'><pre class="mermaid">C4Container
-    title C4 Level 2: Container Diagram — Sleep Apnea Detection System
-
-    Person(patient, &quot;Patient&quot;, &quot;At-home user.&quot;)
-    Person(dispatcher, &quot;Emergency Dispatcher&quot;, &quot;24/7 monitoring operator.&quot;)
-    Person(doctor, &quot;Physician&quot;, &quot;Sleep specialist.&quot;)
-
-    Container(hardware, &quot;Small Breathing Device&quot;, &quot;Embedded Firmware&quot;, &quot;Captures raw airflow differential pressure; streams 100ms GATT packets via BLE.&quot;)
-    
-    Container(mobile_app, &quot;Mobile Application&quot;, &quot;Flutter (iOS &amp; Android)&quot;, &quot;Handles Passkey auth, 2-stage calibration, 100ms signal evaluation, 0-FPS locked display, and Tier-1 audio/haptic alarms.&quot;)
-
-    Container(firebase_auth, &quot;Firebase Auth&quot;, &quot;FIDO2 / WebAuthn Service&quot;, &quot;Manages passwordless Passkey tokens and JWT session verification.&quot;)
-
-    Container(pubsub, &quot;Cloud Pub/Sub Webhook Gateway&quot;, &quot;GCP Cloud Pub/Sub&quot;, &quot;Ingests 10s telemetry batches and high-priority emergency webhook payloads scaling to millions of devices.&quot;)
-
-    Container(stream_workers, &quot;Stream Processing Workers&quot;, &quot;GCP Cloud Run (Go / Dart)&quot;, &quot;Processes incoming telemetry streams, computes moving averages, and evaluates AASM apnea/hypopnea rules.&quot;)
-
-    ContainerDb(bigtable, &quot;Bio-Signal Time-Series Store&quot;, &quot;GCP Cloud Bigtable&quot;, &quot;Stores compressed, encrypted high-frequency bio-signal streams (AES-256).&quot;)
-
-    ContainerDb(firestore, &quot;Application Database&quot;, &quot;Firebase Cloud Firestore&quot;, &quot;Stores user profiles, health baselines, device bindings, sleep metrics, and alert queues (AES-256).&quot;)
-
-    Container(command_portal, &quot;Emergency Center Web Portal&quot;, &quot;React / Next.js Web App&quot;, &quot;Real-time WebSocket dashboard displaying unacknowledged apnea stops, patient GPS, and caregiver contact info.&quot;)
-
-    Container(clinic_portal, &quot;Clinic &amp; Physician Portal&quot;, &quot;React / Next.js Web App&quot;, &quot;Web dashboard rendering morning sleep scores, AHI trends, and PDF graph exports.&quot;)
-
-    Rel(hardware, mobile_app, &quot;Streams Raw Telemetry Packets (100ms)&quot;, &quot;BLE / AES-128&quot;)
-    Rel(patient, mobile_app, &quot;Interacts via Touch UI &amp; Passkey Biometrics&quot;)
-    Rel(mobile_app, firebase_auth, &quot;Authenticates Session &amp; WebAuthn Credentials&quot;, &quot;HTTPS / TLS 1.3&quot;)
-    Rel(mobile_app, pubsub, &quot;Posts Telemetry Webhook Batches &amp; Emergency Payloads&quot;, &quot;HTTPS / TLS 1.3&quot;)
-    Rel(pubsub, stream_workers, &quot;Pushes Ingested Webhook Stream Messages&quot;, &quot;gRPC / Push&quot;)
-    Rel(stream_workers, bigtable, &quot;Writes Compressed Bio-Signal Time Series&quot;, &quot;gRPC&quot;)
-    Rel(stream_workers, firestore, &quot;Updates Sleep Session Metrics &amp; Alert Queues&quot;, &quot;gRPC&quot;)
-    Rel(firestore, command_portal, &quot;Pushes High-Priority Unacknowledged Alerts&quot;, &quot;WSS / WebSockets&quot;)
-    Rel(firestore, clinic_portal, &quot;Syncs Morning Sleep Reports &amp; AHI Graphs&quot;, &quot;HTTPS / REST&quot;)
-    Rel(dispatcher, command_portal, &quot;Manages Real-Time Emergency Escalations&quot;)
-    Rel(doctor, clinic_portal, &quot;Reviews Patient AHI Trends &amp; Sleep Summaries&quot;)
-</pre></div>
+<div class="plantuml-diagram" data-has-include data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":false}'><div style="border:1px solid #f66;background:#fff0f0;padding:0.5em 1em;border-radius:4px;color:#c00;font-size:0.9em;text-align:left;">The local PlantUML server failed to start. See the "PlantUML Markdown Preview" channel in the Output panel for details.</div></div>
 <hr>
-<h2 id="2-bpmn-20-business-process-model">2. 🔄 BPMN 2.0 Business Process Model</h2>
-<p>The business process connects four primary participant pools: <strong>Patient at Home</strong>, <strong>Mobile App Engine</strong>, <strong>GCP/Firebase Ingestion Engine</strong>, and <strong>Emergency Command Center &amp; Clinic Specialists</strong>.</p>
+<h2 id="2-bpmn-20-business-process-model-mermaidjs-preview">2. 🔄 BPMN 2.0 Business Process Model (Mermaid.js Preview)</h2>
 <div class="mermaid-diagram" data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":false}'><pre class="mermaid">sequenceDiagram
     autonumber
     actor Patient as 👤 Patient at Home
@@ -220,26 +164,26 @@ author: Winston (System Architect) &amp; Mary (Business Analyst)</h2>
 
     Note over Patient, Mobile: Phase 1: Onboarding, Passkey Auth &amp; 2-Stage Calibration
     Patient-&gt;&gt;Mobile: Opens App &amp; Authenticates via Passkey (FIDO2)
-    Mobile-&gt;&gt;Cloud: Authenticates Session via Firebase Auth
+    Mobile-&gt;&gt;Cloud: Authenticates Session Token via Firebase Auth
     Patient-&gt;&gt;Mobile: Executes Stage 1 (Idle Noise) &amp; Stage 2 (Active Breath) Calibration
     Mobile-&gt;&gt;Cloud: Webhook: Register Session &amp; Device Baseline (POST /api/v1/sessions/start)
 
     Note over Patient, Mobile: Phase 2: Overnight Sleep Monitoring &amp; Continuous Telemetry
     loop Every 10 Seconds
-        Mobile-&gt;&gt;Cloud: Telemetry Webhook: Batch Respiratory Stream &amp; Heartbeat (GCP Pub/Sub)
-        Cloud-&gt;&gt;Cloud: Stream Processor evaluates AASM Apnea/Hypopnea thresholds
+        Mobile-&gt;&gt;Cloud: Telemetry Webhook: Batch Respiratory Stream (GCP Pub/Sub)
+        Cloud-&gt;&gt;Cloud: Stream Worker evaluates AASM Apnea/Hypopnea thresholds
     end
 
     Note over Patient, Command: Phase 3: Nocturnal Apnea Event &amp; Tier-1 Local Alarm
-    Mobile-&gt;&gt;Mobile: Detects Airflow Stop &gt;10s -&gt; Triggers Tier-1 Escalating Alarm (&lt;200ms)
+    Mobile-&gt;&gt;Mobile: Detects Airflow Stop &gt;10s -&gt; Triggers Tier-1 Alarm (&lt;200ms)
     Mobile-&gt;&gt;Mobile: Spawns 30-Second Cancellation Token Timer
     
     alt Option A: Patient Taps &quot;I'm Safe&quot; (within 30s)
         Patient-&gt;&gt;Mobile: Taps &quot;I'm Safe&quot; Button
-        Mobile-&gt;&gt;Cloud: Webhook: Cancel Emergency Dispatch Payload
+        Mobile-&gt;&gt;Cloud: Webhook: Cancel Pending Emergency Dispatch
         Cloud-&gt;&gt;Cloud: Logs &quot;Patient Safe &amp; Awake&quot; (No Emergency Dispatch)
     else Option B: Unacknowledged (&gt;30s Timeout)
-        Mobile-&gt;&gt;Cloud: High-Priority Emergency Webhook: Apnea Alert Breach
+        Mobile-&gt;&gt;Cloud: High-Priority Emergency Webhook: Apnea Breach
         Cloud-&gt;&gt;Command: Real-Time SSE/WSS Broadcast to Emergency Dashboard (&lt;1.5s)
         
         rect rgb(255, 230, 230)
@@ -251,14 +195,13 @@ author: Winston (System Architect) &amp; Mary (Business Analyst)</h2>
         end
     end
 
-    Note over Patient, Doctor: Phase 5: Morning Analytics &amp; Doctor Report Export
+    Note over Patient, Doctor: Phase 5: Morning Analytics &amp; Doctor Report Sync
     Patient-&gt;&gt;Mobile: Taps &quot;End Sleep Session&quot;
     Mobile-&gt;&gt;Cloud: Webhook: Close Session &amp; Compute Final AHI
     Cloud--&gt;&gt;Doctor: Syncs Morning Sleep Summary &amp; Respiration Graph to Clinic Portal
 </pre></div>
 <hr>
-<h2 id="3-plantuml-conceptual-data-model-bpmn-aligned">3. 🗄️ PlantUML Conceptual Data Model (BPMN Aligned)</h2>
-<p>The high-level Conceptual Data Model is specified below in <strong>PlantUML Class Diagram &amp; ERD syntax</strong>, mapping directly to the data produced across all 5 phases of the BPMN process model:</p>
+<h2 id="3-plantuml-conceptual-data-model-plantuml">3. 🗄️ PlantUML Conceptual Data Model (PlantUML)</h2>
 <div class="plantuml-diagram" data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":false}'><div style="border:1px solid #f66;background:#fff0f0;padding:0.5em 1em;border-radius:4px;color:#c00;font-size:0.9em;text-align:left;">The local PlantUML server failed to start. See the "PlantUML Markdown Preview" channel in the Output panel for details.</div></div>
 <hr>
 <h3 id="31-data-traceability-matrix-bpmn-process-data-requirements-rightarrow-plantuml-entities">3.1 Data Traceability Matrix: BPMN Process Data Requirements <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.3669em;"></span><span class="mrel">→</span></span></span></span> PlantUML Entities</h3>
@@ -320,9 +263,9 @@ author: Winston (System Architect) &amp; Mary (Business Analyst)</h2>
 <hr>
 <h2 id="4-architectural-summary">4. 🏁 Architectural Summary</h2>
 <ul>
-<li><strong>C4 Architecture Model:</strong> C4 Level 1 Context Diagram &amp; C4 Level 2 Container Diagram showing interactions between Flutter Mobile App, BLE Device, Firebase Auth, GCP Pub/Sub, Cloud Run Stream Workers, Cloud Bigtable, Cloud Firestore, Emergency Center Portals, and Clinic Portals.</li>
-<li><strong>BPMN 2.0 Process Model:</strong> Complete 5-phase operational workflow linking Patient <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.3669em;"></span><span class="mrel">→</span></span></span></span> Mobile App <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.3669em;"></span><span class="mrel">→</span></span></span></span> GCP Cloud <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.3669em;"></span><span class="mrel">→</span></span></span></span> 24/7 Command Center <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.3669em;"></span><span class="mrel">→</span></span></span></span> Doctor.</li>
-<li><strong>PlantUML Conceptual Data Model:</strong> PlantUML <code>@startuml</code> class diagram establishing all entities, PK/FK attributes, relationships, and HIPAA Level 1 (PHI) vs. Level 2 (PII) data classification.</li>
+<li><strong>PlantUML C4 &amp; Conceptual Data Models:</strong> Uses native ```plantuml code blocks for C4 Context, C4 Container, and Conceptual Data Models (<code>@startuml</code>).</li>
+<li><strong>Mermaid BPMN 2.0 Process Model:</strong> Uses native ```mermaid sequence diagram code blocks for the BPMN workflow, ensuring it renders <strong>100% cleanly in IDE Markdown previews</strong> without throwing local PlantUML server errors!</li>
+<li><strong>100% Traceability:</strong> Fully links business process requirements to data architecture entities under HIPAA Level 1 (PHI) vs. Level 2 (PII) security rules.</li>
 </ul>
 
 </div>
