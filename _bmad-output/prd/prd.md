@@ -1,7 +1,7 @@
 ---
 title: Product Requirements Document — Sleep Apnea Detection App
 status: final
-version: 1.3.0
+version: 1.4.0
 created: 2026-08-31
 updated: 2026-08-31
 author: Mary (Business Analyst)
@@ -137,9 +137,13 @@ sequenceDiagram
 * **Local Alert Trigger:** Primary smartphone audio/haptic alarms shall trigger within **< 200 milliseconds** of detecting an apnea threshold breach.
 * **Cloud Signal Latency:** Safety acknowledgement and Tier-2 emergency signal payloads shall transmit to the cloud backend within **< 1.5 seconds** under standard 4G/5G/Wi-Fi conditions.
 
-### 4.3 NFR-3: Battery Efficiency & Thermal Safety
-* **Overnight Battery Consumption:** Continuous 8-hour background telemetry and stream processing shall consume **< 12% total phone battery**.
-* **Thermal Management:** Device background execution shall not exceed ambient operating temperatures (CPU throttling guardrails).
+### 4.3 NFR-3: Maximum Battery Efficiency & Ultra-Low Power Architecture
+* **Maximum Overnight Battery Consumption:** Continuous 8-to-10 hour background sleep logging shall consume **< 8.0% total phone battery** (averaging $< 1.0\%$ battery drain per hour).
+* **BLE Low-Power Packet Batching:** BLE connection parameters shall negotiate a batching interval ($15\text{ms} \le \text{connInterval} \le 30\text{ms}$) with 247-byte MTU payload batching to minimize Bluetooth radio CPU wakeups.
+* **Isolate & Thread Offloading:** All signal filtering, noise subtraction, and FFT peak calculations shall execute on background Dart Isolates (worker threads), allowing the main mobile CPU to remain in a deep sleep state.
+* **OLED Dark Mode & Screen Dimming:** During active sleep mode, the UI shall automatically dim screen brightness to minimum and render pure OLED black (`#000000` RGB) to eliminate display power draw.
+* **0-FPS Display Throttling:** When the phone screen is turned off or locked, the UI rendering engine shall throttle to **0 FPS**, pausing all Canvas/Chart repaints while background telemetry processing continues.
+* **Thermal Management:** Device background execution shall not exceed ambient operating temperatures (CPU thermal throttling guardrails).
 
 ### 4.4 NFR-4: Security & Data Privacy
 * **Encrypted Telemetry:** BLE data packets shall be encrypted in transit using AES-128.
@@ -149,7 +153,7 @@ sequenceDiagram
 
 | Chart Identifier | Visual Chart Type | Underlying Library | Data Rendered | Rendering & Performance Spec |
 | :--- | :--- | :--- | :--- | :--- |
-| **CHART-01** | **Live Airflow Telemetry Line Chart** | `victory-native` / `fl_chart` (Skia GPU Accelerated) | Real-time continuous respiratory airflow wave ($V_{\text{net}}$) vs. Time (seconds). | **60 FPS render loop.** 100ms stream updates with cubic spline interpolation smoothing. Dynamic Y-axis auto-scaling with zero-baseline reference indicator. |
+| **CHART-01** | **Live Airflow Telemetry Line Chart** | `victory-native` / `fl_chart` (Skia GPU Accelerated) | Real-time continuous respiratory airflow wave ($V_{\text{net}}$) vs. Time (seconds). | **60 FPS render loop when screen active (0 FPS when locked).** 100ms stream updates with cubic spline smoothing. Dynamic Y-axis auto-scaling with zero-baseline reference. |
 | **CHART-02** | **FFT Frequency Spectrum Graph** | `victory-native` (`VictoryChart`, `VictoryLine`) | Fast Fourier Transform magnitude vs. Frequency (Hz). | Renders spectral peaks derived from raw airflow telemetry to compute exact respiration rates (BPM). |
 | **CHART-03** | **Circular Progress Metric Rings** | `react-native-circular-progress-indicator` | Sleep Quality Score %, Session Countdown timer, Calibration progress. | Animated stroke fill with dynamic status colors (Green: Optimal, Amber: Warning, Red: Apnea Threshold Breach). |
 | **CHART-04** | **Multi-Axis Historical Session Chart** | `victory-native` (`VictoryChart`, `VictoryAxis`) | Overnight AHI events, SpO2 trends, and Heart Rate over 8-hour sleep timelines. | Pinch-to-zoom and pan interactions across multi-hour sleep timelines with color-coded event markers for wake-up alerts & safety acknowledgements. |
@@ -174,9 +178,9 @@ sequenceDiagram
 | Metric | Target | Verification Method |
 | :--- | :--- | :--- |
 | **Emergency Intervention Success** | 99.9% reliable trigger on true apnea stops | Automated signal simulation tests |
+| **Overnight Battery Efficiency** | **< 8.0% drain over 8 hours** | Battery profiling benchmarks |
 | **Safety Acknowledgement Dispatch** | < 1.5s signal transmission to cloud | End-to-end cloud status verification |
 | **Pre-Sleep Calibration Completion** | >95% first-attempt success rate | In-app event telemetry |
-| **Overnight Battery Efficiency** | < 12% drain over 8 hours | Battery profiling benchmarks |
 | **False Positive Apnea Rate** | < 2% per session | Baseline noise floor verification |
 
 ---

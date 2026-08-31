@@ -133,9 +133,9 @@
 <!-- NOTE: This ID is also referenced in src/webview/scroll-sync-webview.ts (applyPendingBodyUpdate). -->
 <div id="preview-content">
 <hr>
-<h2 id="title-product-requirements-document-sleep-apnea-detection-app-status-final-version-120-created-2026-08-31-updated-2026-08-31-author-mary-business-analyst">title: Product Requirements Document — Sleep Apnea Detection App
+<h2 id="title-product-requirements-document-sleep-apnea-detection-app-status-final-version-130-created-2026-08-31-updated-2026-08-31-author-mary-business-analyst">title: Product Requirements Document — Sleep Apnea Detection App
 status: final
-version: 1.2.0
+version: 1.3.0
 created: 2026-08-31
 updated: 2026-08-31
 author: Mary (Business Analyst)</h2>
@@ -313,6 +313,25 @@ author: Mary (Business Analyst)</h2>
 </tr>
 </tbody>
 </table>
+<h3 id="46-nfr-6-clinical-standards-international-regulations-cybersecurity">4.6 NFR-6: Clinical Standards, International Regulations &amp; Cybersecurity</h3>
+<ul>
+<li><strong>NFR-6.1 (AASM Diagnostic Standard Alignment):</strong> The evaluation engine shall classify respiratory events adhering to American Academy of Sleep Medicine (AASM) guidelines:
+<ul>
+<li><strong>Apnea:</strong> <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7719em;vertical-align:-0.136em;"></span><span class="mrel">≥</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8056em;vertical-align:-0.0556em;"></span><span class="mord">90%</span></span></span></span> airflow reduction for <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7719em;vertical-align:-0.136em;"></span><span class="mrel">≥</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">10</span></span></span></span> seconds.</li>
+<li><strong>Hypopnea:</strong> <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7719em;vertical-align:-0.136em;"></span><span class="mrel">≥</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8056em;vertical-align:-0.0556em;"></span><span class="mord">30%</span></span></span></span> airflow reduction for <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7719em;vertical-align:-0.136em;"></span><span class="mrel">≥</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">10</span></span></span></span> seconds.</li>
+<li><strong>AHI Classification:</strong> Normal (<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.5782em;vertical-align:-0.0391em;"></span><span class="mrel">&lt;</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">5</span></span></span></span>), Mild (<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">5–14.9</span></span></span></span>), Moderate (<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">15–29.9</span></span></span></span>), Severe (<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7719em;vertical-align:-0.136em;"></span><span class="mrel">≥</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">30</span></span></span></span> events/hour).</li>
+</ul>
+</li>
+<li><strong>NFR-6.2 (IEC 60601-1-8 Medical Alarm Hierarchy):</strong> The application alarm design shall comply with IEC 60601-1-8 medical alarm prioritization standards:
+<ul>
+<li><strong>High Priority (Apnea &gt;20s / Unacknowledged):</strong> Escalating audio (&gt;75 dB), continuous haptics, Cloud Dispatch.</li>
+<li><strong>Medium Priority (Apnea 10–20s):</strong> Low-decibel chime (40–55 dB), moderate haptic pulses.</li>
+<li><strong>Low Priority (BLE Drop / Battery):</strong> Visual banner notification only (no sleep disturbance).</li>
+</ul>
+</li>
+<li><strong>NFR-6.3 (SaMD &amp; Quality Management Framework):</strong> The application codebase shall be developed under Software as a Medical Device (SaMD) principles aligning with <strong>FDA 21 CFR Part 820</strong> and <strong>ISO 13485</strong> Quality Management Systems to facilitate future 510(k) clinical clearance.</li>
+<li><strong>NFR-6.4 (GDPR Article 9 &amp; HIPAA Compliance):</strong> All personal health information (PHI) shall be classified under GDPR Article 9 (Special Category Health Data) requiring explicit user consent, zero unencrypted local caching of PHI, and verifiable data erasure (Right to be Forgotten).</li>
+</ul>
 <hr>
 <h2 id="5-success-metrics-key-performance-indicators-kpis">5. Success Metrics &amp; Key Performance Indicators (KPIs)</h2>
 <table>
