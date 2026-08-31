@@ -1,7 +1,7 @@
 ---
 title: Product Requirements Document — Sleep Apnea Detection App
 status: final
-version: 1.6.0
+version: 1.7.0
 created: 2026-08-31
 updated: 2026-08-31
 author: Mary (Business Analyst) & Winston (System Architect)
@@ -17,15 +17,15 @@ author: Mary (Business Analyst) & Winston (System Architect)
 ### 1.1 Product Overview
 The **Sleep Apnea Detection App** is a specialized consumer health mobile application designed to interface wirelessly via **Bluetooth Low Energy (BLE)** with a **small breathing device** used comfortably at home during sleep. 
 
-The application transforms raw overnight bio-signals into actionable sleep apnea insights, eliminating the need for expensive, uncomfortable hospital sleep lab visits. Access is secured via passwordless **Passkey (FIDO2/WebAuthn)** biometrics. When severe or prolonged breathing stops are detected during sleep, the application initiates an active **Two-Tier Emergency Response**:
+The application transforms raw overnight bio-signals into actionable sleep apnea insights, eliminating the need for expensive, uncomfortable hospital sleep lab visits. Access is secured via passwordless **Passkey (FIDO2/WebAuthn)** biometrics and strictly compliant with **HIPAA Security & Privacy Rules** for Protected Health Information (PHI). When severe or prolonged breathing stops are detected during sleep, the application initiates an active **Two-Tier Emergency Response**:
 1. **Tier-1 Primary App & Device Wake-Up Alert:** Escalating smartphone audio alarms & haptics (and future device micro-electrical stimulation) to wake the patient and restore breathing.
 2. **Tier-2 Cloud Emergency Dispatch & Safety Acknowledgement:** Real-time signal transmission to the cloud backend. If the patient acknowledges the alert via the app ("I'm Safe"), the cloud logs a safety event; if unacknowledged after 30 seconds, emergency notifications are dispatched to caregivers.
 
 ### 1.2 Strategic Business Goals
 * **At-Home Accessibility:** Provide a comfortable, non-invasive alternative to clinical polysomnography (hospital sleep studies).
-* **Frictionless Security:** Passwordless **Passkey** onboarding for instant, secure authentication.
+* **Frictionless HIPAA Security:** Passwordless **Passkey** onboarding and hardware-encrypted local/cloud PHI storage.
 * **Proactive Patient Safety:** Move from passive morning data logging to active overnight intervention during critical apnea episodes.
-* **Device Binding & Doctor Integration Framework:** Standardized API contract for pairing hardware to cloud user accounts and extensible health profile sharing with physicians.
+* **Device Binding & Doctor Integration Framework:** Standardized API contract for pairing hardware to cloud user accounts and HIPAA-compliant health profile sharing with physicians.
 
 ---
 
@@ -97,7 +97,7 @@ sequenceDiagram
 
 * **FR-1.1 (BLE Auto-Discovery):** The application shall automatically scan for, identify, and establish a low-energy Bluetooth (BLE) connection with the user's paired small breathing device.
 * **FR-1.2 (Device Binding API Framework):** Upon successful BLE pairing, the application shall execute the **Cloud Device Binding API** (`POST /api/v1/devices/bind`), transmitting an encrypted payload containing `user_profile_id`, `device_hardware_id`, `ble_mac_address`, and `binding_timestamp`.
-* **FR-1.3 (Offline Device Binding Queue):** If the device is paired without active internet connectivity, the application shall queue the device binding payload locally and retry transmission upon network restoration.
+* **FR-1.3 (Offline Device Binding Queue):** If the device is paired without active internet connectivity, the application shall queue the device binding payload locally in an encrypted buffer and retry transmission upon network restoration.
 * **FR-1.4 (Stage-1 Idle Sensor Calibration):** Prior to device attachment, the application shall execute a mandatory 5-to-10 second sampling phase of idle BLE data to compute ambient noise floor ($N_{\text{idle}}$).
 * **FR-1.5 (Stage-2 Active Breath Training):** Following device attachment, the application shall execute a 10-to-20 second active breathing calibration phase to record peak inhalation ($V_{\max}$) and trough exhalation ($V_{\min}$).
 * **FR-1.6 (Net Airflow Calculation):** The application shall calculate net respiratory airflow using $V_{\text{net}} = V_{\text{raw}} - N_{\text{idle}}$.
@@ -111,7 +111,7 @@ sequenceDiagram
 * **FR-2.1 (Continuous Background Logging):** The application shall log continuous respiratory airflow streams throughout an 8+ hour sleep window in a low-power background state.
 * **FR-2.2 (Real-Time Apnea Evaluator):** The application shall evaluate real-time net airflow against the calibrated threshold every 100 milliseconds.
 * **FR-2.3 (Apnea Event Flagging):** An obstructive apnea event shall be flagged whenever net airflow remains below threshold continuously for $>10$ seconds.
-* **FR-2.4 (Session Data Integrity):** Telemetry packets shall be timestamped locally and buffered during temporary signal interruptions.
+* **FR-2.4 (Session Data Integrity):** Telemetry packets shall be timestamped locally and buffered in hardware-encrypted storage during temporary signal interruptions.
 
 ---
 
@@ -137,14 +137,8 @@ sequenceDiagram
 ### 3.5 FR-5: Passkey Authentication, Health Profile & Doctor Sharing Framework
 
 * **FR-5.1 (Passkey FIDO2/WebAuthn Authentication):** The application shall support passwordless authentication via **Passkeys**, utilizing native OS biometrics (Face ID, Touch ID, Android BiometricPrompt) and hardware secure enclave tokens.
-* **FR-5.2 (Health Profile Management):** The application shall collect and manage the user's health baseline profile:
-  * Weight (kg / lbs)
-  * Height (cm / ft-in)
-  * Age & Date of Birth
-  * Gender
-  * Automatically calculated BMI (Body Mass Index)
-  * Known Sleep & Cardiovascular Risk Factors
-* **FR-5.3 (Extensible Doctor Sharing Framework):** The application shall provide a dedicated **"Share Profile with Doctor"** UI module and extensible JSON data export engine formatted for future EHR/EMR physician integrations.
+* **FR-5.2 (Health Profile Management):** The application shall collect and manage the user's health baseline profile: Weight, Height, Age, Gender, computed BMI, and Sleep Risk Factors.
+* **FR-5.3 (Extensible Doctor Sharing Framework):** Provides a dedicated **"Share Profile with Doctor"** UI module and extensible JSON data export engine formatted for future EHR/EMR physician integrations.
 
 ---
 
@@ -163,9 +157,13 @@ sequenceDiagram
 * **0-FPS Display Throttling:** 0 FPS rendering when screen is locked/darkened.
 * **Isolate Worker Offloading:** FFT and signal calculations offloaded to background Dart Isolates.
 
-### 4.4 NFR-4: Security & Data Privacy
-* **Passkey Hardware Security:** Passkey private keys stored exclusively inside OS Secure Enclave / Keystore.
-* **Encrypted Telemetry:** AES-128 BLE transit encryption; AES-256 cloud encryption at rest (HIPAA / GDPR Article 9).
+### 4.4 NFR-4: Full HIPAA Security Rule & PHI Safeguards (45 CFR Part 160 & 164)
+
+* **NFR-4.1 (Technical Access Control & Passkey Enforcement - 45 CFR § 164.312(a)):** Access to Protected Health Information (PHI) shall require unique user identification via Passkeys (FIDO2/WebAuthn). The app shall enforce automatic session timeout and re-authentication after 5 minutes of inactivity.
+* **NFR-4.2 (Audit Controls & Tamper-Evident Logs - 45 CFR § 164.312(b)):** The application and cloud gateway shall record immutable audit logs (`phi_audit_logs`) capturing all PHI creation, modification, doctor exports, and caregiver emergency alert dispatches.
+* **NFR-4.3 (Data Integrity & Remote Wipe - 45 CFR § 164.312(c)):** The application shall provide automated checksum integrity checks on local sleep database files and support emergency remote wipe of cached local PHI upon account deletion or device unpairing.
+* **NFR-4.4 (Encryption in Transit & Certificate Pinning - 45 CFR § 164.312(e)):** BLE telemetry packets shall be encrypted in transit via AES-128. All mobile-to-cloud communications shall enforce TLS 1.3 HTTPS/WSS with SSL Certificate Pinning to prevent man-in-the-middle (MITM) attacks.
+* **NFR-4.5 (Encryption at Rest - 45 CFR § 164.312(e)):** Local mobile databases (Hive/SQLCipher) shall be encrypted using **AES-256** with keys stored inside OS Secure Enclave / Android Keystore. Cloud databases shall enforce AES-256 disk and column-level encryption at rest.
 
 ### 4.5 NFR-5: Real-Time Data Visualization & Chart Specifications
 
@@ -181,8 +179,8 @@ sequenceDiagram
 * **NFR-6.1 (AASM Diagnostic Standard Alignment):** Apnea ($\ge 90\%$ drop $\ge 10\text{s}$) & Hypopnea ($\ge 30\%$ drop $\ge 10\text{s}$) classification.
 * **NFR-6.2 (IEC 60601-1-8 Medical Alarm Hierarchy):** High (>20s), Medium (10–20s), and Low (BLE drop) alarm priority levels.
 * **NFR-6.3 (SaMD & Quality Management Framework):** Developed under FDA 21 CFR Part 820 / ISO 13485 framework.
-* **NFR-6.4 (GDPR Article 9 & HIPAA Compliance):** PHI encryption with explicit user consent.
-* **NFR-6.5 (Hardware Air Freight & Customs Compliance — UN 38.3 / IATA PI 967 / ISO 10993):** UN 38.3 battery certification, IATA PI 967 Section II **< 2.7 Wh (<700 mAh)** battery cap, ISO 10993 skin biocompatibility, pre-certified 2.4 GHz BLE spectrum (FCC, CE RED, TELEC, SRRC, KC, Bluetooth SIG QDID).
+* **NFR-6.4 (GDPR Article 9 Compliance):** Special Category Health Data rules with explicit consent management.
+* **NFR-6.5 (Hardware Air Freight Customs Compliance):** UN 38.3 battery certification, IATA PI 967 Section II **< 2.7 Wh (<700 mAh)** battery cap, ISO 10993 skin biocompatibility, pre-certified 2.4 GHz BLE spectrum (FCC, CE RED, TELEC, SRRC, KC, Bluetooth SIG QDID).
 
 ---
 
@@ -190,11 +188,11 @@ sequenceDiagram
 
 | Metric | Target | Verification Method |
 | :--- | :--- | :--- |
+| **HIPAA Security Compliance** | 100% compliance across all §164.312 technical safeguards | Annual HIPAA security audit & penetration testing |
 | **Passkey Authentication Success** | >98% first-attempt biometric login | In-app auth telemetry |
 | **Device Binding API Success** | 100% cloud binding acknowledgment | End-to-end API integration tests |
 | **Emergency Intervention Success** | 99.9% reliable trigger on true apnea stops | Automated signal simulation tests |
 | **Overnight Battery Efficiency** | **< 8.0% drain over 8 hours** | Battery profiling benchmarks |
-| **Air Freight Customs Approval** | 100% first-pass customs clearance | UN 38.3 & IATA PI 967 test summaries |
 
 ---
 
