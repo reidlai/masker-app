@@ -1,7 +1,7 @@
 ---
-title: Enterprise Architecture Specification — Pure PlantUML C4 Models, BPMN & Conceptual Data Architecture
+title: Enterprise Architecture Specification — PlantUML Markdown Plugin Compatible
 status: final
-version: 6.0.0
+version: 6.1.0
 created: 2026-08-31
 updated: 2026-08-31
 author: Winston (System Architect) & Mary (Business Analyst)
@@ -10,14 +10,14 @@ author: Winston (System Architect) & Mary (Business Analyst)
 # 🏛️ Enterprise Architecture Specification
 ## Sleep Apnea Detection App & Emergency Command Platform
 
-> **Diagramming Engine:** Pure PlantUML (`@startuml`) for C4 Context, C4 Container, BPMN 2.0 Workflows & Conceptual Data Models  
+> **Diagramming Engine:** PlantUML Markdown Plugin Format (```plantuml) for C4 Context, C4 Container, BPMN 2.0 Workflows & Conceptual Data Models  
 > **Target Scope:** Global Platform Scaling to Millions of Concurrent Devices  
 
 ---
 
 ## 1. 📐 C4 Architecture Model (PlantUML)
 
-### 1.1 C4 Level 1: System Context Diagram (PlantUML)
+### 1.1 C4 Level 1: System Context Diagram
 
 ```plantuml
 @startuml C4_Level1_System_Context
@@ -49,7 +49,7 @@ Rel(system, ehr, "Synchronizes Health Records & AHI Trends", "HL7 FHIR API")
 
 ---
 
-### 1.2 C4 Level 2: Container Diagram (PlantUML)
+### 1.2 C4 Level 2: Container Diagram
 
 ```plantuml
 @startuml C4_Level2_Container_Diagram
@@ -98,7 +98,7 @@ Rel(doctor, clinic_portal, "Reviews Patient AHI Trends & Sleep Summaries")
 
 ---
 
-## 2. 🔄 BPMN 2.0 Business Process Model (PlantUML)
+## 2. 🔄 BPMN 2.0 Business Process Model
 
 ```plantuml
 @startuml BPMN_Business_Process_Workflow
@@ -294,6 +294,6 @@ PatientUser "1" -- "*" PhiAuditLog : generates >
 
 ## 4. 🏁 Architectural Summary
 
-* **Pure PlantUML Architecture:** All diagrams—C4 Level 1 Context, C4 Level 2 Container, BPMN 2.0 Process Workflow, and Conceptual Data Model—are written in 100% valid, native **PlantUML (`@startuml ... @enduml`)** code blocks.
-* **Local PlantUML Compilation Support:** Compatible with local PlantUML CLI (`plantuml -tsvg` / `plantuml -tpng`) and PlantUML IDE plugins.
-* **100% Traceability:** Complete mapping between business process requirements and data entities under HIPAA Level 1 (PHI) vs. Level 2 (PII) safeguards.
+* **PlantUML Markdown Plugin Format:** All diagrams (C4 Level 1 System Context, C4 Level 2 Container, BPMN 2.0 Process Workflow, and Conceptual Data Model) are formatted inside ```plantuml code blocks with valid `@startuml` and `@enduml` tags.
+* **IDE Plugin & Preview Compatibility:** Instantly renders in VS Code, IntelliJ, GitHub, or any Markdown editor with the PlantUML extension enabled.
+* **100% Traceability:** Fully links business process requirements to data architecture entities under HIPAA Level 1 (PHI) vs. Level 2 (PII) security rules.
