@@ -1,33 +1,105 @@
 ---
-title: Enterprise Business, Data & Cloud Architecture Specification — Sleep Apnea Detection App
+title: Enterprise Architecture Specification — C4 Models, BPMN & Conceptual Data Architecture
 status: final
-version: 3.0.0
+version: 4.0.0
 created: 2026-08-31
 updated: 2026-08-31
 author: Winston (System Architect) & Mary (Business Analyst)
 ---
 
-# 🏛️ Enterprise Business, Data & Cloud Architecture Specification
+# 🏛️ Enterprise Architecture Specification
 ## Sleep Apnea Detection App & Emergency Command Platform
 
-> **Target Scope:** Global Enterprise Platform Scaling to Millions of Breathing Devices  
-> **Cloud Provider & Infrastructure:** Google Cloud Platform (GCP) & Firebase Suite  
-> **Integrations:** Real-Time Telemetry Webhooks, Emergency Response Command Centers, and Clinical Portals  
+> **Architecture Framework:** C4 Model (Context & Container) + BPMN 2.0 Process Modeling + Conceptual Data Architecture  
+> **Target Scope:** Global Platform Scaling to Millions of Concurrent Devices  
 
 ---
 
-## 1. Business Architecture & BPMN Process Models
+## 1. C4 Architecture Model
 
-### 1.1 End-to-End BPMN 2.0 Business Process Workflow
+### 1.1 C4 Level 1: System Context Diagram
 
-The business process connects four primary participant pools: **Patient at Home**, **Mobile App Engine**, **GCP/Firebase Ingestion Engine**, and **Emergency Command Center & Clinic Specialists**.
+The System Context diagram illustrates the high-level boundary of the **Sleep Apnea Detection Platform** and its interactions with human actors and external enterprise systems.
+
+```mermaid
+C4Context
+    title C4 Level 1: System Context Diagram — Sleep Apnea Detection Platform
+
+    Person(patient, "Patient / At-Home User", "Wears small breathing device at home during sleep; authenticates via Passkey.")
+    Person(caregiver, "Caregiver / Family Member", "Receives Tier-2 emergency SMS/Voice calls when patient apnea alarm is unacknowledged.")
+    Person(dispatcher, "Emergency Center Dispatcher", "Monitors 24/7 real-time emergency dashboard for unacknowledged 30s apnea alerts.")
+    Person(doctor, "Attending Physician / Clinic", "Reviews morning AHI scores, respiration wave graphs, and clinical sleep health summaries.")
+
+    System(system, "Sleep Apnea Detection System", "Monitors nocturnal breathing airflow, executes 2-stage calibration, triggers Tier-1 local alarms, and dispatches Tier-2 cloud emergency alerts.")
+
+    System_Ext(telecom, "External Telecom & SMS Gateway", "Twilio / AWS SNS SMS and automated voice call dispatch platform.")
+    System_Ext(ehr, "External Clinic EHR / EMR Platform", "HL7 FHIR compliant Electronic Health Record systems.")
+
+    Rel(patient, system, "Interfaces via BLE & Mobile App (Passkey, Calibration, 'I'm Safe' Tap)")
+    Rel(system, caregiver, "Sends Tier-2 Emergency SMS & Voice Alerts", "HTTPS / Telephony")
+    Rel(system, dispatcher, "Broadcasts Sub-1.5s High-Priority Apnea Alarms", "WSS / SSE WebSockets")
+    Rel(system, doctor, "Delivers Morning Sleep Summaries & Clinical Reports", "HTTPS / HL7 FHIR")
+    Rel(system, telecom, "Triggers Automated SMS & Voice Payloads", "REST API")
+    Rel(system, ehr, "Synchronizes Health Records & AHI Trends", "HL7 FHIR API")
+```
+
+---
+
+### 1.2 C4 Level 2: Container Diagram
+
+The Container diagram decomposes the system into executable applications, data stores, stream processing workers, and web portals.
+
+```mermaid
+C4Container
+    title C4 Level 2: Container Diagram — Sleep Apnea Detection System
+
+    Person(patient, "Patient", "At-home user.")
+    Person(dispatcher, "Emergency Dispatcher", "24/7 monitoring operator.")
+    Person(doctor, "Physician", "Sleep specialist.")
+
+    Container(hardware, "Small Breathing Device", "Embedded Firmware", "Captures raw airflow differential pressure; streams 100ms GATT packets via BLE.")
+    
+    Container(mobile_app, "Mobile Application", "Flutter (iOS & Android)", "Handles Passkey auth, 2-stage calibration, 100ms signal evaluation, 0-FPS locked display, and Tier-1 audio/haptic alarms.")
+
+    Container(firebase_auth, "Firebase Auth", "FIDO2 / WebAuthn Service", "Manages passwordless Passkey tokens and JWT session verification.")
+
+    Container(pubsub, "Cloud Pub/Sub Webhook Gateway", "GCP Cloud Pub/Sub", "Ingests 10s telemetry batches and high-priority emergency webhook payloads scaling to millions of devices.")
+
+    Container(stream_workers, "Stream Processing Workers", "GCP Cloud Run (Go / Dart)", "Processes incoming telemetry streams, computes moving averages, and evaluates AASM apnea/hypopnea rules.")
+
+    ContainerDb(bigtable, "Bio-Signal Time-Series Store", "GCP Cloud Bigtable", "Stores compressed, encrypted high-frequency bio-signal streams (AES-256).")
+
+    ContainerDb(firestore, "Application Database", "Firebase Cloud Firestore", "Stores user profiles, health baselines, device bindings, sleep metrics, and alert queues (AES-256).")
+
+    Container(command_portal, "Emergency Center Web Portal", "React / Next.js Web App", "Real-time WebSocket dashboard displaying unacknowledged apnea stops, patient GPS, and caregiver contact info.")
+
+    Container(clinic_portal, "Clinic & Physician Portal", "React / Next.js Web App", "Web dashboard rendering morning sleep scores, AHI trends, and PDF graph exports.")
+
+    Rel(hardware, mobile_app, "Streams Raw Telemetry Packets (100ms)", "BLE / AES-128")
+    Rel(patient, mobile_app, "Interacts via Touch UI & Passkey Biometrics")
+    Rel(mobile_app, firebase_auth, "Authenticates Session & WebAuthn Credentials", "HTTPS / TLS 1.3")
+    Rel(mobile_app, pubsub, "Posts Telemetry Webhook Batches & Emergency Payloads", "HTTPS / TLS 1.3")
+    Rel(pubsub, stream_workers, "Pushes Ingested Webhook Stream Messages", "gRPC / Push")
+    Rel(stream_workers, bigtable, "Writes Compressed Bio-Signal Time Series", "gRPC")
+    Rel(stream_workers, firestore, "Updates Sleep Session Metrics & Alert Queues", "gRPC")
+    Rel(firestore, command_portal, "Pushes High-Priority Unacknowledged Alerts", "WSS / WebSockets")
+    Rel(firestore, clinic_portal, "Syncs Morning Sleep Reports & AHI Graphs", "HTTPS / REST")
+    Rel(dispatcher, command_portal, "Manages Real-Time Emergency Escalations")
+    Rel(doctor, clinic_portal, "Reviews Patient AHI Trends & Sleep Summaries")
+```
+
+---
+
+## 2. BPMN 2.0 Business Process Model
+
+The business process maps the end-to-end operational lifecycle from bedtime setup to morning doctor report delivery across 5 distinct phases.
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Patient as 👤 Patient at Home
     participant Mobile as 📱 Mobile App (Flutter)
-    participant Cloud as ☁️ GCP / Firebase Telemetry Pipeline
+    participant Cloud as ☁️ GCP / Firebase Cloud Pipeline
     participant Command as 🏢 Emergency Command Center
     actor Doctor as 🩺 Clinic / Physician
 
@@ -72,152 +144,40 @@ sequenceDiagram
 
 ---
 
-### 1.2 Business Capabilities Map (BC-1 to BC-7)
+## 3. BPMN-Derived High-Level Conceptual Data Model
 
-| Capability ID | Business Capability Name | Description | Key Business Service |
-| :--- | :--- | :--- | :--- |
-| **BC-1** | **Patient Identity Governance** | Manages passwordless Passkey (FIDO2) authentication and biometric access. | `AuthenticatePatientService` |
-| **BC-2** | **Pre-Sleep Calibration** | Executes 2-stage noise floor ($N_{\text{idle}}$) & active breath peak ($V_{pp}$) calibration. | `CalibrateBaselineService` |
-| **BC-3** | **Real-Time Telemetry Streaming** | Logs 100ms respiratory stream data and syncs webhooks to GCP Pub/Sub. | `StreamTelemetryService` |
-| **BC-4** | **Two-Tier Emergency Response** | Controls Tier-1 mobile alarms (<200ms) and 30s "I'm Safe" cancellation tokens. | `ManageEmergencyAlertService` |
-| **BC-5** | **Emergency Center Command Gateway** | Broadcasts high-priority alerts to 24/7 Monitoring Centers and Caregiver SMS. | `DispatchEmergencyCenterService` |
-| **BC-6** | **Clinic & Doctor Integration** | Distributes sleep summaries, AHI trends, and health records to attending physicians. | `SyncDoctorClinicService` |
-| **BC-7** | **Hardware Fleet Management** | Binds device hardware IDs to patient accounts and monitors air freight compliance. | `BindDeviceHardwareService` |
-
----
-
-## 2. Process-Aligned Data Architecture
-
-### 2.1 Conceptual Data Model (BPMN Aligned)
+To guarantee that every data requirement generated throughout the BPMN process workflow is fulfilled, the conceptual data model maps directly to each process phase:
 
 ```mermaid
 erDiagram
-    PATIENT_USER ||--o| HEALTH_PROFILE : "has"
-    PATIENT_USER ||--o{ DEVICE_BINDING : "owns"
-    PATIENT_USER ||--o{ SLEEP_SESSION : "records"
-    SLEEP_SESSION ||--o{ TELEMETRY_WEBHOOK_EVENT : "streams"
-    SLEEP_SESSION ||--o{ APNEA_EVENT : "contains"
-    SLEEP_SESSION ||--o{ EMERGENCY_ALERT_QUEUE : "triggers"
-    EMERGENCY_ALERT_QUEUE ||--o| COMMAND_CENTER_DISPATCH : "escalates_to"
-    PATIENT_USER ||--o| CLINIC_PROVIDER_PROFILE : "assigned_to"
-    PATIENT_USER ||--o{ PHI_AUDIT_LOG : "generates"
+    PATIENT_USER ||--o| HEALTH_BASELINE : "Phase_1_Onboarding"
+    PATIENT_USER ||--o{ DEVICE_BINDING : "Phase_1_Device_Pairing"
+    PATIENT_USER ||--o{ SLEEP_SESSION : "Phase_2_Overnight_Logging"
+    SLEEP_SESSION ||--o{ TELEMETRY_STREAM : "Phase_2_Continuous_Webhook"
+    SLEEP_SESSION ||--o{ APNEA_EVENT : "Phase_3_Apnea_Detection"
+    SLEEP_SESSION ||--o{ EMERGENCY_ALERT_QUEUE : "Phase_3_Tier1_and_Tier2_Trigger"
+    EMERGENCY_ALERT_QUEUE ||--o| CARE_DISPATCH_RECORD : "Phase_4_Emergency_Center_Escalation"
+    PATIENT_USER ||--o| CLINIC_DOCTOR_ASSIGNMENT : "Phase_4_and_5_Doctor_Sync"
+    PATIENT_USER ||--o{ PHI_AUDIT_LOG : "All_Phases_HIPAA_Audit"
 ```
 
 ---
 
-### 2.2 Process Data Classification & HIPAA Governance Matrix
+### 3.1 Traceability Matrix: BPMN Process Data Requirements $\rightarrow$ Conceptual Entities
 
-| Entity & Attribute | Classification Level | HIPAA Category | Storage & Transport Encryption | Access Control Policy |
+| BPMN Process Phase | Data Produced / Transformed in Workflow | Derived Conceptual Entity | Key Data Attributes | HIPAA Safeguard Level |
 | :--- | :--- | :--- | :--- | :--- |
-| `user_profile.full_name` | **Level 1 — Direct PHI** | Identity | AES-256 (Rest) / TLS 1.3 (Transit) | Firestore Security Rules (`auth.uid == userId`) |
-| `user_profile.phone` | **Level 1 — Direct PHI** | Endpoint | AES-256 (Rest) / TLS 1.3 (Transit) | Firestore Security Rules |
-| `health_profile.*` | **Level 1 — Direct PHI** | Health Baseline | AES-256 Column Encryption | Firestore Rules + Doctor Share Token |
-| `telemetry_webhook_event.payload` | **Level 1 — Direct PHI** | Bio-Signals | Compressed AES-256 Encrypted Blob | GCP Pub/Sub IAM + KMS Key |
-| `emergency_alert_queue.location` | **Level 1 — Direct PHI** | GPS / Address | AES-256 Encryption | Emergency Center Role-Based Access (RBAC) |
-| `clinic_provider.doctor_npi` | **Level 2 — PII** | Provider ID | Standard Database Column | Clinic Dashboard IAM |
-| `command_center_dispatch.*` | **Level 2 — Operational** | Dispatch Audit | Immutable Write-Once Log | Compliance Administrator Only |
+| **Phase 1: Onboarding & Calibration** | Passkey FIDO2 token, age, weight, height, computed BMI, $N_{\text{idle}}$ noise floor, $V_{pp}$ breath baseline, BLE MAC address. | `PATIENT_USER`, `HEALTH_BASELINE`, `DEVICE_BINDING` | `user_id`, `passkey_credential_id`, `age`, `weight_kg`, `height_cm`, `computed_bmi`, `idle_noise_floor`, `device_hardware_id`, `ble_mac`. | **Level 1 (PHI)** — AES-256 Encryption at Rest. |
+| **Phase 2: Overnight Telemetry** | 100ms raw airflow samples, 10s webhook stream batch, sequence number, heartbeats, battery level. | `SLEEP_SESSION`, `TELEMETRY_STREAM` | `session_id`, `user_id`, `start_time`, `sequence_num`, `net_airflow_samples`, `compressed_bio_signals`, `battery_pct`. | **Level 1 (PHI)** — Compressed AES-256 Time-Series Blob. |
+| **Phase 3: Apnea & Tier-1 Alarm** | Airflow stop timestamp, apnea duration (>10s), peak-to-trough breach margin, 30s cancellation token, "I'm Safe" tap timestamp. | `APNEA_EVENT`, `EMERGENCY_ALERT_QUEUE` | `event_id`, `session_id`, `triggered_at`, `apnea_duration_seconds`, `patient_acknowledged`, `cancellation_token_id`. | **Level 1 (PHI)** — Real-Time Alert Event Queue. |
+| **Phase 4: Emergency Center & Caregiver** | GPS coordinates, address, emergency contact phone, dispatcher action log, SMS/Voice call dispatch timestamp, EMS status. | `CARE_DISPATCH_RECORD`, `CLINIC_DOCTOR_ASSIGNMENT` | `dispatch_id`, `alert_id`, `dispatcher_id`, `caregiver_phone`, `gps_lat_long`, `ems_dispatched`, `doctor_npi`. | **Level 1 (PHI)** — Role-Based Access Control (RBAC). |
+| **Phase 5: Morning Analytics & Doctor** | Session end time, total sleep duration, final AHI score, total apnea stops, quality score (0–100), doctor share payload. | `SLEEP_SESSION`, `CLINIC_DOCTOR_ASSIGNMENT` | `end_time`, `total_duration_hours`, `ahi_score`, `quality_score`, `doctor_share_token_id`. | **Level 1 (PHI)** — HL7 FHIR Export Stream. |
+| **All Phases** | User ID, action performed, accessed table/entity, IP address, timestamp. | `PHI_AUDIT_LOG` | `audit_id`, `user_id`, `action_type`, `accessed_entity`, `ip_address`, `timestamp`. | **Level 2 (Audit)** — Immutable Write-Once Log. |
 
 ---
 
-### 2.3 Application Data Model (Scale & Webhook Entities)
+## 4. Architectural Summary
 
-```mermaid
-classDiagram
-    class TelemetryWebhookPayload {
-        +String session_id
-        +String user_id
-        +String device_hardware_id
-        +int sequence_number
-        +double current_net_airflow
-        +int current_bpm
-        +byte[] raw_samples_compressed
-        +DateTime timestamp
-    }
-
-    class EmergencyAlertQueueEntity {
-        +String alert_id
-        +String session_id
-        +String user_id
-        +DateTime triggered_at
-        +int duration_seconds
-        +String alert_priority
-        +boolean patient_acknowledged
-        +String status
-    }
-
-    class CommandCenterDispatchEntity {
-        +String dispatch_id
-        +String alert_id
-        +String dispatcher_id
-        +String assigned_clinic_id
-        +DateTime dispatched_at
-        +String action_taken
-    }
-
-    class ClinicProviderEntity {
-        +String clinic_id
-        +String doctor_name
-        +String doctor_npi_number
-        +String clinic_phone
-        +List~String~ assigned_patient_ids
-    }
-
-    TelemetryWebhookPayload "1" -- "1" EmergencyAlertQueueEntity
-    EmergencyAlertQueueEntity "1" -- "1" CommandCenterDispatchEntity
-    CommandCenterDispatchEntity "1" -- "1" ClinicProviderEntity
-```
-
----
-
-## 3. Application & GCP/Firebase Cloud Architecture (Scale to Millions)
-
-To support **hundreds of thousands or millions of concurrent devices** streaming telemetry continuously overnight, the cloud architecture utilizes a highly scalable, serverless Google Cloud Platform (GCP) and Firebase infrastructure:
-
-```mermaid
-graph TD
-    subgraph MobileApp ["📱 Mobile Application Layer (Flutter)"]
-        BLE[Small Breathing Device] -->|GATT Stream 100ms| AppEngine[Flutter App Engine]
-        AppEngine -->|1. Passkey Auth| FirebaseAuth[Firebase Auth & WebAuthn]
-        AppEngine -->|2. 10s Telemetry Webhook| CloudPubSub[GCP Cloud Pub/Sub Topic: respiratory-telemetry-stream]
-        AppEngine -->|3. High-Priority Alert Webhook| AlertPubSub[GCP Cloud Pub/Sub Topic: emergency-alerts-high-priority]
-    end
-
-    subgraph GCP_Core ["☁️ GCP Serverless Stream Processing Layer"]
-        CloudPubSub -->|Push Subscription| CloudRunTelemetry[GCP Cloud Run Worker Pool]
-        CloudRunTelemetry -->|Batch Write Compressed Stream| Bigtable[(GCP Cloud Bigtable / Firebase Firestore)]
-        
-        AlertPubSub -->|Immediate Event Push| CloudRunEmergency[GCP Cloud Run Emergency Dispatch Engine]
-        CloudRunEmergency -->|Store Alert Record| FirestoreAlerts[(Firebase Cloud Firestore: emergency_alerts)]
-        CloudRunEmergency -->|Trigger Webhook| Eventarc[GCP Eventarc / Cloud Tasks]
-    end
-
-    subgraph Alert_Dispatch ["🏢 Emergency Center & Clinic Distribution Engine"]
-        Eventarc -->|Sub-1.5s WSS / SSE Broadcast| EmergencyDashboard[24/7 Emergency Command Center Web Portal]
-        Eventarc -->|Twilio / AWS SNS API| CaregiverPhone[Caregiver SMS & Voice Phone Call]
-        EmergencyDashboard -->|Direct EHR / HL7 FHIR Sync| ClinicPortal[Clinic & Physician Web Portal]
-    end
-```
-
----
-
-### 3.1 Webhook & Telemetry Streaming Invariants
-
-1. **High-Throughput Webhook Ingestion (GCP Cloud Pub/Sub):**
-   - Telemetry batches are sent every 10 seconds per active app session via HTTPS POST webhooks (`POST /api/v1/telemetry/stream`) into GCP Cloud Pub/Sub topic `respiratory-telemetry-stream`.
-   - Pub/Sub handles auto-scaling up to **10 million requests per second** with sub-100ms ingestion latency.
-2. **Real-Time Database Tier (GCP Cloud Bigtable & Firebase Firestore):**
-   - High-frequency bio-signal time series are stored in **GCP Cloud Bigtable** (optimized for massive time-series analytics).
-   - Sleep session metrics, patient profiles, and emergency alert queues are stored in **Firebase Cloud Firestore** with real-time WebSocket listeners.
-3. **Emergency Command Center Dashboard Integration:**
-   - 24/7 Emergency Centers connect to the platform via WebSockets (`wss://emergency.sleepapnea.health/stream`).
-   - Unacknowledged 30-second apnea alarms automatically pop up on command center maps with patient GPS coordinates, health profile, and emergency contacts.
-4. **Clinic & Doctor Notification Pipeline:**
-   - When an emergency dispatch occurs or a morning sleep report is generated, GCP Eventarc triggers a webhook notification to assigned clinic portals and physician email/SMS endpoints.
-
----
-
-## 4. Summary of Architecture Invariants
-
-* **Business Architecture:** Complete BPMN 2.0 5-phase workflow linking Patient $\rightarrow$ App $\rightarrow$ GCP $\rightarrow$ Emergency Command Center $\rightarrow$ Doctor.
-* **Data Architecture:** Process-aligned data entities with explicit HIPAA Level 1 (PHI) vs. Level 2 (PII) data classification.
-* **Cloud Architecture:** Fully decoupled, serverless **GCP & Firebase engine** built to scale to millions of devices using Cloud Pub/Sub, Cloud Run, Firestore, Bigtable, and real-time command center webhooks.
+* **C4 Architecture Model:** Fully articulates C4 Level 1 (System Context) and C4 Level 2 (Container Diagram) showing Flutter App, BLE Hardware, Firebase Auth, GCP Pub/Sub, Cloud Run, Bigtable, Firestore, Emergency Center Web Portals, and Clinic Portals.
+* **BPMN 2.0 Process Model:** Complete 5-phase operational workflow linking Patient $\rightarrow$ Mobile App $\rightarrow$ GCP Cloud $\rightarrow$ 24/7 Command Center $\rightarrow$ Doctor.
+* **Conceptual Data Model:** 100% traceable to every data requirement generated across the BPMN process workflow, fully categorized under HIPAA Level 1 (PHI) and Level 2 (PII) safeguards.
