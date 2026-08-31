@@ -1,7 +1,7 @@
 ---
-title: Enterprise Architecture Specification — C4 Models, BPMN & Conceptual Data Architecture
+title: Enterprise Architecture Specification — C4 Models, BPMN & PlantUML Data Architecture
 status: final
-version: 4.0.0
+version: 5.0.0
 created: 2026-08-31
 updated: 2026-08-31
 author: Winston (System Architect) & Mary (Business Analyst)
@@ -10,16 +10,14 @@ author: Winston (System Architect) & Mary (Business Analyst)
 # 🏛️ Enterprise Architecture Specification
 ## Sleep Apnea Detection App & Emergency Command Platform
 
-> **Architecture Framework:** C4 Model (Context & Container) + BPMN 2.0 Process Modeling + Conceptual Data Architecture  
+> **Architecture Framework:** C4 Model (Level 1 Context & Level 2 Container) + BPMN 2.0 Process Model + PlantUML Conceptual Data Architecture  
 > **Target Scope:** Global Platform Scaling to Millions of Concurrent Devices  
 
 ---
 
-## 1. C4 Architecture Model
+## 1. 📐 C4 Architecture Model
 
 ### 1.1 C4 Level 1: System Context Diagram
-
-The System Context diagram illustrates the high-level boundary of the **Sleep Apnea Detection Platform** and its interactions with human actors and external enterprise systems.
 
 ```mermaid
 C4Context
@@ -46,8 +44,6 @@ C4Context
 ---
 
 ### 1.2 C4 Level 2: Container Diagram
-
-The Container diagram decomposes the system into executable applications, data stores, stream processing workers, and web portals.
 
 ```mermaid
 C4Container
@@ -90,9 +86,9 @@ C4Container
 
 ---
 
-## 2. BPMN 2.0 Business Process Model
+## 2. 🔄 BPMN 2.0 Business Process Model
 
-The business process maps the end-to-end operational lifecycle from bedtime setup to morning doctor report delivery across 5 distinct phases.
+The business process connects four primary participant pools: **Patient at Home**, **Mobile App Engine**, **GCP/Firebase Ingestion Engine**, and **Emergency Command Center & Clinic Specialists**.
 
 ```mermaid
 sequenceDiagram
@@ -144,40 +140,148 @@ sequenceDiagram
 
 ---
 
-## 3. BPMN-Derived High-Level Conceptual Data Model
+## 3. 🗄️ PlantUML Conceptual Data Model (BPMN Aligned)
 
-To guarantee that every data requirement generated throughout the BPMN process workflow is fulfilled, the conceptual data model maps directly to each process phase:
+The high-level Conceptual Data Model is specified below in **PlantUML Class Diagram & ERD syntax**, mapping directly to the data produced across all 5 phases of the BPMN process model:
 
-```mermaid
-erDiagram
-    PATIENT_USER ||--o| HEALTH_BASELINE : "Phase_1_Onboarding"
-    PATIENT_USER ||--o{ DEVICE_BINDING : "Phase_1_Device_Pairing"
-    PATIENT_USER ||--o{ SLEEP_SESSION : "Phase_2_Overnight_Logging"
-    SLEEP_SESSION ||--o{ TELEMETRY_STREAM : "Phase_2_Continuous_Webhook"
-    SLEEP_SESSION ||--o{ APNEA_EVENT : "Phase_3_Apnea_Detection"
-    SLEEP_SESSION ||--o{ EMERGENCY_ALERT_QUEUE : "Phase_3_Tier1_and_Tier2_Trigger"
-    EMERGENCY_ALERT_QUEUE ||--o| CARE_DISPATCH_RECORD : "Phase_4_Emergency_Center_Escalation"
-    PATIENT_USER ||--o| CLINIC_DOCTOR_ASSIGNMENT : "Phase_4_and_5_Doctor_Sync"
-    PATIENT_USER ||--o{ PHI_AUDIT_LOG : "All_Phases_HIPAA_Audit"
+```plantuml
+@startuml Conceptual_Data_Model_PlantUML
+skinparam classAttributeIconSize 0
+skinparam backgroundColor #F9F9F9
+skinparam class {
+    BackgroundColor White
+    ArrowColor #2C3E50
+    BorderColor #2C3E50
+}
+
+package "BPMN Phase 1: Onboarding & Calibration" {
+    class PatientUser << (E,#41B883) Level 1 PHI >> {
+        + String user_id {PK}
+        + String passkey_credential_id
+        + String encrypted_full_name
+        + String encrypted_phone
+        + DateTime registered_at
+    }
+
+    class HealthBaseline << (E,#41B883) Level 1 PHI >> {
+        + String baseline_id {PK}
+        + String user_id {FK}
+        + int age
+        + String gender
+        + double weight_kg
+        + double height_cm
+        + double computed_bmi
+        + double idle_noise_floor
+    }
+
+    class DeviceBinding << (E,#3498DB) Level 2 PII >> {
+        + String binding_id {PK}
+        + String user_id {FK}
+        + String device_hardware_id
+        + String ble_mac_address
+        + String status
+        + DateTime bound_at
+    }
+}
+
+package "BPMN Phase 2 & 3: Telemetry & Apnea Detection" {
+    class SleepSession << (E,#41B883) Level 1 PHI >> {
+        + String session_id {PK}
+        + String user_id {FK}
+        + DateTime start_time
+        + DateTime end_time
+        + double ahi_score
+        + int total_apnea_events
+        + int quality_score
+    }
+
+    class TelemetryStream << (E,#41B883) Level 1 PHI >> {
+        + String stream_id {PK}
+        + String session_id {FK}
+        + int sequence_number
+        + byte[] compressed_bio_signals
+        + int battery_pct
+        + DateTime timestamp
+    }
+
+    class ApneaEvent << (E,#E74C3C) Level 1 PHI >> {
+        + String event_id {PK}
+        + String session_id {FK}
+        + DateTime triggered_at
+        + int apnea_duration_seconds
+        + double threshold_breach_margin
+    }
+
+    class EmergencyAlertQueue << (E,#E74C3C) Level 1 PHI >> {
+        + String alert_id {PK}
+        + String session_id {FK}
+        + String cancellation_token_id
+        + boolean patient_acknowledged
+        + String alert_priority
+        + DateTime timeout_at
+    }
+}
+
+package "BPMN Phase 4 & 5: Escalation & Doctor Sync" {
+    class CareDispatchRecord << (E,#E74C3C) Level 1 PHI >> {
+        + String dispatch_id {PK}
+        + String alert_id {FK}
+        + String dispatcher_id
+        + String caregiver_phone
+        + String gps_location
+        + boolean ems_dispatched
+        + DateTime dispatched_at
+    }
+
+    class ClinicDoctorAssignment << (E,#3498DB) Level 2 PII >> {
+        + String assignment_id {PK}
+        + String user_id {FK}
+        + String clinic_id
+        + String doctor_npi_number
+        + String doctor_name
+    }
+
+    class PhiAuditLog << (E,#95A5A6) Audit Level 2 >> {
+        + String audit_id {PK}
+        + String user_id {FK}
+        + String action_type
+        + String accessed_entity
+        + String ip_address
+        + DateTime timestamp
+    }
+}
+
+' Relationships
+PatientUser "1" -- "1" HealthBaseline : possesses >
+PatientUser "1" -- "*" DeviceBinding : owns >
+PatientUser "1" -- "*" SleepSession : records >
+SleepSession "1" -- "*" TelemetryStream : streams >
+SleepSession "1" -- "*" ApneaEvent : flags >
+SleepSession "1" -- "*" EmergencyAlertQueue : triggers >
+EmergencyAlertQueue "1" -- "0..1" CareDispatchRecord : escalates >
+PatientUser "1" -- "*" ClinicDoctorAssignment : assigned_to >
+PatientUser "1" -- "*" PhiAuditLog : generates >
+
+@enduml
 ```
 
 ---
 
-### 3.1 Traceability Matrix: BPMN Process Data Requirements $\rightarrow$ Conceptual Entities
+### 3.1 Data Traceability Matrix: BPMN Process Data Requirements $\rightarrow$ PlantUML Entities
 
-| BPMN Process Phase | Data Produced / Transformed in Workflow | Derived Conceptual Entity | Key Data Attributes | HIPAA Safeguard Level |
+| BPMN Process Phase | Data Produced / Transformed in Workflow | Derived PlantUML Conceptual Entity | Key Data Attributes | HIPAA Safeguard Level |
 | :--- | :--- | :--- | :--- | :--- |
-| **Phase 1: Onboarding & Calibration** | Passkey FIDO2 token, age, weight, height, computed BMI, $N_{\text{idle}}$ noise floor, $V_{pp}$ breath baseline, BLE MAC address. | `PATIENT_USER`, `HEALTH_BASELINE`, `DEVICE_BINDING` | `user_id`, `passkey_credential_id`, `age`, `weight_kg`, `height_cm`, `computed_bmi`, `idle_noise_floor`, `device_hardware_id`, `ble_mac`. | **Level 1 (PHI)** — AES-256 Encryption at Rest. |
-| **Phase 2: Overnight Telemetry** | 100ms raw airflow samples, 10s webhook stream batch, sequence number, heartbeats, battery level. | `SLEEP_SESSION`, `TELEMETRY_STREAM` | `session_id`, `user_id`, `start_time`, `sequence_num`, `net_airflow_samples`, `compressed_bio_signals`, `battery_pct`. | **Level 1 (PHI)** — Compressed AES-256 Time-Series Blob. |
-| **Phase 3: Apnea & Tier-1 Alarm** | Airflow stop timestamp, apnea duration (>10s), peak-to-trough breach margin, 30s cancellation token, "I'm Safe" tap timestamp. | `APNEA_EVENT`, `EMERGENCY_ALERT_QUEUE` | `event_id`, `session_id`, `triggered_at`, `apnea_duration_seconds`, `patient_acknowledged`, `cancellation_token_id`. | **Level 1 (PHI)** — Real-Time Alert Event Queue. |
-| **Phase 4: Emergency Center & Caregiver** | GPS coordinates, address, emergency contact phone, dispatcher action log, SMS/Voice call dispatch timestamp, EMS status. | `CARE_DISPATCH_RECORD`, `CLINIC_DOCTOR_ASSIGNMENT` | `dispatch_id`, `alert_id`, `dispatcher_id`, `caregiver_phone`, `gps_lat_long`, `ems_dispatched`, `doctor_npi`. | **Level 1 (PHI)** — Role-Based Access Control (RBAC). |
-| **Phase 5: Morning Analytics & Doctor** | Session end time, total sleep duration, final AHI score, total apnea stops, quality score (0–100), doctor share payload. | `SLEEP_SESSION`, `CLINIC_DOCTOR_ASSIGNMENT` | `end_time`, `total_duration_hours`, `ahi_score`, `quality_score`, `doctor_share_token_id`. | **Level 1 (PHI)** — HL7 FHIR Export Stream. |
-| **All Phases** | User ID, action performed, accessed table/entity, IP address, timestamp. | `PHI_AUDIT_LOG` | `audit_id`, `user_id`, `action_type`, `accessed_entity`, `ip_address`, `timestamp`. | **Level 2 (Audit)** — Immutable Write-Once Log. |
+| **Phase 1: Onboarding & Calibration** | Passkey FIDO2 token, age, weight, height, computed BMI, $N_{\text{idle}}$ noise floor, $V_{pp}$ breath baseline, BLE MAC address. | `PatientUser`, `HealthBaseline`, `DeviceBinding` | `user_id`, `passkey_credential_id`, `age`, `weight_kg`, `height_cm`, `computed_bmi`, `idle_noise_floor`, `device_hardware_id`. | **Level 1 (PHI)** — AES-256 Encryption at Rest. |
+| **Phase 2: Overnight Telemetry** | 100ms raw airflow samples, 10s webhook stream batch, sequence number, heartbeats, battery level. | `SleepSession`, `TelemetryStream` | `session_id`, `user_id`, `start_time`, `sequence_number`, `compressed_bio_signals`, `battery_pct`. | **Level 1 (PHI)** — Compressed AES-256 Time-Series Blob. |
+| **Phase 3: Apnea & Tier-1 Alarm** | Airflow stop timestamp, apnea duration (>10s), peak-to-trough breach margin, 30s cancellation token, "I'm Safe" tap timestamp. | `ApneaEvent`, `EmergencyAlertQueue` | `event_id`, `session_id`, `triggered_at`, `apnea_duration_seconds`, `patient_acknowledged`, `cancellation_token_id`. | **Level 1 (PHI)** — Real-Time Alert Event Queue. |
+| **Phase 4: Emergency Center & Caregiver** | GPS coordinates, address, emergency contact phone, dispatcher action log, SMS/Voice call dispatch timestamp, EMS status. | `CareDispatchRecord`, `ClinicDoctorAssignment` | `dispatch_id`, `alert_id`, `dispatcher_id`, `caregiver_phone`, `gps_location`, `ems_dispatched`, `doctor_npi_number`. | **Level 1 (PHI)** — Role-Based Access Control (RBAC). |
+| **Phase 5: Morning Analytics & Doctor** | Session end time, total sleep duration, final AHI score, total apnea stops, quality score (0–100), doctor share payload. | `SleepSession`, `ClinicDoctorAssignment` | `end_time`, `total_duration_hours`, `ahi_score`, `quality_score`, `doctor_npi_number`. | **Level 1 (PHI)** — HL7 FHIR Export Stream. |
+| **All Phases** | User ID, action performed, accessed table/entity, IP address, timestamp. | `PhiAuditLog` | `audit_id`, `user_id`, `action_type`, `accessed_entity`, `ip_address`, `timestamp`. | **Level 2 (Audit)** — Immutable Write-Once Log. |
 
 ---
 
-## 4. Architectural Summary
+## 4. 🏁 Architectural Summary
 
-* **C4 Architecture Model:** Fully articulates C4 Level 1 (System Context) and C4 Level 2 (Container Diagram) showing Flutter App, BLE Hardware, Firebase Auth, GCP Pub/Sub, Cloud Run, Bigtable, Firestore, Emergency Center Web Portals, and Clinic Portals.
+* **C4 Architecture Model:** C4 Level 1 Context Diagram & C4 Level 2 Container Diagram showing interactions between Flutter Mobile App, BLE Device, Firebase Auth, GCP Pub/Sub, Cloud Run Stream Workers, Cloud Bigtable, Cloud Firestore, Emergency Center Portals, and Clinic Portals.
 * **BPMN 2.0 Process Model:** Complete 5-phase operational workflow linking Patient $\rightarrow$ Mobile App $\rightarrow$ GCP Cloud $\rightarrow$ 24/7 Command Center $\rightarrow$ Doctor.
-* **Conceptual Data Model:** 100% traceable to every data requirement generated across the BPMN process workflow, fully categorized under HIPAA Level 1 (PHI) and Level 2 (PII) safeguards.
+* **PlantUML Conceptual Data Model:** PlantUML `@startuml` class diagram establishing all entities, PK/FK attributes, relationships, and HIPAA Level 1 (PHI) vs. Level 2 (PII) data classification.
