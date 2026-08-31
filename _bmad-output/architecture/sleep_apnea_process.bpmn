@@ -1,19 +1,92 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_SleepApneaProcess" targetNamespace="http://bpmn.io/schema/bpmn" exporter="BPMN.js Model Platform" exporterVersion="11.0.0">
   <bpmn:collaboration id="Collaboration_SleepApnea">
-    <bpmn:participant id="Participant_Patient" name="Patient at Home" processRef="Process_Patient" />
-    <bpmn:participant id="Participant_MobileApp" name="Mobile Application Engine" processRef="Process_MobileApp" />
-    <bpmn:participant id="Participant_CloudEngine" name="Cloud Services &#38; Event Processing Engine" processRef="Process_CloudEngine" />
-    <bpmn:participant id="Participant_EmergencyCenter" name="24/7 Emergency Command Center &#38; Clinic" processRef="Process_EmergencyCenter" />
-    <bpmn:messageFlow id="Flow_BLE_Stream" name="100ms BLE Telemetry Stream" sourceRef="Task_SleepMonitoring" targetRef="Task_StreamWebhooks" />
-    <bpmn:messageFlow id="Flow_Webhook_Stream" name="10s Batch Telemetry Webhook" sourceRef="Task_StreamWebhooks" targetRef="Task_PubSubIngest" />
-    <bpmn:messageFlow id="Flow_Emergency_Dispatch" name="High-Priority Emergency Payload" sourceRef="Task_SendEmergencyWebhook" targetRef="Task_QueueEmergency" />
-    <bpmn:messageFlow id="Flow_Command_WSS" name="Sub-1.5s WSS Dashboard Alert" sourceRef="Task_BroadcastCommand" targetRef="Task_DashboardAlert" />
+    <bpmn:participant id="Participant_Onboarding" name="Patient Onboarding" processRef="Process_Onboarding" />
+    <bpmn:participant id="Participant_Backoffice" name="Backoffice Operations" processRef="Process_Backoffice" />
+    <bpmn:participant id="Participant_Patient" name="Patient Sleep Operations" processRef="Process_Patient" />
+    <bpmn:participant id="Participant_EmergencyCenter" name="Emergency Center" processRef="Process_EmergencyCenter" />
+    <bpmn:participant id="Participant_Clinic" name="Clinic &#38; Physician [Future]" processRef="Process_Clinic" />
+    
+    <bpmn:messageFlow id="Flow_Registration_Backoffice" name="Patient Profile &#38; Device Serial" sourceRef="Task_CreateUserProfile" targetRef="Task_VerifyPatientIdentity" />
+    <bpmn:messageFlow id="Flow_Passkey_Auth" name="Registered Passkey Credential" sourceRef="Task_RegisterPasskey" targetRef="Task_PasskeyAuth" />
+    <bpmn:messageFlow id="Flow_Emergency_Dispatch" name="30s Unacknowledged Alarm Push" sourceRef="Task_SleepMonitoring" targetRef="Task_DashboardAlert" />
+    <bpmn:messageFlow id="Flow_Morning_Sync" name="Morning Sleep Summary &#38; AHI Score" sourceRef="Task_EndSession" targetRef="Task_DoctorSync" />
   </bpmn:collaboration>
 
+  <!-- SWIMLANE 1: PATIENT ONBOARDING -->
+  <bpmn:process id="Process_Onboarding" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_Onboarding">
+      <bpmn:lane id="Lane_PatientOnboarding" name="Patient Onboarding">
+        <bpmn:flowNodeRef>Start_Onboarding</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_PatientRegister</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CreateUserProfile</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RegisterPasskey</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_OnboardingComplete</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_Onboarding" name="Start: First App Launch">
+      <bpmn:outgoing>Flow_O1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_PatientRegister" name="Register Patient Account">
+      <bpmn:incoming>Flow_O1</bpmn:incoming>
+      <bpmn:outgoing>Flow_O1b</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_CreateUserProfile" name="Create Patient Medical Profile">
+      <bpmn:incoming>Flow_O1b</bpmn:incoming>
+      <bpmn:outgoing>Flow_O2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_RegisterPasskey" name="Register &#38; Enroll FIDO2 Passkey">
+      <bpmn:incoming>Flow_O2</bpmn:incoming>
+      <bpmn:outgoing>Flow_O3</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_OnboardingComplete" name="End: Profile &#38; Passkey Created">
+      <bpmn:incoming>Flow_O3</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_O1" sourceRef="Start_Onboarding" targetRef="Task_PatientRegister" />
+    <bpmn:sequenceFlow id="Flow_O1b" sourceRef="Task_PatientRegister" targetRef="Task_CreateUserProfile" />
+    <bpmn:sequenceFlow id="Flow_O2" sourceRef="Task_CreateUserProfile" targetRef="Task_RegisterPasskey" />
+    <bpmn:sequenceFlow id="Flow_O3" sourceRef="Task_RegisterPasskey" targetRef="End_OnboardingComplete" />
+  </bpmn:process>
+
+  <!-- SWIMLANE 2: BACKOFFICE OPERATIONS -->
+  <bpmn:process id="Process_Backoffice" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_Backoffice">
+      <bpmn:lane id="Lane_BackofficePlatform" name="Backoffice Operations">
+        <bpmn:flowNodeRef>Start_Backoffice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_VerifyPatientIdentity</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_BindMedicalDevice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_LockEmergencyContacts</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_BackofficeComplete</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_Backoffice" name="Start: Registration Trigger">
+      <bpmn:outgoing>Flow_B1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_VerifyPatientIdentity" name="Verify Patient Identity &#38; Eligibility">
+      <bpmn:incoming>Flow_B1</bpmn:incoming>
+      <bpmn:outgoing>Flow_B2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_BindMedicalDevice" name="Pair &#38; Bind Hardware Sensor Serial">
+      <bpmn:incoming>Flow_B2</bpmn:incoming>
+      <bpmn:outgoing>Flow_B3</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_LockEmergencyContacts" name="Lock Caregiver Emergency Contacts">
+      <bpmn:incoming>Flow_B3</bpmn:incoming>
+      <bpmn:outgoing>Flow_B4</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_BackofficeComplete" name="End: Account Provisioned">
+      <bpmn:incoming>Flow_B4</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_B1" sourceRef="Start_Backoffice" targetRef="Task_VerifyPatientIdentity" />
+    <bpmn:sequenceFlow id="Flow_B2" sourceRef="Task_VerifyPatientIdentity" targetRef="Task_BindMedicalDevice" />
+    <bpmn:sequenceFlow id="Flow_B3" sourceRef="Task_BindMedicalDevice" targetRef="Task_LockEmergencyContacts" />
+    <bpmn:sequenceFlow id="Flow_B4" sourceRef="Task_LockEmergencyContacts" targetRef="End_BackofficeComplete" />
+  </bpmn:process>
+
+  <!-- SWIMLANE 3: PATIENT SLEEP OPERATIONS -->
   <bpmn:process id="Process_Patient" isExecutable="true">
     <bpmn:laneSet id="LaneSet_Patient">
-      <bpmn:lane id="Lane_PatientAtHome" name="Patient at Home">
+      <bpmn:lane id="Lane_PatientAtHome" name="Patient Sleep Operations">
         <bpmn:flowNodeRef>Start_Bedtime</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Task_PasskeyAuth</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Task_Stage1Cal</bpmn:flowNodeRef>
@@ -27,22 +100,22 @@
         <bpmn:flowNodeRef>End_SessionComplete</bpmn:flowNodeRef>
       </bpmn:lane>
     </bpmn:laneSet>
-    <bpmn:startEvent id="Start_Bedtime" name="Start: Bedtime Onboarding">
+    <bpmn:startEvent id="Start_Bedtime" name="Start: Bedtime Session">
       <bpmn:outgoing>Flow_P1</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:userTask id="Task_PasskeyAuth" name="1.1 Authenticate via Passkey (FIDO2)">
+    <bpmn:userTask id="Task_PasskeyAuth" name="Authenticate via Passkey (FIDO2)">
       <bpmn:incoming>Flow_P1</bpmn:incoming>
       <bpmn:outgoing>Flow_P2</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:userTask id="Task_Stage1Cal" name="1.2 Execute Stage 1 Idle Noise Calibration">
+    <bpmn:userTask id="Task_Stage1Cal" name="Execute Stage 1 Idle Noise Calibration">
       <bpmn:incoming>Flow_P2</bpmn:incoming>
       <bpmn:outgoing>Flow_P3</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:userTask id="Task_Stage2Cal" name="1.3 Execute Stage 2 Active Breath Calibration">
+    <bpmn:userTask id="Task_Stage2Cal" name="Execute Stage 2 Active Breath Calibration">
       <bpmn:incoming>Flow_P3</bpmn:incoming>
       <bpmn:outgoing>Flow_P4</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:userTask id="Task_SleepMonitoring" name="1.4 Sleep with Device Attached">
+    <bpmn:userTask id="Task_SleepMonitoring" name="Sleep with Device Attached">
       <bpmn:incoming>Flow_P4</bpmn:incoming>
       <bpmn:incoming>Flow_AlarmNo</bpmn:incoming>
       <bpmn:outgoing>Flow_P5</bpmn:outgoing>
@@ -59,7 +132,7 @@
       <bpmn:outgoing>Flow_AwakeNo</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="Flow_AlarmYes" name="Yes" sourceRef="Gateway_Tier1Alarm" targetRef="Gateway_PatientAwake" />
-    <bpmn:userTask id="Task_TapSafe" name="1.5 Tap &#39;I&#39;m Safe&#39; Button">
+    <bpmn:userTask id="Task_TapSafe" name="Tap &#39;I&#39;m Safe&#39; Button">
       <bpmn:incoming>Flow_AwakeYes</bpmn:incoming>
       <bpmn:outgoing>Flow_P6</bpmn:outgoing>
     </bpmn:userTask>
@@ -68,7 +141,7 @@
       <bpmn:incoming>Flow_AwakeNo</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_AwakeNo" name="No (30s Timeout)" sourceRef="Gateway_PatientAwake" targetRef="End_Escalated" />
-    <bpmn:userTask id="Task_EndSession" name="1.6 Tap &#39;End Sleep Session&#39;">
+    <bpmn:userTask id="Task_EndSession" name="Tap &#39;End Sleep Session&#39;">
       <bpmn:incoming>Flow_P6</bpmn:incoming>
       <bpmn:outgoing>Flow_P7</bpmn:outgoing>
     </bpmn:userTask>
@@ -84,348 +157,83 @@
     <bpmn:sequenceFlow id="Flow_P7" sourceRef="Task_EndSession" targetRef="End_SessionComplete" />
   </bpmn:process>
 
-  <bpmn:process id="Process_MobileApp" isExecutable="true">
-    <bpmn:laneSet id="LaneSet_MobileApp">
-      <bpmn:lane id="Lane_MobileAppEngine" name="Mobile Application Engine">
-        <bpmn:flowNodeRef>Start_AppSession</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Task_RegisterSession</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Task_StreamWebhooks</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Gateway_AirflowBreach</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Task_TriggerAlarm</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Task_SpawnTimer</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Task_SendEmergencyWebhook</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>End_AppAlarm</bpmn:flowNodeRef>
-      </bpmn:lane>
-    </bpmn:laneSet>
-    <bpmn:startEvent id="Start_AppSession" name="App Initialized">
-      <bpmn:outgoing>Flow_M1</bpmn:outgoing>
-    </bpmn:startEvent>
-    <bpmn:serviceTask id="Task_RegisterSession" name="2.1 Register Session &#38; Baseline Payload">
-      <bpmn:incoming>Flow_M1</bpmn:incoming>
-      <bpmn:outgoing>Flow_M2</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:serviceTask id="Task_StreamWebhooks" name="2.2 Stream 10s Respiratory Webhook Batches">
-      <bpmn:incoming>Flow_M2</bpmn:incoming>
-      <bpmn:incoming>Flow_BreachNo</bpmn:incoming>
-      <bpmn:outgoing>Flow_M3</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:exclusiveGateway id="Gateway_AirflowBreach" name="Airflow Stop &#62; 10s?">
-      <bpmn:incoming>Flow_M3</bpmn:incoming>
-      <bpmn:outgoing>Flow_BreachNo</bpmn:outgoing>
-      <bpmn:outgoing>Flow_BreachYes</bpmn:outgoing>
-    </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="Flow_BreachNo" name="No" sourceRef="Gateway_AirflowBreach" targetRef="Task_StreamWebhooks" />
-    <bpmn:serviceTask id="Task_TriggerAlarm" name="2.3 Trigger Tier-1 Audio &#38; Haptics (&#60;200ms)">
-      <bpmn:incoming>Flow_BreachYes</bpmn:incoming>
-      <bpmn:outgoing>Flow_M4</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:sequenceFlow id="Flow_BreachYes" name="Yes" sourceRef="Gateway_AirflowBreach" targetRef="Task_TriggerAlarm" />
-    <bpmn:serviceTask id="Task_SpawnTimer" name="2.4 Spawn 30s Cancellation Token Timer">
-      <bpmn:incoming>Flow_M4</bpmn:incoming>
-      <bpmn:outgoing>Flow_M5</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:serviceTask id="Task_SendEmergencyWebhook" name="2.5 Transmit High-Priority Emergency Payload">
-      <bpmn:incoming>Flow_M5</bpmn:incoming>
-      <bpmn:outgoing>Flow_M6</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:endEvent id="End_AppAlarm" name="Alarm Handled">
-      <bpmn:incoming>Flow_M6</bpmn:incoming>
-    </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_M1" sourceRef="Start_AppSession" targetRef="Task_RegisterSession" />
-    <bpmn:sequenceFlow id="Flow_M2" sourceRef="Task_RegisterSession" targetRef="Task_StreamWebhooks" />
-    <bpmn:sequenceFlow id="Flow_M3" sourceRef="Task_StreamWebhooks" targetRef="Gateway_AirflowBreach" />
-    <bpmn:sequenceFlow id="Flow_M4" sourceRef="Task_TriggerAlarm" targetRef="Task_SpawnTimer" />
-    <bpmn:sequenceFlow id="Flow_M5" sourceRef="Task_SpawnTimer" targetRef="Task_SendEmergencyWebhook" />
-    <bpmn:sequenceFlow id="Flow_M6" sourceRef="Task_SendEmergencyWebhook" targetRef="End_AppAlarm" />
-  </bpmn:process>
-
-  <bpmn:process id="Process_CloudEngine" isExecutable="true">
-    <bpmn:laneSet id="LaneSet_CloudEngine">
-      <bpmn:lane id="Lane_CloudEngine" name="Cloud Services &#38; Event Processing Engine">
-        <bpmn:flowNodeRef>Start_CloudIngest</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Task_PubSubIngest</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Task_CloudRunWorker</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Task_WriteBigtable</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Task_QueueEmergency</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Task_BroadcastCommand</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>End_CloudProcessed</bpmn:flowNodeRef>
-      </bpmn:lane>
-    </bpmn:laneSet>
-    <bpmn:startEvent id="Start_CloudIngest" name="Telemetry / Emergency Ingested">
-      <bpmn:outgoing>Flow_C1</bpmn:outgoing>
-    </bpmn:startEvent>
-    <bpmn:serviceTask id="Task_PubSubIngest" name="3.1 Cloud Event &#38; Telemetry Ingestion">
-      <bpmn:incoming>Flow_C1</bpmn:incoming>
-      <bpmn:outgoing>Flow_C2</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:serviceTask id="Task_CloudRunWorker" name="3.2 Respiratory Stream Evaluation Engine">
-      <bpmn:incoming>Flow_C2</bpmn:incoming>
-      <bpmn:outgoing>Flow_C3</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:serviceTask id="Task_WriteBigtable" name="3.3 Store Bio-Signal Streams &#38; Application State">
-      <bpmn:incoming>Flow_C3</bpmn:incoming>
-      <bpmn:outgoing>Flow_C4</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:serviceTask id="Task_QueueEmergency" name="3.4 Queue High-Priority Emergency Alert">
-      <bpmn:incoming>Flow_C4</bpmn:incoming>
-      <bpmn:outgoing>Flow_C5</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:serviceTask id="Task_BroadcastCommand" name="3.5 Broadcast Sub-1.5s WSS to Command Center">
-      <bpmn:incoming>Flow_C5</bpmn:incoming>
-      <bpmn:outgoing>Flow_C6</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:endEvent id="End_CloudProcessed" name="Ingest Processed">
-      <bpmn:incoming>Flow_C6</bpmn:incoming>
-    </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_C1" sourceRef="Start_CloudIngest" targetRef="Task_PubSubIngest" />
-    <bpmn:sequenceFlow id="Flow_C2" sourceRef="Task_PubSubIngest" targetRef="Task_CloudRunWorker" />
-    <bpmn:sequenceFlow id="Flow_C3" sourceRef="Task_CloudRunWorker" targetRef="Task_WriteBigtable" />
-    <bpmn:sequenceFlow id="Flow_C4" sourceRef="Task_WriteBigtable" targetRef="Task_QueueEmergency" />
-    <bpmn:sequenceFlow id="Flow_C5" sourceRef="Task_QueueEmergency" targetRef="Task_BroadcastCommand" />
-    <bpmn:sequenceFlow id="Flow_C6" sourceRef="Task_BroadcastCommand" targetRef="End_CloudProcessed" />
-  </bpmn:process>
-
+  <!-- SWIMLANE 4: EMERGENCY CENTER -->
   <bpmn:process id="Process_EmergencyCenter" isExecutable="true">
     <bpmn:laneSet id="LaneSet_EmergencyCenter">
-      <bpmn:lane id="Lane_EmergencyCenter" name="24/7 Emergency Command Center &#38; Clinic">
-        <bpmn:flowNodeRef>Start_CommandAlert</bpmn:flowNodeRef>
+      <bpmn:lane id="Lane_EmergencyCenter" name="Emergency Center">
+        <bpmn:flowNodeRef>Start_EmergencyTrigger</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Task_DashboardAlert</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Task_VerifyGPS</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_MetricCollection</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Task_CaregiverCall</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Task_DoctorSync</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Gateway_EMSDispatch</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>End_CaregiverHandled</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Task_DispatchEMS</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>End_EventResolved</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_DispatchResolved</bpmn:flowNodeRef>
       </bpmn:lane>
     </bpmn:laneSet>
-    <bpmn:startEvent id="Start_CommandAlert" name="WSS Alert Received">
+    <bpmn:startEvent id="Start_EmergencyTrigger" name="Start: 30s Unacknowledged Apnea Trigger">
       <bpmn:outgoing>Flow_E1</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:userTask id="Task_DashboardAlert" name="4.1 Command Center Dashboard Alert Pop-up">
+    <bpmn:userTask id="Task_DashboardAlert" name="Dashboard Alert Pop-up">
       <bpmn:incoming>Flow_E1</bpmn:incoming>
       <bpmn:outgoing>Flow_E2</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:userTask id="Task_VerifyGPS" name="4.2 Dispatcher Verifies Location &#38; Patient GPS">
+    <bpmn:serviceTask id="Task_MetricCollection" name="Collect Emergency Alert Metrics">
       <bpmn:incoming>Flow_E2</bpmn:incoming>
       <bpmn:outgoing>Flow_E3</bpmn:outgoing>
-    </bpmn:userTask>
-    <bpmn:serviceTask id="Task_CaregiverCall" name="4.3 Trigger Voice Call &#38; SMS to Caregiver">
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Task_CaregiverCall" name="Trigger Voice Call &#38; SMS to Caregiver">
       <bpmn:incoming>Flow_E3</bpmn:incoming>
       <bpmn:outgoing>Flow_E4</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:serviceTask id="Task_DoctorSync" name="4.4 Push Notification Payload to Attending Physician">
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_DispatchEMS" name="Dispatch Local EMS / 911 Responders">
       <bpmn:incoming>Flow_E4</bpmn:incoming>
       <bpmn:outgoing>Flow_E5</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:exclusiveGateway id="Gateway_EMSDispatch" name="Caregiver / Patient Responds?">
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_DispatchResolved" name="End: Emergency Resolved">
       <bpmn:incoming>Flow_E5</bpmn:incoming>
-      <bpmn:outgoing>Flow_RespYes</bpmn:outgoing>
-      <bpmn:outgoing>Flow_RespNo</bpmn:outgoing>
-    </bpmn:exclusiveGateway>
-    <bpmn:endEvent id="End_CaregiverHandled" name="Resolved by Caregiver">
-      <bpmn:incoming>Flow_RespYes</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_RespYes" name="Yes" sourceRef="Gateway_EMSDispatch" targetRef="End_CaregiverHandled" />
-    <bpmn:serviceTask id="Task_DispatchEMS" name="4.5 Dispatch Local EMS / 911 Responders">
-      <bpmn:incoming>Flow_RespNo</bpmn:incoming>
-      <bpmn:outgoing>Flow_E6</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:sequenceFlow id="Flow_RespNo" name="No" sourceRef="Gateway_EMSDispatch" targetRef="Task_DispatchEMS" />
-    <bpmn:endEvent id="End_EventResolved" name="End: Emergency Resolved &#38; Documented">
-      <bpmn:incoming>Flow_E6</bpmn:incoming>
+    <bpmn:sequenceFlow id="Flow_E1" sourceRef="Start_EmergencyTrigger" targetRef="Task_DashboardAlert" />
+    <bpmn:sequenceFlow id="Flow_E2" sourceRef="Task_DashboardAlert" targetRef="Task_MetricCollection" />
+    <bpmn:sequenceFlow id="Flow_E3" sourceRef="Task_MetricCollection" targetRef="Task_CaregiverCall" />
+    <bpmn:sequenceFlow id="Flow_E4" sourceRef="Task_CaregiverCall" targetRef="Task_DispatchEMS" />
+    <bpmn:sequenceFlow id="Flow_E5" sourceRef="Task_DispatchEMS" targetRef="End_DispatchResolved" />
+  </bpmn:process>
+
+  <!-- SWIMLANE 5: CLINIC & PHYSICIAN [FUTURE] -->
+  <bpmn:process id="Process_Clinic" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_Clinic">
+      <bpmn:lane id="Lane_ClinicPhysician" name="Clinic &#38; Physician [Future]">
+        <bpmn:flowNodeRef>Start_ClinicSync</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_DoctorSync</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_PhysicianReview</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_ClinicComplete</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_ClinicSync" name="Start: Morning Report Trigger">
+      <bpmn:outgoing>Flow_C1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_DoctorSync" name="Sync Morning Sleep Scores &#38; AHI Reports [Future]">
+      <bpmn:incoming>Flow_C1</bpmn:incoming>
+      <bpmn:outgoing>Flow_C2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_PhysicianReview" name="Physician Reviews AHI Classification &#38; Notes [Future]">
+      <bpmn:incoming>Flow_C2</bpmn:incoming>
+      <bpmn:outgoing>Flow_C3</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_ClinicComplete" name="End: Diagnosis Updated">
+      <bpmn:incoming>Flow_C3</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_E1" sourceRef="Start_CommandAlert" targetRef="Task_DashboardAlert" />
-    <bpmn:sequenceFlow id="Flow_E2" sourceRef="Task_DashboardAlert" targetRef="Task_VerifyGPS" />
-    <bpmn:sequenceFlow id="Flow_E3" sourceRef="Task_VerifyGPS" targetRef="Task_CaregiverCall" />
-    <bpmn:sequenceFlow id="Flow_E4" sourceRef="Task_CaregiverCall" targetRef="Task_DoctorSync" />
-    <bpmn:sequenceFlow id="Flow_E5" sourceRef="Task_DoctorSync" targetRef="Gateway_EMSDispatch" />
-    <bpmn:sequenceFlow id="Flow_E6" sourceRef="Task_DispatchEMS" targetRef="End_EventResolved" />
+    <bpmn:sequenceFlow id="Flow_C1" sourceRef="Start_ClinicSync" targetRef="Task_DoctorSync" />
+    <bpmn:sequenceFlow id="Flow_C2" sourceRef="Task_DoctorSync" targetRef="Task_PhysicianReview" />
+    <bpmn:sequenceFlow id="Flow_C3" sourceRef="Task_PhysicianReview" targetRef="End_ClinicComplete" />
   </bpmn:process>
 
   <bpmndi:BPMNDiagram id="BPMNDiagram_SleepApnea">
     <bpmndi:BPMNPlane id="BPMNPlane_SleepApnea" bpmnElement="Collaboration_SleepApnea">
-      <!-- Participant Pool 1: Patient at Home -->
-      <bpmndi:BPMNShape id="Participant_Patient_di" bpmnElement="Participant_Patient" isHorizontal="true">
-        <dc:Bounds x="30" y="30" width="1460" height="200" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Lane_PatientAtHome_di" bpmnElement="Lane_PatientAtHome" isHorizontal="true">
-        <dc:Bounds x="60" y="30" width="1430" height="200" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Start_Bedtime_di" bpmnElement="Start_Bedtime">
-        <dc:Bounds x="85" y="112" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_PasskeyAuth_di" bpmnElement="Task_PasskeyAuth">
-        <dc:Bounds x="175" y="90" width="110" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_Stage1Cal_di" bpmnElement="Task_Stage1Cal">
-        <dc:Bounds x="325" y="90" width="110" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_Stage2Cal_di" bpmnElement="Task_Stage2Cal">
-        <dc:Bounds x="475" y="90" width="110" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_SleepMonitoring_di" bpmnElement="Task_SleepMonitoring">
-        <dc:Bounds x="625" y="90" width="110" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_Tier1Alarm_di" bpmnElement="Gateway_Tier1Alarm" isMarkerVisible="true">
-        <dc:Bounds x="785" y="105" width="50" height="50" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_PatientAwake_di" bpmnElement="Gateway_PatientAwake" isMarkerVisible="true">
-        <dc:Bounds x="915" y="105" width="50" height="50" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_TapSafe_di" bpmnElement="Task_TapSafe">
-        <dc:Bounds x="1035" y="90" width="110" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_EndSession_di" bpmnElement="Task_EndSession">
-        <dc:Bounds x="1185" y="90" width="110" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="End_SessionComplete_di" bpmnElement="End_SessionComplete">
-        <dc:Bounds x="1345" y="112" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="End_Escalated_di" bpmnElement="End_Escalated">
-        <dc:Bounds x="922" y="180" width="36" height="36" />
-      </bpmndi:BPMNShape>
-
-      <!-- Participant Pool 2: Mobile Application Engine -->
-      <bpmndi:BPMNShape id="Participant_MobileApp_di" bpmnElement="Participant_MobileApp" isHorizontal="true">
-        <dc:Bounds x="30" y="270" width="1460" height="200" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Lane_MobileAppEngine_di" bpmnElement="Lane_MobileAppEngine" isHorizontal="true">
-        <dc:Bounds x="60" y="270" width="1430" height="200" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Start_AppSession_di" bpmnElement="Start_AppSession">
-        <dc:Bounds x="85" y="352" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_RegisterSession_di" bpmnElement="Task_RegisterSession">
-        <dc:Bounds x="175" y="330" width="110" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_StreamWebhooks_di" bpmnElement="Task_StreamWebhooks">
-        <dc:Bounds x="345" y="330" width="110" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_AirflowBreach_di" bpmnElement="Gateway_AirflowBreach" isMarkerVisible="true">
-        <dc:Bounds x="515" y="345" width="50" height="50" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_TriggerAlarm_di" bpmnElement="Task_TriggerAlarm">
-        <dc:Bounds x="645" y="330" width="110" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_SpawnTimer_di" bpmnElement="Task_SpawnTimer">
-        <dc:Bounds x="805" y="330" width="110" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_SendEmergencyWebhook_di" bpmnElement="Task_SendEmergencyWebhook">
-        <dc:Bounds x="965" y="330" width="110" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="End_AppAlarm_di" bpmnElement="End_AppAlarm">
-        <dc:Bounds x="1145" y="352" width="36" height="36" />
-      </bpmndi:BPMNShape>
-
-      <!-- Participant Pool 3: Cloud Services & Event Processing Engine -->
-      <bpmndi:BPMNShape id="Participant_CloudEngine_di" bpmnElement="Participant_CloudEngine" isHorizontal="true">
-        <dc:Bounds x="30" y="510" width="1460" height="200" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Lane_CloudEngine_di" bpmnElement="Lane_CloudEngine" isHorizontal="true">
-        <dc:Bounds x="60" y="510" width="1430" height="200" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Start_CloudIngest_di" bpmnElement="Start_CloudIngest">
-        <dc:Bounds x="85" y="592" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_PubSubIngest_di" bpmnElement="Task_PubSubIngest">
-        <dc:Bounds x="175" y="570" width="110" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_CloudRunWorker_di" bpmnElement="Task_CloudRunWorker">
-        <dc:Bounds x="345" y="570" width="110" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_WriteBigtable_di" bpmnElement="Task_WriteBigtable">
-        <dc:Bounds x="515" y="570" width="110" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_QueueEmergency_di" bpmnElement="Task_QueueEmergency">
-        <dc:Bounds x="685" y="570" width="110" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_BroadcastCommand_di" bpmnElement="Task_BroadcastCommand">
-        <dc:Bounds x="855" y="570" width="110" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="End_CloudProcessed_di" bpmnElement="End_CloudProcessed">
-        <dc:Bounds x="1035" y="592" width="36" height="36" />
-      </bpmndi:BPMNShape>
-
-      <!-- Participant Pool 4: 24/7 Emergency Command Center & Clinic -->
-      <bpmndi:BPMNShape id="Participant_EmergencyCenter_di" bpmnElement="Participant_EmergencyCenter" isHorizontal="true">
-        <dc:Bounds x="30" y="750" width="1460" height="200" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Lane_EmergencyCenter_di" bpmnElement="Lane_EmergencyCenter" isHorizontal="true">
-        <dc:Bounds x="60" y="750" width="1430" height="200" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Start_CommandAlert_di" bpmnElement="Start_CommandAlert">
-        <dc:Bounds x="85" y="832" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_DashboardAlert_di" bpmnElement="Task_DashboardAlert">
-        <dc:Bounds x="175" y="810" width="110" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_VerifyGPS_di" bpmnElement="Task_VerifyGPS">
-        <dc:Bounds x="345" y="810" width="110" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_CaregiverCall_di" bpmnElement="Task_CaregiverCall">
-        <dc:Bounds x="515" y="810" width="110" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_DoctorSync_di" bpmnElement="Task_DoctorSync">
-        <dc:Bounds x="685" y="810" width="110" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_EMSDispatch_di" bpmnElement="Gateway_EMSDispatch" isMarkerVisible="true">
-        <dc:Bounds x="855" y="825" width="50" height="50" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="End_CaregiverHandled_di" bpmnElement="End_CaregiverHandled">
-        <dc:Bounds x="965" y="772" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_DispatchEMS_di" bpmnElement="Task_DispatchEMS">
-        <dc:Bounds x="960" y="860" width="110" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="End_EventResolved_di" bpmnElement="End_EventResolved">
-        <dc:Bounds x="1135" y="882" width="36" height="36" />
-      </bpmndi:BPMNShape>
-
-      <!-- Sequence Flow Edges -->
-      <bpmndi:BPMNEdge id="Flow_P1_di" bpmnElement="Flow_P1"><di:waypoint x="121" y="130" /><di:waypoint x="175" y="130" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_P2_di" bpmnElement="Flow_P2"><di:waypoint x="285" y="130" /><di:waypoint x="325" y="130" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_P3_di" bpmnElement="Flow_P3"><di:waypoint x="435" y="130" /><di:waypoint x="475" y="130" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_P4_di" bpmnElement="Flow_P4"><di:waypoint x="585" y="130" /><di:waypoint x="625" y="130" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_P5_di" bpmnElement="Flow_P5"><di:waypoint x="735" y="130" /><di:waypoint x="785" y="130" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_AlarmNo_di" bpmnElement="Flow_AlarmNo"><di:waypoint x="810" y="155" /><di:waypoint x="810" y="190" /><di:waypoint x="680" y="190" /><di:waypoint x="680" y="170" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_AlarmYes_di" bpmnElement="Flow_AlarmYes"><di:waypoint x="835" y="130" /><di:waypoint x="915" y="130" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_AwakeYes_di" bpmnElement="Flow_AwakeYes"><di:waypoint x="965" y="130" /><di:waypoint x="1035" y="130" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_AwakeNo_di" bpmnElement="Flow_AwakeNo"><di:waypoint x="940" y="155" /><di:waypoint x="940" y="180" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_P6_di" bpmnElement="Flow_P6"><di:waypoint x="1145" y="130" /><di:waypoint x="1185" y="130" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_P7_di" bpmnElement="Flow_P7"><di:waypoint x="1295" y="130" /><di:waypoint x="1345" y="130" /></bpmndi:BPMNEdge>
-
-      <bpmndi:BPMNEdge id="Flow_M1_di" bpmnElement="Flow_M1"><di:waypoint x="121" y="370" /><di:waypoint x="175" y="370" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_M2_di" bpmnElement="Flow_M2"><di:waypoint x="285" y="370" /><di:waypoint x="345" y="370" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_M3_di" bpmnElement="Flow_M3"><di:waypoint x="455" y="370" /><di:waypoint x="515" y="370" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_BreachNo_di" bpmnElement="Flow_BreachNo"><di:waypoint x="540" y="395" /><di:waypoint x="540" y="430" /><di:waypoint x="400" y="430" /><di:waypoint x="400" y="410" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_BreachYes_di" bpmnElement="Flow_BreachYes"><di:waypoint x="565" y="370" /><di:waypoint x="645" y="370" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_M4_di" bpmnElement="Flow_M4"><di:waypoint x="755" y="370" /><di:waypoint x="805" y="370" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_M5_di" bpmnElement="Flow_M5"><di:waypoint x="915" y="370" /><di:waypoint x="965" y="370" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_M6_di" bpmnElement="Flow_M6"><di:waypoint x="1075" y="370" /><di:waypoint x="1145" y="370" /></bpmndi:BPMNEdge>
-
-      <bpmndi:BPMNEdge id="Flow_C1_di" bpmnElement="Flow_C1"><di:waypoint x="121" y="610" /><di:waypoint x="175" y="610" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_C2_di" bpmnElement="Flow_C2"><di:waypoint x="285" y="610" /><di:waypoint x="345" y="610" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_C3_di" bpmnElement="Flow_C3"><di:waypoint x="455" y="610" /><di:waypoint x="515" y="610" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_C4_di" bpmnElement="Flow_C4"><di:waypoint x="625" y="610" /><di:waypoint x="685" y="610" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_C5_di" bpmnElement="Flow_C5"><di:waypoint x="795" y="610" /><di:waypoint x="855" y="610" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_C6_di" bpmnElement="Flow_C6"><di:waypoint x="965" y="610" /><di:waypoint x="1035" y="610" /></bpmndi:BPMNEdge>
-
-      <bpmndi:BPMNEdge id="Flow_E1_di" bpmnElement="Flow_E1"><di:waypoint x="121" y="850" /><di:waypoint x="175" y="850" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_E2_di" bpmnElement="Flow_E2"><di:waypoint x="285" y="850" /><di:waypoint x="345" y="850" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_E3_di" bpmnElement="Flow_E3"><di:waypoint x="455" y="850" /><di:waypoint x="515" y="850" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_E4_di" bpmnElement="Flow_E4"><di:waypoint x="625" y="850" /><di:waypoint x="685" y="850" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_E5_di" bpmnElement="Flow_E5"><di:waypoint x="795" y="850" /><di:waypoint x="855" y="850" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_RespYes_di" bpmnElement="Flow_RespYes"><di:waypoint x="880" y="825" /><di:waypoint x="880" y="790" /><di:waypoint x="965" y="790" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_RespNo_di" bpmnElement="Flow_RespNo"><di:waypoint x="880" y="875" /><di:waypoint x="880" y="900" /><di:waypoint x="960" y="900" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_E6_di" bpmnElement="Flow_E6"><di:waypoint x="1070" y="900" /><di:waypoint x="1135" y="900" /></bpmndi:BPMNEdge>
-
-      <!-- Message Flow Edges -->
-      <bpmndi:BPMNEdge id="Flow_BLE_Stream_di" bpmnElement="Flow_BLE_Stream" stroke-dasharray="5 5"><di:waypoint x="680" y="170" /><di:waypoint x="680" y="250" /><di:waypoint x="400" y="250" /><di:waypoint x="400" y="330" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_Webhook_Stream_di" bpmnElement="Flow_Webhook_Stream" stroke-dasharray="5 5"><di:waypoint x="400" y="410" /><di:waypoint x="400" y="490" /><di:waypoint x="230" y="490" /><di:waypoint x="230" y="570" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_Emergency_Dispatch_di" bpmnElement="Flow_Emergency_Dispatch" stroke-dasharray="5 5"><di:waypoint x="1020" y="410" /><di:waypoint x="1020" y="490" /><di:waypoint x="740" y="490" /><di:waypoint x="740" y="570" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_Command_WSS_di" bpmnElement="Flow_Command_WSS" stroke-dasharray="5 5"><di:waypoint x="910" y="650" /><di:waypoint x="910" y="730" /><di:waypoint x="230" y="730" /><di:waypoint x="230" y="810" /></bpmndi:BPMNEdge>
-
+      <bpmndi:BPMNShape id="Participant_Onboarding_di" bpmnElement="Participant_Onboarding" isHorizontal="true"><dc:Bounds x="10" y="50" width="1680" height="170" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Backoffice_di" bpmnElement="Participant_Backoffice" isHorizontal="true"><dc:Bounds x="10" y="240" width="1680" height="170" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Patient_di" bpmnElement="Participant_Patient" isHorizontal="true"><dc:Bounds x="10" y="430" width="1680" height="200" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_EmergencyCenter_di" bpmnElement="Participant_EmergencyCenter" isHorizontal="true"><dc:Bounds x="10" y="650" width="1680" height="200" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Clinic_di" bpmnElement="Participant_Clinic" isHorizontal="true"><dc:Bounds x="10" y="870" width="1680" height="180" /></bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>
