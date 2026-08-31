@@ -1,144 +1,171 @@
 ---
-title: Technical Architecture Spine — Sleep Apnea Detection App
+title: Business & Data Architecture Specification — Sleep Apnea Detection App
 status: final
-version: 1.3.0
+version: 2.0.0
 created: 2026-08-31
 updated: 2026-08-31
-author: Winston (System Architect)
+author: Winston (System Architect) & Mary (Business Analyst)
 ---
 
-# 🏛️ Technical Architecture Spine: Sleep Apnea Detection App
+# 🏛️ Business & Data Architecture Specification
+## Sleep Apnea Detection App
 
-> **Architecture Paradigm:** Reactive BLoC + Worker Isolate Stream Pipeline + Atomic UI Design System  
-> **Target Scope:** Cross-Platform Flutter Mobile Application & BLE Bio-Signal Telemetry Gateway  
+> **Architecture Paradigm:** Vendor-Agnostic Enterprise Architecture (Business & Data Focus)  
+> **Backend Decoupling Strategy:** Abstract Repository Pattern (Supports Supabase, Firebase, AWS, or Custom Backend)  
 
 ---
 
-## 1. Core Architectural Paradigm & Invariants
+## 1. Business Architecture
 
 ```mermaid
 graph TD
-    subgraph Layer0 ["🔐 Passkey Auth & HIPAA Security Layer (45 CFR § 164.312)"]
-        Passkey[Passkey FIDO2 / WebAuthn Engine] -->|Secure Enclave Token| AuthBloc[Auth & Profile BLoC]
-        AuthBloc -->|Auto Lock 5min Inactivity| SessionGuard[Session Timeout Guard]
-        AuthBloc -->|Health Profile: Age, Weight, Height, BMI| ProfileRepo[Health Profile Repository]
-        ProfileRepo -->|AES-256 SQLCipher Encrypted Storage| LocalDB[(Local Encrypted Database)]
+    subgraph ValueStream ["🛣️ Patient Value Stream Pipeline"]
+        VS1[1. Bedtime Onboarding & Passkey Auth] --> VS2[2. Two-Stage Pre-Sleep Calibration]
+        VS2 --> VS3[3. Overnight Bio-Signal Telemetry Logging]
+        VS3 --> VS4[4. Real-Time Apnea Detection & Tier-1 Wake-Up]
+        VS4 -->|Option A: Tap I'm Safe| VS5[5. Log Patient Safe Status]
+        VS4 -->|Option B: Timeout 30s| VS6[6. Tier-2 Cloud Emergency Dispatch]
+        VS5 --> VS7[7. Morning AHI & Sleep Score Analytics]
+        VS6 --> VS7
     end
+```
 
-    subgraph Layer1 ["📟 Hardware Interface & Device Binding Layer"]
-        BLE_Dev[Small Breathing Device] -->|GATT Stream 100ms (AES-128 Transit)| BLE_Plugin[flutter_reactive_ble Plugin]
-        BLE_Plugin -->|BLE Pair Success| DeviceBinding[Device Binding Repository]
-        DeviceBinding -->|TLS 1.3 Cert Pinned POST| CloudGateway[Cloud Device Binding Gateway]
-    end
+### 1.1 Business Capabilities Map (BC-1 to BC-6)
 
-    subgraph Layer2 ["⚡ Background Isolate Engine (Non-UI Thread)"]
-        BLE_Plugin -->|Raw Telemetry Stream| RingBuf[1-Hour Local RAM Circular Buffer]
-        RingBuf -->|Stage 1 Subtraction V_raw - N_idle| Filter[Bandpass Filter 0.1Hz - 0.5Hz]
-        Filter -->|Stage 2 Net Airflow V_net| FFT[FFT Spectral Engine & BPM Peak Detector]
-        FFT -->|Net Signal < Apnea Threshold| Evaluator[10s Apnea Evaluator]
-    end
+| Capability ID | Business Capability Name | Capability Description | Key Business Service |
+| :--- | :--- | :--- | :--- |
+| **BC-1** | **Patient Identity & Access Governance** | Provides frictionless passwordless authentication using native OS Passkeys (FIDO2/WebAuthn). | `AuthenticatePatientService` |
+| **BC-2** | **Pre-Sleep Signal Calibration** | Establishes zero-noise baselines ($N_{\text{idle}}$) and personalized breathing thresholds ($V_{pp}$) before sleep. | `CalibrateBaselineService` |
+| **BC-3** | **Overnight Telemetry & Apnea Detection** | Continuously logs 100ms respiratory streams and flags obstructive apnea stops (>10s) adhering to AASM standards. | `EvaluateApneaStreamService` |
+| **BC-4** | **Two-Tier Active Emergency Response** | Triggers Tier-1 local mobile alarms (<200ms), manages 30s "I'm Safe" patient acknowledgements, and dispatches Tier-2 cloud caregiver alerts (<1.5s). | `ManageEmergencyAlertService` |
+| **BC-5** | **Morning Clinical Health Analytics** | Calculates total sleep duration, estimated AHI score, intervention count, quality score, and exports doctor reports. | `GenerateSleepSummaryService` |
+| **BC-6** | **Hardware Binding & Fleet Lifecycle** | Associates physical breathing devices to patient cloud accounts and verifies skin-contact compliance. | `BindDeviceHardwareService` |
 
-    subgraph Layer3 ["📱 Application State & Alert Controller (BLoC Layer)"]
-        Evaluator -->|Apnea Breached >10s| AlertManager[Emergency Alert Manager]
-        AlertManager -->|Trigger Tier-1 Audio/Haptics <200ms| LocalAlert[Primary Mobile Alarm & Haptics]
-        AlertManager -->|Start 30s Token Timer| TokenTimer[Cancellation Token Timer]
-        
-        TokenTimer -->|Option A: Tap I'm Safe| CancelCloud[Cancel Pending Dispatch & Log Safe]
-        TokenTimer -->|Option B: Timeout >30s| CloudEmergency[Send Tier-2 Emergency Payload <1.5s]
-    end
+---
 
-    subgraph Layer4 ["🎨 UI & Rendering Layer (OLED 0-FPS Throttled)"]
-        Filter -->|Screen Active: 60 FPS Spline| ChartWidget[Skia Live Waveform Canvas]
-        Filter -->|Screen Locked: 0 FPS Throttled| DisplaySaver[OLED Pure Black Power Saver]
-        ProfileRepo -->|Export HIPAA Encrypted Payload| DoctorShareUI[Doctor Profile Sharing Module]
-    end
+### 1.2 Non-Functional Service Level Agreements (SLAs)
+
+* **SLA-1 (Emergency Alert Latency):** Tier-1 mobile audio/haptic alarm shall trigger within **< 200 milliseconds** of an apnea breach. Tier-2 cloud caregiver notification payloads shall transmit within **< 1.5 seconds**.
+* **SLA-2 (Battery & Thermal Efficiency):** Continuous 8-to-10 hour background telemetry logging shall consume **< 8.0% total phone battery** (utilizing 0-FPS display throttling when screen is locked).
+* **SLA-3 (BLE Reconnect Resilience):** Connection drops during sleep shall auto-reconnect within **< 3.0 seconds** without terminating the active sleep session.
+* **SLA-4 (HIPAA PHI Privacy & Security):** 100% compliance with 45 CFR Part 164. All PHI shall be encrypted with AES-256 at rest and AES-128/TLS 1.3 in transit.
+
+---
+
+## 2. Vendor-Agnostic Data Architecture
+
+### 2.1 Conceptual Data Model
+
+```mermaid
+erDiagram
+    PATIENT_USER ||--o| HEALTH_PROFILE : "possesses"
+    PATIENT_USER ||--o{ DEVICE_BINDING : "owns"
+    DEVICE_BINDING }|--|| BREATHING_DEVICE : "pairs"
+    PATIENT_USER ||--o{ EMERGENCY_CONTACT : "designates"
+    PATIENT_USER ||--o{ SLEEP_SESSION : "records"
+    SLEEP_SESSION ||--o{ APNEA_EVENT : "contains"
+    SLEEP_SESSION ||--o{ EMERGENCY_ALERT : "triggers"
+    PATIENT_USER ||--o{ PHI_AUDIT_LOG : "generates"
 ```
 
 ---
 
-## 2. Architectural Decisions (ADs) & Structural Rules
+### 2.2 Data Classification & HIPAA Governance Matrix
 
-### AD-1: BLE Telemetry Gateway & Connection Management
-* **Binds:** `lib/core/ble/ble_manager.dart`
-* **Rule:** Singleton `BleManager` handles scanning, MTU size negotiation (247 bytes), exponential auto-reconnect (<3.0s), and a 1-hour circular RAM ring buffer.
-
-### AD-2: Two-Stage Pre-Sleep Calibration & Baseline Engine
-* **Binds:** `lib/core/signal/calibration_engine.dart`
-* **Rule:** Stage 1 ($N_{\text{idle}}$ subtraction) + Stage 2 ($V_{pp}$ 10% peak-to-trough threshold binding). Wear verification guardrail blocks start if $\Delta V < \text{Threshold}_{\min}$.
-
-### AD-3: Signal Offloading & Background Worker Isolates
-* **Binds:** `lib/core/signal/signal_processor_isolate.dart`
-* **Rule:** Bandpass filtering, $N_{\text{idle}}$ subtraction, and FFT peak calculations execute in background Dart Isolates (`compute()`).
-
-### AD-4: Emergency Response & Cancellation Token Pattern
-* **Binds:** `lib/core/services/emergency_alert_manager.dart`
-* **Rule:** Instant local mobile alarms (<200ms) + 30s Cancellation Token timer. Tapping "I'm Safe" cancels cloud dispatch; timeout fires Tier-2 payload (<1.5s).
-
-### AD-5: Ultra-Low Power Architecture & 0-FPS Display Throttling
-* **Binds:** `lib/ui/organisms/live_waveform_chart.dart`, `lib/main.dart`
-* **Rule:** 0-FPS display throttling when screen locked, OLED pure black (`#000000`) theme, Android Foreground Service / iOS Bluetooth Central (<8% battery drain over 8h).
-
-### AD-6: Full HIPAA Security Rule Architecture & PHI Safeguards (45 CFR § 164.312)
-* **Binds:** `lib/core/security/crypto_util.dart`, `lib/core/network/api_client.dart`, `lib/data/datasources/encrypted_db_datasource.dart`
-* **Prevents:** HIPAA non-compliance penalties, unencrypted PHI storage, MITM attacks, and unauthorized health record tampering.
-* **Rule:**
-  1. **Encryption at Rest (45 CFR § 164.312(e)):** All local mobile databases storing patient profiles or telemetry logs shall enforce **AES-256 encryption** (via Hive Encrypted Box / SQLCipher) with 256-bit master keys stored in iOS Keychain / Android Keystore. Plain-text health data caching is strictly forbidden.
-  2. **Encryption in Transit & Certificate Pinning (45 CFR § 164.312(e)):** All BLE telemetry packets shall use AES-128 link encryption. All mobile-to-cloud HTTPS/WSS endpoints shall mandate **TLS 1.3** with SSL Certificate Pinning.
-  3. **Automatic Session Timeout (45 CFR § 164.312(a)):** The app shall lock active views and require Passkey re-authentication after 5 minutes of inactivity.
-  4. **Tamper-Evident Audit Logging (45 CFR § 164.312(b)):** Every PHI creation, modification, doctor export, or emergency alert event shall record a cryptographic, tamper-evident entry in `phi_audit_logs`.
-  5. **Data Destruction (45 CFR § 164.312(c)):** Implements one-tap local PHI cache wipe upon user account logout or remote unpair command.
-
-### AD-7: Hardware Air Freight & International Customs Compliance
-* **Binds:** `hardware/specifications/customs_compliance_manifest.json`
-* **Rule:** UN 38.3 & IATA PI 967 Section II battery capacity cap **< 2.7 Wh (<700 mAh)**, IEC 62133-2, ISO 10993 skin biocompatibility, and pre-certified 2.4 GHz BLE spectrum.
-
-### AD-8: Passkey FIDO2/WebAuthn Authentication Architecture
-* **Binds:** `lib/core/auth/passkey_authenticator.dart`, `lib/core/auth/secure_enclave_storage.dart`
-* **Rule:** Passwordless FIDO2/WebAuthn authentication using native OS biometrics (Face ID, Touch ID, Android BiometricPrompt). Private keys stored inside hardware OS Secure Enclave.
-
-### AD-9: Cloud Device Binding API & Doctor Sharing Framework Architecture
-* **Binds:** `lib/data/repositories/device_binding_repository.dart`, `lib/data/models/health_profile.dart`
-* **Rule:** Device pairing dispatches POST `/api/v1/devices/bind` JSON payload. Interface `DeviceBindingApiInterface` provides local `MockDeviceBindingApi` stub. Doctor export formats JSON under HL7 FHIR standards.
+| Model Attribute | Classification Level | HIPAA PHI Category | Storage Encryption Rule | Vendor Abstraction |
+| :--- | :--- | :--- | :--- | :--- |
+| `user_profile.full_name` | **Level 1 — Direct PHI** | Patient Identity | AES-256 Column Encryption | `AuthRepository` |
+| `user_profile.phone_number` | **Level 1 — Direct PHI** | Contact Endpoint | AES-256 Column Encryption | `AuthRepository` |
+| `health_profile.weight_kg` | **Level 1 — Direct PHI** | Health Baseline | AES-256 Column Encryption | `HealthProfileRepository` |
+| `health_profile.height_cm` | **Level 1 — Direct PHI** | Health Baseline | AES-256 Column Encryption | `HealthProfileRepository` |
+| `health_profile.computed_bmi` | **Level 1 — Direct PHI** | Derived Metric | AES-256 Column Encryption | `HealthProfileRepository` |
+| `emergency_contact.phone` | **Level 1 — Direct PHI** | Emergency Endpoint | AES-256 Column Encryption | `EmergencyContactRepository` |
+| `sleep_session.ahi_score` | **Level 1 — Direct PHI** | Clinical Metric | AES-256 Column Encryption | `TelemetryRepository` |
+| `sleep_session.telemetry_blob`| **Level 1 — Direct PHI** | Bio-Signal Time Series | Compressed AES-256 Blob | `TelemetryRepository` |
+| `device_binding.device_mac` | **Level 2 — PII / Technical** | Hardware Identifier | Standard Column Encryption | `DeviceBindingRepository` |
+| `phi_audit_log.*` | **Level 2 — Security Audit** | Compliance Audit | Immutable Insert-Only | `AuditLogRepository` |
 
 ---
 
-## 3. Technology Stack & Starter Dependency Invariants
+### 2.3 Logical Data Model (Abstract Entities)
 
-```yaml
-environment:
-  sdk: ">=3.0.0 <4.0.0"
-  flutter: ">=3.10.0"
+```mermaid
+classDiagram
+    class UserProfileEntity {
+        +String user_id
+        +String auth_token
+        +String full_name
+        +String phone_number
+        +DateTime created_at
+    }
 
-dependencies:
-  flutter:
-    sdk: flutter
-  # Core BLE & Reactive Streams
-  flutter_reactive_ble: ^5.0.2
-  rxdart: ^0.27.7
-  # State Management
-  flutter_bloc: ^8.1.3
-  # Passkey Auth & Secure Enclave
-  passkeys: ^1.2.0
-  flutter_secure_storage: ^9.0.0
-  sqflite_sqlcipher: ^3.0.0
-  # UI & GPU Chart Rendering
-  fl_chart: ^0.68.0
-  google_fonts: ^6.2.1
-  cupertino_icons: ^1.0.6
-  # Local Encrypted Storage & Ring Buffer
-  hive: ^2.2.3
-  hive_flutter: ^1.1.0
-  # Networking & Emergency Alerts
-  dio: ^5.4.3+1
-  web_socket_channel: ^3.0.0
-  flutter_local_notifications: ^17.1.2
-  vibration: ^2.0.1
+    class HealthProfileEntity {
+        +String profile_id
+        +String user_id
+        +int age
+        +String gender
+        +double weight_kg
+        +double height_cm
+        +double computed_bmi
+    }
+
+    class DeviceBindingEntity {
+        +String binding_id
+        +String user_id
+        +String device_hardware_id
+        +String ble_mac_address
+        +DateTime bound_at
+    }
+
+    class SleepSessionEntity {
+        +String session_id
+        +String user_id
+        +DateTime start_time
+        +DateTime end_time
+        +double ahi_score
+        +int total_apnea_events
+        +int quality_score
+        +byte[] compressed_bio_signals
+    }
+
+    UserProfileEntity "1" -- "1" HealthProfileEntity
+    UserProfileEntity "1" -- "*" DeviceBindingEntity
+    UserProfileEntity "1" -- "*" SleepSessionEntity
 ```
 
 ---
 
-## 4. Deferred Technical Decisions
+### 2.4 Abstract Data Access Layer (Vendor-Agnostic Repository Pattern)
 
-1. **Cloud Backend Infrastructure:** AWS / GCP HIPAA-compliant BAA infrastructure.
-2. **SMS Gateway Provider:** Twilio BAA vs. AWS SNS for Tier-2 Caregiver SMS Dispatch.
-3. **Doctor PDF / HL7 FHIR Cloud Integration:** Direct EHR API synchronization.
+To guarantee that the application can switch cloud database vendors (from Supabase to Firebase, AWS, GCP, or a custom backend) with zero changes to business logic or UI code, data access is decoupled via Dart abstract interfaces:
+
+```dart
+// Abstract Device Binding Interface (Vendor Independent)
+abstract class DeviceBindingRepository {
+  Future<void> bindDevice({
+    required String userId,
+    required String deviceHardwareId,
+    required String bleMacAddress,
+  });
+
+  Future<DeviceBindingEntity?> fetchActiveBinding(String userId);
+}
+
+// Concrete Provider 1: Supabase Implementation
+class SupabaseDeviceBindingRepository implements DeviceBindingRepository { ... }
+
+// Concrete Provider 2: Firebase Firestore Implementation
+class FirebaseDeviceBindingRepository implements DeviceBindingRepository { ... }
+
+// Concrete Provider 3: Local Mock / Testing Implementation
+class MockDeviceBindingRepository implements DeviceBindingRepository { ... }
+```
+
+---
+
+## 3. Deferred Architecture Phases
+
+The following architecture domains are explicitly deferred to subsequent phases per project strategy:
+1. **Phase 2A — Application Architecture:** UI component trees, BLoC state transition diagrams, and Flutter navigation routers.
+2. **Phase 2B — Infrastructure Architecture:** Cloud hosting provider selection (Supabase vs. Firebase vs. AWS ECS), Terraform IaC scripts, and CI/CD pipelines.
+3. **Phase 2C — Physical Security Architecture:** SSL Certificate pinning configuration files and KMS key rotation automation.
