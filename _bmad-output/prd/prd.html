@@ -133,9 +133,9 @@
 <!-- NOTE: This ID is also referenced in src/webview/scroll-sync-webview.ts (applyPendingBodyUpdate). -->
 <div id="preview-content">
 <hr>
-<h2 id="title-product-requirements-document-sleep-apnea-detection-app-status-final-version-110-created-2026-08-31-updated-2026-08-31-author-mary-business-analyst">title: Product Requirements Document — Sleep Apnea Detection App
+<h2 id="title-product-requirements-document-sleep-apnea-detection-app-status-final-version-120-created-2026-08-31-updated-2026-08-31-author-mary-business-analyst">title: Product Requirements Document — Sleep Apnea Detection App
 status: final
-version: 1.1.0
+version: 1.2.0
 created: 2026-08-31
 updated: 2026-08-31
 author: Mary (Business Analyst)</h2>
@@ -147,13 +147,13 @@ author: Mary (Business Analyst)</h2>
 <p>The <strong>Sleep Apnea Detection App</strong> is a specialized consumer health mobile application designed to interface wirelessly via <strong>Bluetooth Low Energy (BLE)</strong> with a <strong>small breathing device</strong> used comfortably at home during sleep.</p>
 <p>The application transforms raw overnight bio-signals into actionable sleep apnea insights, eliminating the need for expensive, uncomfortable hospital sleep lab visits. When severe or prolonged breathing stops are detected during sleep, the application initiates an active <strong>Two-Tier Emergency Response</strong>:</p>
 <ol>
-<li><strong>Tier-1 Local Wake-Up Alert:</strong> Escalating haptic vibrations and audio alarms to wake the patient and restore breathing.</li>
-<li><strong>Tier-2 Cloud Emergency Dispatch:</strong> Real-time signal transmission to the cloud backend to notify designated emergency contacts or caregivers.</li>
+<li><strong>Tier-1 Primary App &amp; Device Wake-Up Alert:</strong> Escalating smartphone audio alarms &amp; haptics (and future device micro-electrical stimulation) to wake the patient and restore breathing.</li>
+<li><strong>Tier-2 Cloud Emergency Dispatch &amp; Safety Acknowledgement:</strong> Real-time signal transmission to the cloud backend. If the patient acknowledges the alert via the app (&quot;I'm Safe&quot;), the cloud logs a safety event; if unacknowledged after 30 seconds, emergency notifications are dispatched to caregivers.</li>
 </ol>
 <h3 id="12-strategic-business-goals">1.2 Strategic Business Goals</h3>
 <ul>
 <li><strong>At-Home Accessibility:</strong> Provide a comfortable, non-invasive alternative to clinical polysomnography (hospital sleep studies).</li>
-<li><strong>Proactive Safety:</strong> Move from passive morning data logging to active overnight intervention during critical apnea episodes.</li>
+<li><strong>Proactive Patient Safety:</strong> Move from passive morning data logging to active overnight intervention during critical apnea episodes.</li>
 <li><strong>Signal Accuracy:</strong> Eliminate false positives/negatives through a mandatory <strong>Two-Stage Pre-Sleep Calibration Routine</strong> that learns device noise floors and personalized breathing thresholds.</li>
 </ul>
 <hr>
@@ -164,7 +164,7 @@ author: Mary (Business Analyst)</h2>
 <li><strong>Profile:</strong> Suffers from severe loud snoring, morning fatigue, and unmonitored nocturnal breathing pauses. Sleeps at home with his spouse.</li>
 <li><strong>Core Need:</strong> A comfortable, reliable at-home breathing monitor that wakes him during dangerous apnea stops and alerts his spouse if he does not respond.</li>
 </ul>
-<h3 id="22-user-journey-1-uj-1-bedtime-calibration-overnight-telemetry-emergency-alert">2.2 User Journey 1 (UJ-1): Bedtime Calibration, Overnight Telemetry &amp; Emergency Alert</h3>
+<h3 id="22-user-journey-1-uj-1-bedtime-calibration-overnight-telemetry-safety-acknowledgement-alert">2.2 User Journey 1 (UJ-1): Bedtime Calibration, Overnight Telemetry &amp; Safety Acknowledgement Alert</h3>
 <div class="mermaid-diagram" data-vscode-context='{"webviewSection":"diagram","preventDefaultContextMenuItems":false}'><pre class="mermaid">sequenceDiagram
     autonumber
     actor David as David (User at Home)
@@ -189,11 +189,17 @@ author: Mary (Business Analyst)</h2>
     BLE-&gt;&gt;App: Stream: Airflow drops below calibrated Apnea Threshold
     
     rect rgb(255, 230, 230)
-        Note over App, Contact: Two-Tier Emergency Intervention
-        App-&gt;&gt;BLE: Tier 1: Escalating Haptic Vibration &amp; Audio Alarm
-        BLE--&gt;&gt;David: Wakes David Up (Restores Breathing Airflow)
-        App-&gt;&gt;Cloud: Tier 2: Real-time Cloud Emergency Event Dispatch
-        Cloud--&gt;&gt;Contact: Sends Emergency SMS / Push Alert
+        Note over App, Contact: Tier-1 Wake-Up &amp; Safety Acknowledgement
+        App-&gt;&gt;App: Primary Mobile Alarm: Escalating Audio &amp; Haptics
+        BLE--&gt;&gt;David: Wakes David Up (Restores Breathing)
+        alt Option A: Patient Taps &quot;I'm Safe&quot; (within 30s)
+            David-&gt;&gt;App: Taps &quot;I'm Safe&quot; / Acknowledges Alert
+            App-&gt;&gt;Cloud: Sends &quot;Patient Awake &amp; Safe&quot; Status Payload
+            Cloud--&gt;&gt;Contact: Logged Safe (No Emergency Dispatch Needed)
+        else Option B: Unacknowledged (&gt;30s)
+            App-&gt;&gt;Cloud: Tier-2 Cloud Emergency Payload Dispatch
+            Cloud--&gt;&gt;Contact: Sends Emergency SMS / Push Alert to Caregiver
+        end
     end
 
     Note over David, App: 07:00 AM — Morning Summary
@@ -220,12 +226,13 @@ author: Mary (Business Analyst)</h2>
 <li><strong>FR-2.4 (Session Data Integrity):</strong> Telemetry packets shall be timestamped locally and buffered during temporary signal interruptions to prevent data loss.</li>
 </ul>
 <hr>
-<h3 id="33-fr-3-two-tier-emergency-response-intervention-system">3.3 FR-3: Two-Tier Emergency Response &amp; Intervention System</h3>
+<h3 id="33-fr-3-primary-app-alarm-patient-safety-acknowledgement-cloud-dispatch">3.3 FR-3: Primary App Alarm, Patient Safety Acknowledgement &amp; Cloud Dispatch</h3>
 <ul>
-<li><strong>FR-3.1 (Tier-1 Escalating Local Alarm):</strong> Upon flagging a critical apnea event (&gt;10s breathing stop), the application shall immediately trigger local haptic vibrations (via phone/device) and an escalating audio alarm to wake the user.</li>
-<li><strong>FR-3.2 (Local Alarm Dismissal):</strong> The local wake-up alarm shall automatically silence upon detecting restored active breathing airflow (<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">net</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">&gt;</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8444em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord text"><span class="mord">Threshold</span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">normal</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>) or manual user tap.</li>
-<li><strong>FR-3.3 (Tier-2 Cloud Emergency Dispatch):</strong> Simultaneously with Tier-1 activation, the application shall transmit an emergency alert payload (User ID, timestamp, GPS location, apnea duration) over HTTPS/WebSocket to the cloud backend.</li>
-<li><strong>FR-3.4 (Cloud Caregiver Notification):</strong> The cloud backend shall dispatch multi-channel emergency alerts (Push Notification, SMS, Email) to designated emergency contacts if the local alarm is unacknowledged after 30 seconds.</li>
+<li><strong>FR-3.1 (Primary Mobile App Alarm):</strong> Upon flagging a critical apnea event (&gt;10s breathing stop), the smartphone application shall trigger high-priority escalating audio tones (40 dB → 75+ dB) and full-screen haptic vibration pulses to wake the patient.</li>
+<li><strong>FR-3.2 (Patient &quot;I'm Safe&quot; Acknowledgement Action):</strong> The application shall render a prominent, large touch target button (<strong>&quot;I'm Safe / I'm Awake&quot;</strong>) on the screen during an alarm event.</li>
+<li><strong>FR-3.3 (Patient Safety Signal to Cloud):</strong> If the patient taps &quot;I'm Safe&quot; within 30 seconds of alarm initiation, the application shall silence the alarm and immediately transmit a <strong>&quot;Patient Awake &amp; Safe&quot;</strong> status signal to the cloud platform.</li>
+<li><strong>FR-3.4 (Automatic Alarm Silence on Breathing Restoration):</strong> If normal respiratory airflow is restored (<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">net</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">&gt;</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8444em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord text"><span class="mord">Threshold</span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">normal</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>) continuously for 5 seconds without manual tap, the app shall auto-silence the alarm and record a self-resolved event.</li>
+<li><strong>FR-3.5 (Tier-2 Cloud Emergency Dispatch on Timeout):</strong> If the alarm remains unacknowledged and breathing is not restored after 30 seconds, the application shall transmit a high-priority <strong>Emergency Dispatch Payload</strong> to the cloud backend to alert designated caregivers via SMS/Push Notification.</li>
 </ul>
 <hr>
 <h3 id="34-fr-4-morning-analytics-history-sleep-health-insights">3.4 FR-4: Morning Analytics, History &amp; Sleep Health Insights</h3>
@@ -234,11 +241,11 @@ author: Mary (Business Analyst)</h2>
 <ul>
 <li>Total Sleep Duration (hours/minutes)</li>
 <li>Estimated AHI (Apnea-Hypopnea Index — events per hour)</li>
-<li>Count of Triggered Wake-Up Interventions</li>
+<li>Count of Triggered Wake-Up Interventions &amp; Patient Safety Acknowledgements</li>
 <li>Overall Sleep Breathing Quality Score (0–100)</li>
 </ul>
 </li>
-<li><strong>FR-4.2 (Interactive Respiration Timeline):</strong> The application shall render an interactive overnight respiration wave graph with color-coded markers for flagged apnea episodes and wake-up events.</li>
+<li><strong>FR-4.2 (Interactive Respiration Timeline):</strong> The application shall render an interactive overnight respiration wave graph with color-coded markers for flagged apnea episodes, wake-up alarms, and safety acknowledgement timestamps.</li>
 <li><strong>FR-4.3 (Calendar &amp; History Filter):</strong> Users shall be able to filter historical sleep sessions by day, week, or month using an interactive calendar strip.</li>
 <li><strong>FR-4.4 (Educational Library):</strong> The application shall provide integrated articles and video guides on sleep hygiene, obstructive sleep apnea signs, and physician consultation guidance.</li>
 </ul>
@@ -251,8 +258,8 @@ author: Mary (Business Analyst)</h2>
 </ul>
 <h3 id="42-nfr-2-performance-alert-latency">4.2 NFR-2: Performance &amp; Alert Latency</h3>
 <ul>
-<li><strong>Local Alert Trigger:</strong> Tier-1 local haptic/audio alarms shall trigger within <strong>&lt; 200 milliseconds</strong> of detecting an apnea threshold breach.</li>
-<li><strong>Cloud Signal Latency:</strong> Tier-2 cloud emergency payload transmission shall complete within <strong>&lt; 1.5 seconds</strong> under standard 4G/5G/Wi-Fi conditions.</li>
+<li><strong>Local Alert Trigger:</strong> Primary smartphone audio/haptic alarms shall trigger within <strong>&lt; 200 milliseconds</strong> of detecting an apnea threshold breach.</li>
+<li><strong>Cloud Signal Latency:</strong> Safety acknowledgement and Tier-2 emergency signal payloads shall transmit to the cloud backend within <strong>&lt; 1.5 seconds</strong> under standard 4G/5G/Wi-Fi conditions.</li>
 </ul>
 <h3 id="43-nfr-3-battery-efficiency-thermal-safety">4.3 NFR-3: Battery Efficiency &amp; Thermal Safety</h3>
 <ul>
@@ -265,7 +272,6 @@ author: Mary (Business Analyst)</h2>
 <li><strong>Cloud Encryption:</strong> All stored sleep telemetry and emergency payload logs in the cloud backend shall be encrypted at rest (AES-256) and compliant with HIPAA/GDPR health privacy standards.</li>
 </ul>
 <h3 id="45-nfr-5-real-time-data-visualization-chart-specifications">4.5 NFR-5: Real-Time Data Visualization &amp; Chart Specifications</h3>
-<p>To ensure high-performance, responsive visual feedback, the application shall implement the following chart types and rendering engines (analyzed from <code>dennis-masker</code> repository patterns):</p>
 <table>
 <thead>
 <tr>
@@ -303,7 +309,7 @@ author: Mary (Business Analyst)</h2>
 <td style="text-align:left"><strong>Multi-Axis Historical Session Chart</strong></td>
 <td style="text-align:left"><code>victory-native</code> (<code>VictoryChart</code>, <code>VictoryAxis</code>)</td>
 <td style="text-align:left">Overnight AHI events, SpO2 trends, and Heart Rate over 8-hour sleep timelines.</td>
-<td style="text-align:left">Pinch-to-zoom and pan interactions across multi-hour sleep timelines with color-coded event markers for wake-up alerts.</td>
+<td style="text-align:left">Pinch-to-zoom and pan interactions across multi-hour sleep timelines with color-coded event markers for wake-up alerts &amp; safety acknowledgements.</td>
 </tr>
 </tbody>
 </table>
@@ -324,14 +330,14 @@ author: Mary (Business Analyst)</h2>
 <td style="text-align:left">Automated signal simulation tests</td>
 </tr>
 <tr>
+<td style="text-align:left"><strong>Safety Acknowledgement Dispatch</strong></td>
+<td style="text-align:left">&lt; 1.5s signal transmission to cloud</td>
+<td style="text-align:left">End-to-end cloud status verification</td>
+</tr>
+<tr>
 <td style="text-align:left"><strong>Pre-Sleep Calibration Completion</strong></td>
 <td style="text-align:left">&gt;95% first-attempt success rate</td>
 <td style="text-align:left">In-app event telemetry</td>
-</tr>
-<tr>
-<td style="text-align:left"><strong>Cloud Alert Latency</strong></td>
-<td style="text-align:left">&lt; 1.5 seconds</td>
-<td style="text-align:left">End-to-end cloud dispatch monitoring</td>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Overnight Battery Efficiency</strong></td>
@@ -346,8 +352,9 @@ author: Mary (Business Analyst)</h2>
 </tbody>
 </table>
 <hr>
-<h2 id="6-future-expansion-roadmap">6. Future Expansion Roadmap</h2>
+<h2 id="6-future-expansion-hardware-enhancement-roadmap">6. Future Expansion &amp; Hardware Enhancement Roadmap</h2>
 <ul>
+<li><strong>⚡ HW-ENHANCEMENT-1 (Device Micro-Electrical Stimulation - EMS/TENS):</strong> Future hardware revisions of the small breathing device may integrate mild micro-electrical stimulation (safe EMS micro-pulses) delivered directly via the device hardware to gently stimulate airway muscles and wake the patient.</li>
 <li><strong>Doctor-Ready PDF Export:</strong> One-tap export of 8-hour overnight breathing graphs formatted for sleep medical specialists.</li>
 <li><strong>Smart Home IoT Action Triggers:</strong> Automated cloud integration to turn on bedroom lights or raise bed incline during severe apnea alerts.</li>
 <li><strong>Positional Sleep Tracking:</strong> Correlating nocturnal apnea episodes with body sleeping posture (back vs. side).</li>
