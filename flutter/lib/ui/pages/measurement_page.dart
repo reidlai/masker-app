@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/ble/ble_sensor_driver.dart';
+import '../../core/monitoring/apnea_evaluator.dart';
 import '../organisms/thermal_calibration_wizard.dart';
+import '../organisms/apnea_alert_overlay.dart';
 import '../atoms/app_button.dart';
 
 class MeasurementPage extends StatefulWidget {
@@ -13,9 +16,15 @@ class MeasurementPage extends StatefulWidget {
 
 class _MeasurementPageState extends State<MeasurementPage> {
   final BLESensorDriver _bleDriver = BLESensorDriver();
+  ApneaEvaluator? _apneaEvaluator;
+  StreamSubscription<double>? _telemetrySub;
+  StreamSubscription<ApneaState>? _evaluatorStateSub;
+
   bool _isBleConnected = false;
   bool _isCalibrationComplete = false;
   bool _isMonitoringActive = false;
+  bool _showAlertOverlay = false;
+  int _alertCountdown = 30;
 
   @override
   void initState() {
@@ -34,17 +43,51 @@ class _MeasurementPageState extends State<MeasurementPage> {
 
   void _startSleepMonitoring() {
     if (!mounted) return;
+
+    _apneaEvaluator = ApneaEvaluator(threshold: _bleDriver.apneaThreshold);
+
+    _evaluatorStateSub = _apneaEvaluator!.stateStream.listen((state) {
+      if (!mounted) return;
+      if (state == ApneaState.breachAlert) {
+        setState(() {
+          _showAlertOverlay = true;
+        });
+      } else if (state == ApneaState.patientSafe) {
+        setState(() {
+          _showAlertOverlay = false;
+        });
+      }
+    });
+
+    _apneaEvaluator!.countdownStream.listen((seconds) {
+      if (mounted) {
+        setState(() {
+          _alertCountdown = seconds;
+        });
+      }
+    });
+
+    _telemetrySub = _bleDriver.thermalStream.listen((signal) {
+      _apneaEvaluator?.evaluateSignal(signal);
+    });
+
     setState(() {
       _isMonitoringActive = true;
     });
+
     _bleDriver.startTelemetryLogging();
   }
 
   void _stopSleepMonitoring() {
+    _telemetrySub?.cancel();
+    _evaluatorStateSub?.cancel();
+    _apneaEvaluator?.dispose();
     _bleDriver.stopTelemetryLogging();
+
     if (mounted) {
       setState(() {
         _isMonitoringActive = false;
+        _showAlertOverlay = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Sleep session saved — Morning summary ready ✓"), backgroundColor: AppColors.accentGreen),
@@ -52,14 +95,35 @@ class _MeasurementPageState extends State<MeasurementPage> {
     }
   }
 
+  void _handlePatientSafe() {
+    _apneaEvaluator?.acknowledgePatientSafe();
+    if (mounted) {
+      setState(() {
+        _showAlertOverlay = false;
+      });
+    }
+  }
+
   @override
   void dispose() {
+    _telemetrySub?.cancel();
+    _evaluatorStateSub?.cancel();
+    _apneaEvaluator?.dispose();
     _bleDriver.disconnect();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_showAlertOverlay) {
+      return Scaffold(
+        body: ApneaAlertOverlay(
+          countdownSeconds: _alertCountdown,
+          onPatientSafe: _handlePatientSafe,
+        ),
+      );
+    }
+
     if (_isMonitoringActive) {
       // 0-FPS Night Mode Display Lock (#000000)
       return Scaffold(
