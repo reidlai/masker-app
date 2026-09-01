@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import 'home_page.dart';
 import 'measurement_page.dart';
+import 'summary_screen_page.dart';
 import 'profile_page.dart';
 
 class MainContainerPage extends StatefulWidget {
@@ -17,6 +18,7 @@ class _MainContainerPageState extends State<MainContainerPage> {
   final List<Widget> _pages = const [
     HomePage(),
     MeasurementPage(),
+    SummaryScreenPage(),
     ProfilePage(),
   ];
 
@@ -36,8 +38,9 @@ class _MainContainerPageState extends State<MainContainerPage> {
           currentIndex: _currentIndex,
           backgroundColor: Colors.transparent,
           elevation: 0,
-          selectedItemColor: AppColors.primaryTeal,
-          unselectedItemColor: AppColors.textMuted,
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: AppColors.accentGreen,
+          unselectedItemColor: AppColors.textSecondary,
           onTap: (index) {
             setState(() {
               _currentIndex = index;
@@ -50,14 +53,19 @@ class _MainContainerPageState extends State<MainContainerPage> {
               label: 'Home',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.insights_outlined),
-              activeIcon: Icon(Icons.insights),
-              label: 'Records',
+              icon: Icon(Icons.nightlight_outlined),
+              activeIcon: Icon(Icons.nightlight_round),
+              label: 'Monitor',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.bar_chart_outlined),
+              activeIcon: Icon(Icons.bar_chart),
+              label: 'Summary',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),
               activeIcon: Icon(Icons.person),
-              label: 'Settings',
+              label: 'Profile',
             ),
           ],
         ),
