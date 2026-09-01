@@ -6,11 +6,14 @@
     <bpmn:participant id="Participant_Patient" name="Patient Sleep Operations" processRef="Process_Patient" />
     <bpmn:participant id="Participant_EmergencyCenter" name="Emergency Center" processRef="Process_EmergencyCenter" />
     <bpmn:participant id="Participant_Clinic" name="Clinic &#38; Physician [Future]" processRef="Process_Clinic" />
+    <bpmn:participant id="Participant_DeviceLostRecovery" name="Device Loss &#38; Mobile Recovery Operations" processRef="Process_DeviceLostRecovery" />
+    <bpmn:participant id="Participant_MobileDashboardReview" name="Mobile Dashboard Review &#38; Analytics" processRef="Process_MobileDashboardReview" />
     
     <bpmn:messageFlow id="Flow_Registration_Backoffice" name="Patient Profile &#38; Device Serial" sourceRef="Task_CreateUserProfile" targetRef="Task_VerifyPatientIdentity" />
     <bpmn:messageFlow id="Flow_Passkey_Auth" name="Registered Passkey Credential" sourceRef="Task_RegisterPasskey" targetRef="Task_PasskeyAuth" />
     <bpmn:messageFlow id="Flow_Emergency_Dispatch" name="30s Unacknowledged Alarm Push" sourceRef="Task_SleepMonitoring" targetRef="Task_DashboardAlert" />
     <bpmn:messageFlow id="Flow_Morning_Sync" name="Morning Sleep Summary &#38; AHI Score" sourceRef="Task_EndSession" targetRef="Task_DoctorSync" />
+    <bpmn:messageFlow id="Flow_Dashboard_Review" name="Morning Sleep Summary Data Stream" sourceRef="Task_EndSession" targetRef="Task_ReviewMorningSummary" />
   </bpmn:collaboration>
 
   <!-- SWIMLANE 1: PATIENT ONBOARDING -->
@@ -227,6 +230,88 @@
     <bpmn:sequenceFlow id="Flow_C3" sourceRef="Task_PhysicianReview" targetRef="End_ClinicComplete" />
   </bpmn:process>
 
+  <!-- SWIMLANE 6: DEVICE LOSS & MOBILE RECOVERY OPERATIONS -->
+  <bpmn:process id="Process_DeviceLostRecovery" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_DeviceLostRecovery">
+      <bpmn:lane id="Lane_DeviceLostRecovery" name="Device Loss &#38; Mobile Recovery Operations">
+        <bpmn:flowNodeRef>Start_DeviceLostTrigger</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReportDeviceLost</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReportMobileLost</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_TriggerRemoteWipe</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RebindReplacementDevice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_DeviceRecoveryComplete</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_DeviceLostTrigger" name="Start: Device / Mobile Lost Reported">
+      <bpmn:outgoing>Flow_L1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_ReportDeviceLost" name="Report D-BAND Sensor Lost / Stolen">
+      <bpmn:incoming>Flow_L1</bpmn:incoming>
+      <bpmn:outgoing>Flow_L2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_ReportMobileLost" name="Report Mobile Phone Lost / Stolen">
+      <bpmn:incoming>Flow_L2</bpmn:incoming>
+      <bpmn:outgoing>Flow_L3</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Task_TriggerRemoteWipe" name="Issue Cryptographic Remote Wipe Signal">
+      <bpmn:incoming>Flow_L3</bpmn:incoming>
+      <bpmn:outgoing>Flow_L4</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Task_RebindReplacementDevice" name="Pair &#38; Bind Replacement D-BAND Device">
+      <bpmn:incoming>Flow_L4</bpmn:incoming>
+      <bpmn:outgoing>Flow_L5</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_DeviceRecoveryComplete" name="End: Device Recovery Complete">
+      <bpmn:incoming>Flow_L5</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_L1" sourceRef="Start_DeviceLostTrigger" targetRef="Task_ReportDeviceLost" />
+    <bpmn:sequenceFlow id="Flow_L2" sourceRef="Task_ReportDeviceLost" targetRef="Task_ReportMobileLost" />
+    <bpmn:sequenceFlow id="Flow_L3" sourceRef="Task_ReportMobileLost" targetRef="Task_TriggerRemoteWipe" />
+    <bpmn:sequenceFlow id="Flow_L4" sourceRef="Task_TriggerRemoteWipe" targetRef="Task_RebindReplacementDevice" />
+    <bpmn:sequenceFlow id="Flow_L5" sourceRef="Task_RebindReplacementDevice" targetRef="End_DeviceRecoveryComplete" />
+  </bpmn:process>
+
+  <!-- SWIMLANE 7: MOBILE DASHBOARD REVIEW & ANALYTICS -->
+  <bpmn:process id="Process_MobileDashboardReview" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_MobileDashboardReview">
+      <bpmn:lane id="Lane_MobileDashboardReview" name="Mobile Dashboard Review &#38; Analytics">
+        <bpmn:flowNodeRef>Start_DashboardReviewTrigger</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReviewMorningSummary</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_InspectRespirationWaveform</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_FilterHistoricalSessions</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ExportDoctorReport</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_DashboardReviewComplete</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_DashboardReviewTrigger" name="Start: Session Ended / App Open">
+      <bpmn:outgoing>Flow_D1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_ReviewMorningSummary" name="Review Morning Sleep Summary &#38; AHI Score">
+      <bpmn:incoming>Flow_D1</bpmn:incoming>
+      <bpmn:outgoing>Flow_D2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_InspectRespirationWaveform" name="Inspect Interactive Respiration Waveform &#38; FFT Spectrum">
+      <bpmn:incoming>Flow_D2</bpmn:incoming>
+      <bpmn:outgoing>Flow_D3</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_FilterHistoricalSessions" name="Filter Historical Sleep Sessions &#38; Trends">
+      <bpmn:incoming>Flow_D3</bpmn:incoming>
+      <bpmn:outgoing>Flow_D4</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_ExportDoctorReport" name="Generate Signed Clinical Report for Physician">
+      <bpmn:incoming>Flow_D4</bpmn:incoming>
+      <bpmn:outgoing>Flow_D5</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_DashboardReviewComplete" name="End: Dashboard Review Complete">
+      <bpmn:incoming>Flow_D5</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_D1" sourceRef="Start_DashboardReviewTrigger" targetRef="Task_ReviewMorningSummary" />
+    <bpmn:sequenceFlow id="Flow_D2" sourceRef="Task_ReviewMorningSummary" targetRef="Task_InspectRespirationWaveform" />
+    <bpmn:sequenceFlow id="Flow_D3" sourceRef="Task_InspectRespirationWaveform" targetRef="Task_FilterHistoricalSessions" />
+    <bpmn:sequenceFlow id="Flow_D4" sourceRef="Task_FilterHistoricalSessions" targetRef="Task_ExportDoctorReport" />
+    <bpmn:sequenceFlow id="Flow_D5" sourceRef="Task_ExportDoctorReport" targetRef="End_DashboardReviewComplete" />
+  </bpmn:process>
+
   <bpmndi:BPMNDiagram id="BPMNDiagram_SleepApnea">
     <bpmndi:BPMNPlane id="BPMNPlane_SleepApnea" bpmnElement="Collaboration_SleepApnea">
       <bpmndi:BPMNShape id="Participant_Onboarding_di" bpmnElement="Participant_Onboarding" isHorizontal="true"><dc:Bounds x="10" y="50" width="1680" height="170" /></bpmndi:BPMNShape>
@@ -234,6 +319,22 @@
       <bpmndi:BPMNShape id="Participant_Patient_di" bpmnElement="Participant_Patient" isHorizontal="true"><dc:Bounds x="10" y="430" width="1680" height="200" /></bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Participant_EmergencyCenter_di" bpmnElement="Participant_EmergencyCenter" isHorizontal="true"><dc:Bounds x="10" y="650" width="1680" height="200" /></bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Participant_Clinic_di" bpmnElement="Participant_Clinic" isHorizontal="true"><dc:Bounds x="10" y="870" width="1680" height="180" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_DeviceLostRecovery_di" bpmnElement="Participant_DeviceLostRecovery" isHorizontal="true"><dc:Bounds x="10" y="1070" width="1680" height="190" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_MobileDashboardReview_di" bpmnElement="Participant_MobileDashboardReview" isHorizontal="true"><dc:Bounds x="10" y="1280" width="1680" height="190" /></bpmndi:BPMNShape>
+      
+      <bpmndi:BPMNShape id="Lane_MobileDashboardReview_di" bpmnElement="Lane_MobileDashboardReview" isHorizontal="true"><dc:Bounds x="40" y="1280" width="1650" height="190" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_DashboardReviewTrigger_di" bpmnElement="Start_DashboardReviewTrigger"><dc:Bounds x="100" y="1345" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReviewMorningSummary_di" bpmnElement="Task_ReviewMorningSummary"><dc:Bounds x="160" y="1305" width="155" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_InspectRespirationWaveform_di" bpmnElement="Task_InspectRespirationWaveform"><dc:Bounds x="355" y="1305" width="165" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_FilterHistoricalSessions_di" bpmnElement="Task_FilterHistoricalSessions"><dc:Bounds x="560" y="1305" width="155" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ExportDoctorReport_di" bpmnElement="Task_ExportDoctorReport"><dc:Bounds x="755" y="1305" width="155" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_DashboardReviewComplete_di" bpmnElement="End_DashboardReviewComplete"><dc:Bounds x="950" y="1345" width="36" height="36" /></bpmndi:BPMNShape>
+      
+      <bpmndi:BPMNEdge id="Flow_D1_di" bpmnElement="Flow_D1"><di:waypoint x="136" y="1363" /><di:waypoint x="160" y="1363" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_D2_di" bpmnElement="Flow_D2"><di:waypoint x="315" y="1363" /><di:waypoint x="355" y="1363" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_D3_di" bpmnElement="Flow_D3"><di:waypoint x="520" y="1363" /><di:waypoint x="560" y="1363" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_D4_di" bpmnElement="Flow_D4"><di:waypoint x="715" y="1363" /><di:waypoint x="755" y="1363" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_D5_di" bpmnElement="Flow_D5"><di:waypoint x="910" y="1363" /><di:waypoint x="950" y="1363" /></bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>

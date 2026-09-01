@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="1100" viewBox="0 0 1680 1100" version="1.1">
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="1470" viewBox="0 0 1680 1470" version="1.1">
   <defs>
     <style>
       .pool-bg-1 { fill: #FDF4FF; stroke: #7E22CE; stroke-width: 2px; }
@@ -7,12 +7,16 @@
       .pool-bg-3 { fill: #F8FAFC; stroke: #475569; stroke-width: 2px; }
       .pool-bg-4 { fill: #FEF2F2; stroke: #991B1B; stroke-width: 2px; }
       .pool-bg-5 { fill: #F0FDF4; stroke: #166534; stroke-width: 2px; stroke-dasharray: 6 4; }
+      .pool-bg-6 { fill: #EFF6FF; stroke: #1D4ED8; stroke-width: 2px; }
+      .pool-bg-7 { fill: #F5F3FF; stroke: #6D28D9; stroke-width: 2px; }
       
       .pool-header-1 { fill: #6B21A8; }
       .pool-header-2 { fill: #92400E; }
       .pool-header-3 { fill: #334155; }
       .pool-header-4 { fill: #B91C1C; }
       .pool-header-5 { fill: #15803D; }
+      .pool-header-6 { fill: #1E40AF; }
+      .pool-header-7 { fill: #5B21B6; }
 
       .header-text { font-family: 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: bold; fill: #FFFFFF; text-anchor: middle; }
 
@@ -153,20 +157,15 @@
 
   <rect x="1430" y="480" width="120" height="80" class="task-rect" />
   <text x="1490" y="500" class="task-title">End Session</text>
-  <text x="1490" y="514" class="task-desc">Morning Summary</text>
-  <text x="1490" y="528" class="task-desc">Unpair Sensor</text>
+  <rect x="20" y="1250" width="1640" height="200" class="pool-bg-7" rx="6" />
+  <path d="M 20 1256 A 6 6 0 0 1 26 1250 L 60 1250 L 60 1440 L 26 1440 A 6 6 0 0 1 20 1434 Z" class="pool-header-7" />
+  <text x="40" y="1350" class="header-text" transform="rotate(-90 40 1350)">Analytics &amp; Data Pipeline</text>
 
-  <circle cx="1585" cy="520" r="16" class="event-end" />
-  <text x="1585" y="550" class="event-text">Complete</text>
-
-  <path d="M 101 520 L 537 520" class="flow-path" marker-end="url(#arrow)" />
-  <path d="M 672 520 L 695 520" class="flow-path" marker-end="url(#arrow)" />
+  <path d="M 1160 520 L 1215 520" class="flow-path" marker-end="url(#arrow)" />
   <path d="M 815 520 L 835 520" class="flow-path" marker-end="url(#arrow)" />
   <path d="M 955 520 L 975 520" class="flow-path" marker-end="url(#arrow)" />
   <path d="M 1095 520 L 1120 520" class="flow-path" marker-end="url(#arrow)" />
 
-  <path d="M 1160 520 L 1215 520" class="flow-path" marker-end="url(#arrow)" />
-  <text x="1180" y="512" class="flow-label">Yes</text>
 
   <path d="M 1140 500 L 1140 460 L 1035 460 L 1035 480" class="flow-path" marker-end="url(#arrow)" />
   <text x="1085" y="472" class="flow-label">No</text>
@@ -232,5 +231,79 @@
 
   <path d="M 1386 930 L 1430 930" class="flow-path" stroke-dasharray="4 3" marker-end="url(#arrow)" />
   <path d="M 1565 930 L 1594 930" class="flow-path" stroke-dasharray="4 3" marker-end="url(#arrow)" />
+
+  <!-- ==================== POOL 6: DEVICE LOSS & MOBILE RECOVERY OPERATIONS ==================== -->
+  <rect x="20" y="1040" width="1640" height="190" class="pool-bg-6" rx="6" />
+  <path d="M 20 1046 A 6 6 0 0 1 26 1040 L 60 1040 L 60 1230 L 26 1230 A 6 6 0 0 1 20 1224 Z" class="pool-header-6" />
+  <text x="40" y="1135" class="header-text" transform="rotate(-90 40 1135)">Device &amp; Mobile Lost Operations</text>
+
+  <circle cx="100" cy="1135" r="16" class="event-start" />
+  <text x="100" y="1165" class="event-text"><tspan x="100" dy="0">Start: Device/Mobile</tspan><tspan x="100" dy="11">Lost Reported</tspan></text>
+
+  <rect x="160" y="1095" width="145" height="80" class="task-rect" />
+  <text x="232" y="1115" class="task-title">Report Sensor Lost</text>
+  <text x="232" y="1129" class="task-desc">Unbind D-BAND Serial &amp;</text>
+  <text x="232" y="1143" class="task-desc">Blacklist MAC Address</text>
+
+  <rect x="340" y="1095" width="145" height="80" class="task-rect" />
+  <text x="412" y="1115" class="task-title">Report Mobile Lost</text>
+  <text x="412" y="1129" class="task-desc">Revoke JWT Sessions &amp;</text>
+  <text x="412" y="1143" class="task-desc">Invalidate Passkey Tokens</text>
+
+  <rect x="520" y="1095" width="155" height="80" class="task-rect" />
+  <text x="597" y="1115" class="task-title">Trigger Remote Wipe</text>
+  <text x="597" y="1129" class="task-desc">Sub-1s Zeroization of</text>
+  <text x="597" y="1143" class="task-desc">Local DB &amp; Enclave Keys</text>
+
+  <rect x="710" y="1095" width="155" height="80" class="task-rect" />
+  <text x="787" y="1115" class="task-title">Rebind Replacement</text>
+  <text x="787" y="1129" class="task-desc">Pair New D-BAND Hardware</text>
+  <text x="787" y="1143" class="task-desc">&amp; Retain Cloud History</text>
+
+  <circle cx="910" cy="1135" r="16" class="event-end" />
+  <text x="910" y="1165" class="event-text">Recovery Complete</text>
+
+  <path d="M 116 1135 L 160 1135" class="flow-path" marker-end="url(#arrow)" />
+  <path d="M 305 1135 L 340 1135" class="flow-path" marker-end="url(#arrow)" />
+  <path d="M 485 1135 L 520 1135" class="flow-path" marker-end="url(#arrow)" />
+  <path d="M 675 1135 L 710 1135" class="flow-path" marker-end="url(#arrow)" />
+  <path d="M 865 1135 L 894 1135" class="flow-path" marker-end="url(#arrow)" />
+
+  <!-- ==================== POOL 7: MOBILE DASHBOARD REVIEW & ANALYTICS ==================== -->
+  <rect x="20" y="1250" width="1640" height="190" class="pool-bg-7" rx="6" />
+  <path d="M 20 1256 A 6 6 0 0 1 26 1250 L 60 1250 L 60 1440 L 26 1440 A 6 6 0 0 1 20 1434 Z" class="pool-header-7" />
+  <text x="40" y="1345" class="header-text" transform="rotate(-90 40 1345)">Mobile Dashboard Review &amp; Analytics</text>
+
+  <circle cx="100" cy="1345" r="16" class="event-start" />
+  <text x="100" y="1375" class="event-text"><tspan x="100" dy="0">Start: Session Ended /</tspan><tspan x="100" dy="11">App Open</tspan></text>
+
+  <rect x="160" y="1305" width="155" height="80" class="task-rect" />
+  <text x="237" y="1325" class="task-title">Review Morning Summary</text>
+  <text x="237" y="1339" class="task-desc">Display AHI Score,</text>
+  <text x="237" y="1353" class="task-desc">Duration &amp; Quality Score</text>
+
+  <rect x="355" y="1305" width="165" height="80" class="task-rect" />
+  <text x="437" y="1325" class="task-title">Inspect Waveform &amp; FFT</text>
+  <text x="437" y="1339" class="task-desc">Skia 60 FPS GPU Wave,</text>
+  <text x="437" y="1353" class="task-desc">Spectral Peaks &amp; Apnea</text>
+
+  <rect x="560" y="1305" width="155" height="80" class="task-rect" />
+  <text x="637" y="1325" class="task-title">Filter History &amp; Trends</text>
+  <text x="637" y="1339" class="task-desc">Date Range &amp; Severity</text>
+  <text x="637" y="1353" class="task-desc">AHI Trend Analytics</text>
+
+  <rect x="755" y="1305" width="155" height="80" class="task-rect" />
+  <text x="832" y="1325" class="task-title">Export Doctor Report</text>
+  <text x="832" y="1339" class="task-desc">Signed FHIR JSON / PDF</text>
+  <text x="832" y="1353" class="task-desc">Physician Chart Share</text>
+
+  <circle cx="950" cy="1345" r="16" class="event-end" />
+  <text x="950" y="1375" class="event-text">Review Complete</text>
+
+  <path d="M 116 1345 L 160 1345" class="flow-path" marker-end="url(#arrow)" />
+  <path d="M 315 1345 L 355 1345" class="flow-path" marker-end="url(#arrow)" />
+  <path d="M 520 1345 L 560 1345" class="flow-path" marker-end="url(#arrow)" />
+  <path d="M 715 1345 L 755 1345" class="flow-path" marker-end="url(#arrow)" />
+  <path d="M 910 1345 L 934 1345" class="flow-path" marker-end="url(#arrow)" />
 
 </svg>
