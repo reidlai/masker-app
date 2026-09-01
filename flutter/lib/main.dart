@@ -4,17 +4,17 @@ import 'ui/pages/login_page.dart';
 import 'ui/pages/main_container_page.dart';
 
 void main() {
-  runApp(const DennisMaskerApp());
+  runApp(const MaskerApp());
 }
 
-class DennisMaskerApp extends StatefulWidget {
-  const DennisMaskerApp({super.key});
+class MaskerApp extends StatefulWidget {
+  const MaskerApp({super.key});
 
   @override
-  State<DennisMaskerApp> createState() => _DennisMaskerAppState();
+  State<MaskerApp> createState() => _MaskerAppState();
 }
 
-class _DennisMaskerAppState extends State<DennisMaskerApp> {
+class _MaskerAppState extends State<MaskerApp> {
   bool _isLoggedIn = false;
 
   @override
