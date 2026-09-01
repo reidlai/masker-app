@@ -10,8 +10,11 @@ class BLESensorDriver {
   BLEDeviceState _state = BLEDeviceState.disconnected;
   BLEDeviceState get state => _state;
 
-  final StreamController<double> _thermalStreamController = StreamController<double>.broadcast();
-  Stream<double> get thermalStream => _thermalStreamController.stream;
+  StreamController<double>? _thermalStreamController;
+  Stream<double> get thermalStream {
+    _thermalStreamController ??= StreamController<double>.broadcast();
+    return _thermalStreamController!.stream;
+  }
 
   Timer? _telemetryTimer;
   double _ambientNoiseFloor = 0.5; // N_idle
@@ -64,7 +67,7 @@ class BLESensorDriver {
       step += 0.1;
       // 10Hz sine wave simulating thermal breath stream
       double signal = (_breathBaselineVpp / 2) * (1 + sin(step)) + _ambientNoiseFloor;
-      _thermalStreamController.add(signal);
+      _thermalStreamController?.add(signal);
     });
   }
 
@@ -74,6 +77,8 @@ class BLESensorDriver {
 
   void disconnect() {
     stopTelemetryLogging();
+    _thermalStreamController?.close();
+    _thermalStreamController = null;
     _state = BLEDeviceState.disconnected;
   }
 }

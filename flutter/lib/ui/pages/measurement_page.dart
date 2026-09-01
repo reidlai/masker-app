@@ -33,6 +33,7 @@ class _MeasurementPageState extends State<MeasurementPage> {
   }
 
   void _startSleepMonitoring() {
+    if (!mounted) return;
     setState(() {
       _isMonitoringActive = true;
     });
@@ -41,12 +42,14 @@ class _MeasurementPageState extends State<MeasurementPage> {
 
   void _stopSleepMonitoring() {
     _bleDriver.stopTelemetryLogging();
-    setState(() {
-      _isMonitoringActive = false;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Sleep session saved — Morning summary ready ✓"), backgroundColor: AppColors.accentGreen),
-    );
+    if (mounted) {
+      setState(() {
+        _isMonitoringActive = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Sleep session saved — Morning summary ready ✓"), backgroundColor: AppColors.accentGreen),
+      );
+    }
   }
 
   @override
@@ -158,9 +161,11 @@ class _MeasurementPageState extends State<MeasurementPage> {
               ThermalCalibrationWizard(
                 bleDriver: _bleDriver,
                 onCalibrationComplete: () {
-                  setState(() {
-                    _isCalibrationComplete = true;
-                  });
+                  if (mounted) {
+                    setState(() {
+                      _isCalibrationComplete = true;
+                    });
+                  }
                 },
               ),
               const SizedBox(height: 32),
