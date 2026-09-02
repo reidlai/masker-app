@@ -1,9 +1,9 @@
 ---
 name: Sleep Apnea Detection App (D-BAND Integrated Platform)
 status: final
-version: 1.0.0
+version: 1.1.0
 created: 2026-09-01
-updated: 2026-09-01
+updated: 2026-09-02
 author: Sally (UX Designer) & Winston (System Architect)
 colors:
   primary: "#0F172A"       # Slate 900 (Deep Night Background)
@@ -16,6 +16,7 @@ colors:
   text_primary: "#F8FAFC"   # Slate 50 (High Contrast Text)
   text_secondary: "#94A3B8" # Slate 400 (Subtle Subtitles & Labels)
   night_mode: "#000000"     # Pure Black (0-FPS Sleep Display Lock)
+  pressed_surface: "#273449" # Slate 800 pressed (list-row / menu-row active background)
 typography:
   font_family: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
   h1: "32px / 700 / 1.2"
@@ -51,6 +52,9 @@ components:
   - CalibrationStepHeader
   - ApneaAlertBanner
   - SessionHistoryListItem
+  - BottomNavBar
+  - SettingsMenuRow
+  - SettingsSectionHeader
 ---
 
 # 🎨 DESIGN.md — Visual Identity & Design System Specification
@@ -79,6 +83,7 @@ The visual identity of the **Sleep Apnea Detection App** balances **clinical med
 | `{colors.text_primary}` | `#F8FAFC` | `hsl(210, 40%, 98%)` | Primary headlines, numerical bio-signal readings, and emergency titles. |
 | `{colors.text_secondary}` | `#94A3B8` | `hsl(215, 20%, 65%)` | Subtitles, unit labels (`L/s`, `BPM`, `events/hr`), and secondary metadata. |
 | `{colors.night_mode}` | `#000000` | `hsl(0, 0%, 0%)` | Pure black 0-FPS sleep monitoring screen lock state. |
+| `{colors.pressed_surface}` | `#273449` | `hsl(217, 30%, 22%)` | Pressed / active background for list rows and menu rows. |
 
 ---
 
@@ -139,6 +144,15 @@ Caption:      12px / Medium (500) / Line Height 1.4  -->  Chart Axes, Timestamps
 ### 4. `SessionHistoryListItem` (Molecule Component)
 * **Visual Structure:** Horizontal list card displaying session date (`14px #F8FAFC`), duration (`12px #94A3B8`), color-coded AHI score badge (`AHI 3.2 Normal`), and right chevron arrow.
 
+### 5. `BottomNavBar` (Organism Component)
+* **Visual Structure:** Persistent bottom bar on `{colors.surface}` (`#1E293B`) with a 1px top border `{colors.surface_border}` (`#334155`), respecting the device safe-area inset. Four equal-width items, each an outlined icon (24dp) above a `{typography.caption}` label (`12px`). **Active** item: icon + label in `{colors.accent_green}` (`#10B981`). **Inactive**: `{colors.text_secondary}` (`#94A3B8`). Item 4 is the outlined **gear** (`settings`) icon with label **"Settings"**. No badges. *(Visibility rules — hidden during onboarding and Night Mode — are behavioral; see `EXPERIENCE.md` §Component Patterns.)*
+
+### 6. `SettingsMenuRow` (Molecule Component)
+* **Visual Structure:** Full-width row inside a grouped card on `{colors.surface}` (`#1E293B`, `8px` radius `{rounded.md}`, 1px `#334155` border). Layout: leading 24dp icon · label (`{typography.body}` `14px #F8FAFC`) · flexible spacer · trailing right chevron (`#94A3B8`). Horizontal padding `16px` (`{spacing.lg}`); min height `48dp` (`{spacing.touch_target_min}`); 1px `#334155` divider between rows (never after the last). **Navigable variant** (Profile): chevron present, label at full-contrast `#F8FAFC`. **Inert variant** (Debugging, Developer): **no chevron**, label at `{colors.text_secondary}` (`#94A3B8`). Pressed state (navigable rows): row background lifts to `{colors.pressed_surface}` (`#273449`).
+
+### 7. `SettingsSectionHeader` (Atom Component)
+* **Visual Structure:** Left-aligned label in `{typography.caption}` (`12px`, weight 500) `{colors.text_secondary}` (`#94A3B8`), `0.04em` letter-spacing, sentence case ("Advanced"). Spacing: `24px` (`{spacing.xl}`) above, `8px` (`{spacing.sm}`) below. **Rendered only when its section contains at least one visible row** — never shown above an empty section.
+
 ---
 
 ## Do's and Don'ts
@@ -147,8 +161,10 @@ Caption:      12px / Medium (500) / Line Height 1.4  -->  Chart Axes, Timestamps
 * **DO** use tabular numbers (`tabular-nums`) for all 10Hz live bio-signal numbers and countdown clocks to eliminate layout shifts.
 * **DO** enforce pitch black `#000000` for Night Mode to prevent sleep disturbance.
 * **DO** maintain high contrast ($\ge 4.5:1$) for all medical text against dark surfaces.
+* **DO** gate the Debugging and Developer rows on build flags, and hide the "Advanced" `SettingsSectionHeader` whenever both are off.
 
 ### ❌ DON'T:
 * **DON'T** use bright white backgrounds (`#FFFFFF`) on primary mobile monitoring screens.
 * **DON'T** use subtle or small buttons for the emergency "I'm Safe" dismiss action.
 * **DON'T** introduce complex decorative animations during live 10Hz signal logging (keep GPU rendering streamlined).
+* **DON'T** give the inert Debugging / Developer rows a trailing chevron — the chevron is reserved for rows that navigate.
