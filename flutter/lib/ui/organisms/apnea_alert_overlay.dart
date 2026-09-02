@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_theme.dart';
 import '../atoms/app_button.dart';
 
 class ApneaAlertOverlay extends StatelessWidget {

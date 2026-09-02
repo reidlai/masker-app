@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../../lib/core/ble/ble_sensor_driver.dart';
+import 'package:masker_app/core/ble/ble_sensor_driver.dart';
 
 void main() {
   group('BLESensorDriver Unit Tests', () {
@@ -27,7 +27,7 @@ void main() {
 
     test('Stage 1 room noise calibration computes positive N_idle floor', () async {
       double nIdle = await driver.calibrateStage1NoiseFloor();
-      expect(nIdle, isGreaterThan(0.0));
+      expect(nIdle, greaterThan(0.0));
       expect(driver.ambientNoiseFloor, equals(nIdle));
     });
 

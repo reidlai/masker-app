@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../../lib/ui/pages/summary_screen_page.dart';
+import 'package:masker_app/ui/pages/summary_screen_page.dart';
 
 void main() {
   testWidgets('SummaryScreenPage renders AHI score 92, metrics grid, and FHIR export button', (WidgetTester tester) async {
@@ -26,6 +26,10 @@ void main() {
     // Verify Export Button
     final Finder exportBtn = find.text("Export Signed Report for Physician");
     expect(exportBtn, findsOneWidget);
+
+    // Button sits below the fold in the scroll view; bring it on-screen first.
+    await tester.ensureVisible(exportBtn);
+    await tester.pumpAndSettle();
 
     // Tap Export button
     await tester.tap(exportBtn);

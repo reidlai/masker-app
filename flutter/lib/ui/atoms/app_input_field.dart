@@ -6,6 +6,7 @@ class AppInputField extends StatelessWidget {
   final String hint;
   final bool isPassword;
   final TextEditingController? controller;
+  final ValueChanged<String>? onChanged;
 
   const AppInputField({
     super.key,
@@ -13,6 +14,7 @@ class AppInputField extends StatelessWidget {
     required this.hint,
     this.isPassword = false,
     this.controller,
+    this.onChanged,
   });
 
   @override
@@ -31,6 +33,7 @@ class AppInputField extends StatelessWidget {
         const SizedBox(height: 8),
         TextField(
           controller: controller,
+          onChanged: onChanged,
           obscureText: isPassword,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(

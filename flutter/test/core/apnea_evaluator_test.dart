@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../../lib/core/monitoring/apnea_evaluator.dart';
+import 'package:masker_app/core/monitoring/apnea_evaluator.dart';
 
 void main() {
   group('ApneaEvaluator Unit Tests', () {
