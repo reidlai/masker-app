@@ -136,7 +136,9 @@
 <p>stepsCompleted:</p>
 <ul>
 <li>step-01-validate-prerequisites</li>
-<li>step-02-design-epics
+<li>step-02-design-epics</li>
+<li>step-03-create-stories</li>
+<li>step-04-final-validation
 inputDocuments:</li>
 <li>_bmad-output/prd/prd.md</li>
 <li>_bmad-output/architecture/ARCHITECTURE-SPINE.md</li>
@@ -182,6 +184,8 @@ In accordance with product owner strategy, <strong>MVP1 focuses exclusively on t
 <li><strong>FR-5.2:</strong> Health Profile Management collecting and managing user health baseline profile (Weight, Height, Age, Gender, computed BMI, Emergency Contacts).</li>
 <li><strong>FR-5.3:</strong> Extensible Doctor Sharing Framework providing a dedicated &quot;Share Profile with Doctor&quot; UI module and extensible JSON data export engine formatted for physician chart sharing.</li>
 <li><strong>FR-5.4:</strong> Mobile Device Lost &amp; Remote Session Revocation self-service Web Portal allowing users or emergency contacts to report a lost mobile phone, revoking active JWT session tokens and issuing a cryptographic remote wipe signal.</li>
+<li><strong>FR-5.5:</strong> Application Documentation &amp; Developer Setup Guide providing comprehensive developer README covering project summary, product background, quick start, developer mode, debugging mode, and release build workflows.</li>
+<li><strong>FR-5.6:</strong> Developer Options Page &amp; BLE Signal Simulator providing interactive controls for simulating 2-stage calibration lifecycles (<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.109em;">N</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.109em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">idle</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> &amp; <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">pp</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span>) and nocturnal sleep cycles (normal 16 bpm respiration streams, <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7719em;vertical-align:-0.136em;"></span><span class="mrel">≥</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">10</span><span class="mord text"><span class="mord">s</span></span></span></span></span> apnea breathing stop alerts, and 5s patient breathing recovery signals).</li>
 </ul>
 <h3 id="nonfunctional-requirements">NonFunctional Requirements</h3>
 <ul>
@@ -255,11 +259,13 @@ In accordance with product owner strategy, <strong>MVP1 focuses exclusively on t
 <li><strong>FR-5.2:</strong> Epic 1 (Mobile App Infrastructure &amp; Biometric Passkey Onboarding)</li>
 <li><strong>FR-5.3:</strong> Epic 6 (Clinic &amp; Attending Physician Diagnostic Portal - UNPLANNED)</li>
 <li><strong>FR-5.4:</strong> Epic 5 (Backoffice Hardware Provisioning - UNPLANNED)</li>
+<li><strong>FR-5.5:</strong> Epic 1 (Mobile App Infrastructure &amp; Biometric Passkey Onboarding)</li>
+<li><strong>FR-5.6:</strong> Epic 1 (Mobile App Infrastructure &amp; Biometric Passkey Onboarding)</li>
 </ul>
 <h2 id="epic-list">Epic List</h2>
 <h3 id="epic-1-mobile-app-infrastructure-ui-kit-biometric-passkey-onboarding-mvp1-active">Epic 1: Mobile App Infrastructure, UI Kit &amp; Biometric Passkey Onboarding (MVP1 - Active)</h3>
-<p>Patients can perform passwordless FIDO2 Passkey registration using native biometrics (Face ID / Touch ID), set up their medical baseline profile, and navigate a responsive <code>flutter_shadcn</code> dark glassmorphic UI.
-<strong>FRs covered:</strong> FR-5.1, FR-5.2 | <strong>NFRs:</strong> NFR-4.1, NFR-4.4, NFR-4.5 | <strong>UX-DRs:</strong> UX-DR1</p>
+<p>Patients can perform passwordless FIDO2 Passkey registration using native biometrics (Face ID / Touch ID), set up their medical baseline profile, navigate a responsive <code>flutter_shadcn</code> dark glassmorphic UI, access developer onboarding documentation, and access the Developer Options Page with interactive BLE signal simulation controls.
+<strong>FRs covered:</strong> FR-5.1, FR-5.2, FR-5.5, FR-5.6 | <strong>NFRs:</strong> NFR-4.1, NFR-4.4, NFR-4.5 | <strong>UX-DRs:</strong> UX-DR1</p>
 <h3 id="epic-2-ble-bluetooth-sensor-discovery-pairing-thermal-calibration-mvp1-active">Epic 2: BLE Bluetooth Sensor Discovery, Pairing &amp; Thermal Calibration (MVP1 - Active)</h3>
 <p>Patients can turn on their D-BAND thermal sensor array, auto-discover and pair via encrypted BLE (BLE 4.0, 4.1, 4.2, 5.0+), execute Stage 1 room noise (<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.109em;">N</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.109em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">idle</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>) and Stage 2 active breath (<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">pp</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span>) calibration, transform thermal <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord">Δ</span><span class="mord mathnormal" style="margin-right:0.1389em;">T</span></span></span></span> into volumetric airflow rates, and enforce wear verification guardrails.
 <strong>FRs covered:</strong> FR-1.1, FR-1.2, FR-1.3, FR-1.4, FR-1.5, FR-1.6, FR-1.7, FR-1.8 | <strong>NFRs:</strong> NFR-1.1, NFR-6.5 | <strong>UX-DRs:</strong> UX-DR4</p>
@@ -283,6 +289,203 @@ In accordance with product owner strategy, <strong>MVP1 focuses exclusively on t
 <h3 id="epic-8-cloud-big-data-analytics-de-identified-clinical-research-export-unplanned">Epic 8: Cloud Big Data Analytics &amp; De-Identified Clinical Research Export (UNPLANNED)</h3>
 <p>Cloud big data pipeline for de-identified PHI data exports, clinical trial research integration (PolyU/CUHK), and cloud-side neural network re-classification.
 <strong>FRs covered:</strong> FR-2.5, FR-4.5 | <strong>Status:</strong> UNPLANNED</p>
+<hr>
+<h2 id="detailed-user-stories-mvp1-active-epics">Detailed User Stories (MVP1 Active Epics)</h2>
+<h3 id="epic-1-mobile-app-infrastructure-ui-kit-biometric-passkey-onboarding">Epic 1: Mobile App Infrastructure, UI Kit &amp; Biometric Passkey Onboarding</h3>
+<h4 id="story-11-passkey-fido2webauthn-biometric-authentication">Story 1.1: Passkey FIDO2/WebAuthn Biometric Authentication</h4>
+<p>As a patient,<br>
+I want to authenticate passwordlessly using my device biometrics (Face ID / Touch ID / Android BiometricPrompt),<br>
+So that my PHI health data is securely encrypted under HIPAA §164.312 without requiring vulnerable passwords.</p>
+<p><strong>Acceptance Criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> the app launches on <code>LoginPage</code>,</li>
+<li><strong>When</strong> I tap &quot;Sign in with Passkey&quot;,</li>
+<li><strong>Then</strong> <code>AuthBloc</code> dispatches <code>AuthPasskeySubmitted</code> and triggers native OS biometric authentication.</li>
+<li><strong>And</strong> upon success, the state transitions to <code>AuthAuthenticated</code> and navigates to <code>MainContainerPage</code>.</li>
+<li><strong>And</strong> UI is composed of <code>BrandHeaderOrganism</code>, <code>PasskeyAuthCardOrganism</code>, and <code>SecurityBadgeOrganism</code>.</li>
+</ul>
+<h4 id="story-12-patient-health-baseline-demographics-setup">Story 1.2: Patient Health Baseline &amp; Demographics Setup</h4>
+<p>As a patient,<br>
+I want to enter and edit my physical demographics (Age, Weight, Height) and Caregiver Emergency Phone Number,<br>
+So that the system can calculate my baseline BMI and alert my caregiver during nocturnal apnea emergencies.</p>
+<p><strong>Acceptance Criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> I am on <code>ProfilePage</code>,</li>
+<li><strong>When</strong> I update my weight or height input fields,</li>
+<li><strong>Then</strong> <code>HealthDemographicsOrganism</code> dynamically recalculates and displays my computed BMI (<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.0641em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span><span class="mord mathnormal">e</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal">h</span><span class="mord mathnormal">t</span><span class="mord">/</span><span class="mord mathnormal" style="margin-right:0.0813em;">H</span><span class="mord mathnormal">e</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal">h</span><span class="mord"><span class="mord mathnormal">t</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span></span></span></span>).</li>
+<li><strong>And</strong> <code>EmergencyContactOrganism</code> preserves my caregiver emergency phone number.</li>
+<li><strong>And</strong> <code>UserHeaderOrganism</code> renders my custom persona title and dynamic initials avatar fallback.</li>
+</ul>
+<h4 id="story-13-app-navigation-bottom-navigation-tab-bar">Story 1.3: App Navigation &amp; Bottom Navigation Tab Bar</h4>
+<p>As a patient,<br>
+I want to navigate between Home, Sleep Measurement, Morning Summary, and Settings screens via a bottom navigation bar,<br>
+So that I can quickly access monitoring tools and application options.</p>
+<p><strong>Acceptance Criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> I am on <code>MainContainerPage</code>,</li>
+<li><strong>When</strong> I tap Tab 4 (Gear icon),</li>
+<li><strong>Then</strong> the page inline renders <code>SettingsPage</code>.</li>
+<li><strong>And</strong> <code>SettingsGroupCardOrganism</code> renders Profile and Advanced options card sections.</li>
+</ul>
+<h4 id="story-14-mobile-app-documentation-developer-setup-guide">Story 1.4: Mobile App Documentation &amp; Developer Setup Guide</h4>
+<p>As a developer or contributor,<br>
+I want a comprehensive <code>flutter/README.md</code> document covering project background, quick start, developer mode, debugging mode, and release build workflows,<br>
+So that I can quickly set up my local development environment and build production APKs without ambiguity.</p>
+<p><strong>Acceptance Criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> the repository is cloned,</li>
+<li><strong>When</strong> a developer opens <code>flutter/README.md</code>,</li>
+<li><strong>Then</strong> it provides clear instructions for:
+<ol>
+<li>Product Overview &amp; Architecture Summary (D-BAND Integrated Platform).</li>
+<li>Quick Start setup commands (<code>flutter pub get</code>, <code>flutter test</code>, <code>flutter run</code>).</li>
+<li>How to enable Developer Mode (<code>--dart-define=DEV_MODE=true</code> compile-time flag).</li>
+<li>How to enable Debugging Mode (<code>debuggingEnabled: true</code> flag / <code>kDebugMode</code>).</li>
+<li>How to build production release APKs (<code>flutter build apk --debug / --release</code>).</li>
+</ol>
+</li>
+</ul>
+<h4 id="story-15-developer-options-page-ble-signal-simulator-controls">Story 1.5: Developer Options Page &amp; BLE Signal Simulator Controls</h4>
+<p>As a developer or tester,<br>
+I want to navigate to a dedicated <code>DeveloperOptionsPage</code> when Developer Mode (<code>DEV_MODE=true</code>) is enabled,<br>
+So that I can trigger interactive BLE signal simulation controls to test the calibration lifecycle and nocturnal sleep apnea alarm cycles without requiring physical hardware.</p>
+<p><strong>Acceptance Criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> Developer Mode (<code>DEV_MODE=true</code>) is enabled,</li>
+<li><strong>When</strong> I view <code>SettingsPage</code> under the Advanced section (<code>SettingsGroupCardOrganism</code>),</li>
+<li><strong>Then</strong> the &quot;Developer&quot; menu row (<code>SettingsMenuRow</code>) is displayed.</li>
+<li><strong>And</strong> tapping &quot;Developer&quot; navigates to <code>DeveloperOptionsPage</code>.</li>
+<li><strong>And</strong> <code>DeveloperOptionsPage</code> renders <code>BleSimulatorOrganism</code> with controls for:
+<ol>
+<li><strong>Calibration Lifecycle Simulation</strong>: Triggering ambient idle noise (<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.109em;">N</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.109em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">idle</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>) and active breathing baseline (<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">pp</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span>).</li>
+<li><strong>Sleep Cycle Simulation</strong>: Triggering normal 16 bpm respiration streams, <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7719em;vertical-align:-0.136em;"></span><span class="mrel">≥</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">10</span><span class="mord text"><span class="mord">s</span></span></span></span></span> apnea breathing stop alerts, and 5s patient recovery signals.</li>
+</ol>
+</li>
+</ul>
+<hr>
+<h3 id="epic-2-ble-bluetooth-sensor-discovery-pairing-thermal-calibration">Epic 2: BLE Bluetooth Sensor Discovery, Pairing &amp; Thermal Calibration</h3>
+<h4 id="story-21-encrypted-ble-sensor-auto-discovery-cloud-device-binding">Story 2.1: Encrypted BLE Sensor Auto-Discovery &amp; Cloud Device Binding</h4>
+<p>As a patient,<br>
+I want the app to automatically discover and pair with my D-BAND thermal sensor array over encrypted BLE 5.0+,<br>
+So that telemetry data can be securely streamed to my device.</p>
+<p><strong>Acceptance Criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> I am on <code>MeasurementPage</code>,</li>
+<li><strong>When</strong> the app scans for <code>0x180D</code> GATT service,</li>
+<li><strong>Then</strong> <code>BleSensorStatusOrganism</code> displays connection status (&quot;D-BAND Sensor Connected ✓&quot; vs &quot;Scanning...&quot;).</li>
+<li><strong>And</strong> <code>BleSensorDriver</code> establishes AES-128 link security.</li>
+</ul>
+<h4 id="story-22-2-stage-thermal-sensor-baseline-calibration">Story 2.2: 2-Stage Thermal Sensor Baseline Calibration</h4>
+<p>As a patient,<br>
+I want to perform a 2-stage calibration (Stage 1 ambient noise <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.109em;">N</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.109em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">idle</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> and Stage 2 active breath <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">pp</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span>),<br>
+So that the zero-airflow apnea threshold (<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">0.10</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">pp</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span>) is accurately established for my session.</p>
+<p><strong>Acceptance Criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> I start sensor positioning on <code>MeasurementPage</code>,</li>
+<li><strong>When</strong> <code>ThermalCalibrationWizard</code> samples 10 seconds of idle ambient data,</li>
+<li><strong>Then</strong> it computes room thermal noise floor <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.109em;">N</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.109em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">idle</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>.</li>
+<li><strong>And</strong> following 10 seconds of active breathing, it sets apnea threshold to <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">0.10</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">pp</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span>.</li>
+</ul>
+<h4 id="story-23-airflow-volumetric-transformation-wear-guardrails">Story 2.3: Airflow Volumetric Transformation &amp; Wear Guardrails</h4>
+<p>As a patient,<br>
+I want the system to verify sensor placement before recording,<br>
+So that invalid or unattached sensor readings do not produce false apnea readings.</p>
+<p><strong>Acceptance Criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> active breath calibration is completed,</li>
+<li><strong>When</strong> active breathing delta <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7224em;vertical-align:-0.0391em;"></span><span class="mord">Δ</span><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">&lt;</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">1.5</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.109em;">N</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.109em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">idle</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>,</li>
+<li><strong>Then</strong> the system blocks sleep recording initiation and displays a sensor wear warning.</li>
+</ul>
+<hr>
+<h3 id="epic-3-nocturnal-sleep-apnea-monitoring-tier-1-local-emergency-alarm">Epic 3: Nocturnal Sleep Apnea Monitoring &amp; Tier-1 Local Emergency Alarm</h3>
+<h4 id="story-31-low-power-background-airflow-monitoring-0-fps-night-mode">Story 3.1: Low-Power Background Airflow Monitoring &amp; 0-FPS Night Mode</h4>
+<p>As a high-risk nocturnal apnea patient,<br>
+I want continuous 10Hz background sleep logging in a 0-FPS pitch-black screen state,<br>
+So that my phone battery is conserved (&lt;8% consumption) while my breathing is continuously monitored overnight.</p>
+<p><strong>Acceptance Criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> active monitoring is launched,</li>
+<li><strong>When</strong> Night Mode activates,</li>
+<li><strong>Then</strong> the screen throttles to 0-FPS pitch black (<code>#000000</code>) with dim pulsing heartbeat indicator.</li>
+<li><strong>And</strong> 10Hz respiratory data is written into a 1-hour circular RAM buffer.</li>
+</ul>
+<h4 id="story-32-real-time-aasm-apnea-event-evaluation">Story 3.2: Real-Time AASM Apnea Event Evaluation</h4>
+<p>As a patient,<br>
+I want the app to evaluate net airflow against my calibrated baseline every 100ms,<br>
+So that obstructive apnea events (<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7719em;vertical-align:-0.136em;"></span><span class="mrel">≥</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8056em;vertical-align:-0.0556em;"></span><span class="mord">90%</span></span></span></span> drop for <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7719em;vertical-align:-0.136em;"></span><span class="mrel">≥</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">10</span></span></span></span> seconds) are immediately flagged.</p>
+<p><strong>Acceptance Criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> continuous 10Hz airflow data is streaming,</li>
+<li><strong>When</strong> net volumetric airflow drops below threshold continuously for <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7719em;vertical-align:-0.136em;"></span><span class="mrel">≥</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">10</span></span></span></span> seconds,</li>
+<li><strong>Then</strong> <code>ApneaEvaluator</code> flags an obstructive apnea breach event and transitions state to <code>breachAlert</code>.</li>
+</ul>
+<h4 id="story-33-tier-1-local-emergency-siren-escalating-alarm-overlay">Story 3.3: Tier-1 Local Emergency Siren &amp; Escalating Alarm Overlay</h4>
+<p>As a patient,<br>
+I want an escalating local siren (<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord">40</span><span class="mord text"><span class="mord">dB</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">75</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord text"><span class="mord">dB</span></span></span></span></span>) and full-screen haptic vibration pulse within &lt;200ms of an apnea breach,<br>
+So that I am immediately awakened to resume breathing.</p>
+<p><strong>Acceptance Criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> <code>ApneaEvaluator</code> flags a breach event,</li>
+<li><strong>When</strong> <code>ApneaAlertOverlay</code> renders within &lt;200ms,</li>
+<li><strong>Then</strong> high-contrast red/yellow warning banner flashes with escalating siren tone.</li>
+<li><strong>And</strong> tapping &quot;I'M SAFE&quot; within 30 seconds silences the alarm and restores normal monitoring.</li>
+<li><strong>And</strong> continuous normal breathing for 5 seconds automatically silences the alarm.</li>
+</ul>
+<h4 id="story-34-caregiver-emergency-dispatch-payload">Story 3.4: Caregiver Emergency Dispatch Payload</h4>
+<p>As a patient,<br>
+I want the app to transmit an emergency dispatch payload to designated caregivers if I do not respond within 30 seconds,<br>
+So that emergency assistance can be dispatched if I am unresponsive.</p>
+<p><strong>Acceptance Criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> an apnea alarm has been sounding for 30 seconds,</li>
+<li><strong>When</strong> no &quot;I'm Safe&quot; tap or breathing restoration occurs,</li>
+<li><strong>Then</strong> the app transmits a Tier-2 emergency payload via cloud SMS/Voice call API to caregiver contacts.</li>
+</ul>
+<hr>
+<h3 id="epic-4-morning-sleep-dashboard-respiration-waveform-inspection">Epic 4: Morning Sleep Dashboard &amp; Respiration Waveform Inspection</h3>
+<h4 id="story-41-morning-sleep-summary-dashboard">Story 4.1: Morning Sleep Summary Dashboard</h4>
+<p>As a patient,<br>
+I want a morning sleep summary displaying my overnight AHI score, total monitoring duration, and quality score,<br>
+So that I can quickly assess my sleep health upon waking.</p>
+<p><strong>Acceptance Criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> I open <code>SummaryScreenPage</code>,</li>
+<li><strong>When</strong> the page loads,</li>
+<li><strong>Then</strong> <code>ReportHeaderOrganism</code> displays session date and report title.</li>
+<li><strong>And</strong> <code>SleepScoreOrganism</code> renders the 0–100 score ring (<code>92</code>) and AHI score badge (<code>3.2 Normal</code>).</li>
+<li><strong>And</strong> <code>SummaryMetricsGridOrganism</code> renders total apnea stops and safety tap metrics.</li>
+</ul>
+<h4 id="story-42-respiration-waveform-spectral-graphs">Story 4.2: Respiration Waveform &amp; Spectral Graphs</h4>
+<p>As a patient,<br>
+I want to inspect overnight respiration waveforms rendered at 60 FPS via GPU,<br>
+So that I can visually review breathing patterns and apnea episodes.</p>
+<p><strong>Acceptance Criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> I view <code>SummaryScreenPage</code>,</li>
+<li><strong>When</strong> rendering waveform graphs,</li>
+<li><strong>Then</strong> <code>LiveWaveformChart</code> renders smooth GPU-accelerated Skia line plots (<code>fl_chart</code>).</li>
+</ul>
+<h4 id="story-43-historical-sessions-educational-insights">Story 4.3: Historical Sessions &amp; Educational Insights</h4>
+<p>As a patient,<br>
+I want to filter historical sleep sessions by date and read educational articles on sleep apnea,<br>
+So that I can track long-term health progress and improve mask compliance.</p>
+<p><strong>Acceptance Criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> I am on <code>HomePage</code>,</li>
+<li><strong>When</strong> I view the dashboard,</li>
+<li><strong>Then</strong> <code>WeeklyCalendarOrganism</code> supports date selection.</li>
+<li><strong>And</strong> <code>HealthInsightsOrganism</code> provides article cards (&quot;Mask Use &amp; Health&quot; &amp; &quot;Understanding SpO2&quot;).</li>
+</ul>
+<h4 id="story-44-signed-physician-report-export">Story 4.4: Signed Physician Report Export</h4>
+<p>As a patient,<br>
+I want to export a signed FHIR JSON / PDF clinical report of my sleep session,<br>
+So that I can share verified health data with my attending physician.</p>
+<p><strong>Acceptance Criteria:</strong></p>
+<ul>
+<li><strong>Given</strong> I am on <code>SummaryScreenPage</code>,</li>
+<li><strong>When</strong> I tap &quot;Export Signed Report for Physician&quot;,</li>
+<li><strong>Then</strong> the app compiles encrypted FHIR JSON and PDF clinical summary payloads for doctor sharing.</li>
+</ul>
 
 </div>
 
