@@ -71,6 +71,7 @@ This document provides the complete epic and story breakdown for Sleep Apnea Det
 - **NFR-4.3:** Sub-1s automated cryptographic remote zeroization protocol deleting local SQLCipher databases, Hive stores, and Secure Enclave master keys upon remote wipe signal or 10 failed auth retries.
 - **NFR-4.4:** Encryption in Transit & Certificate Pinning (AES-128 BLE, HTTPS TLS 1.3 with SSL Certificate Pinning, gRPC mTLS internal service mesh).
 - **NFR-4.5:** Encryption at Rest (AES-256 SQLCipher local database encryption + Cloud KMS master key envelope encryption for Level 1 PHI fields).
+- **NFR-4.6:** SOLID Dependency Inversion Principle (`IBLESensorDriver` polymorphism across `BLESensorDriver`, `BleTelemetryService`, and `FlutterBlueSensorDriver` with Constructor Dependency Injection).
 - **NFR-5.1:** CHART-01 Live Airflow Telemetry Line Chart (`fl_chart` / Skia GPU, 60 FPS active / 0 FPS locked).
 - **NFR-5.2:** CHART-02 FFT Frequency Spectrum Graph (256-point FFT magnitude vs Hz).
 - **NFR-5.3:** CHART-03 Circular Progress Metric Rings (Animated stroke fill for calibration & sleep quality score).
