@@ -93,21 +93,27 @@ const SettingsPage(
 
 ---
 
-## 📦 How to Build the Production Release Application
+## 📦 How to Build the Application APK (Debug & Release)
 
-### 1. Build Debug APK (For Manual Device Testing)
+### 1. Build Debug APK with Developer Mode (Fast Dev Testing)
 ```bash
-flutter build apk --debug
+flutter build apk --debug --dart-define=DEV_MODE=true
 ```
-*Output location*: `build/app/intermediates/flutter/debug/flutter_assets/` & `build/app/outputs/flutter-apk/app-debug.apk`
+*Output location*: `build/app/outputs/flutter-apk/app-debug.apk`
 
-### 2. Build Production Release APK (For Distribution)
+### 2. Build Release APK with Developer Mode (For Distribution to QA / Devs)
+```bash
+flutter build apk --release --dart-define=DEV_MODE=true
+```
+*Output location*: `build/app/outputs/flutter-apk/app-release.apk`
+
+### 3. Build Standard Production Release APK (No Dev Mode)
 ```bash
 flutter build apk --release
 ```
 *Output location*: `build/app/outputs/flutter-apk/app-release.apk`
 
-### 3. Build Production App Bundle (For Google Play Store)
+### 4. Build Production App Bundle (For Google Play Store)
 ```bash
 flutter build appbundle --release
 ```
