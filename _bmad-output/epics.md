@@ -2,6 +2,8 @@
 stepsCompleted:
   - step-01-validate-prerequisites
   - step-02-design-epics
+  - step-03-create-stories
+  - step-04-final-validation
 inputDocuments:
   - _bmad-output/prd/prd.md
   - _bmad-output/architecture/ARCHITECTURE-SPINE.md
@@ -52,6 +54,8 @@ This document provides the complete epic and story breakdown for Sleep Apnea Det
 - **FR-5.2:** Health Profile Management collecting and managing user health baseline profile (Weight, Height, Age, Gender, computed BMI, Emergency Contacts).
 - **FR-5.3:** Extensible Doctor Sharing Framework providing a dedicated "Share Profile with Doctor" UI module and extensible JSON data export engine formatted for physician chart sharing.
 - **FR-5.4:** Mobile Device Lost & Remote Session Revocation self-service Web Portal allowing users or emergency contacts to report a lost mobile phone, revoking active JWT session tokens and issuing a cryptographic remote wipe signal.
+- **FR-5.5:** Application Documentation & Developer Setup Guide providing comprehensive developer README covering project summary, product background, quick start, developer mode, debugging mode, and release build workflows.
+- **FR-5.6:** Developer Options Page & BLE Signal Simulator providing interactive controls for simulating 2-stage calibration lifecycles ($N_{\text{idle}}$ & $V_{pp}$) and nocturnal sleep cycles (normal 16 bpm respiration streams, $\ge 10\text{s}$ apnea breathing stop alerts, and 5s patient breathing recovery signals).
 
 ### NonFunctional Requirements
 
@@ -67,6 +71,7 @@ This document provides the complete epic and story breakdown for Sleep Apnea Det
 - **NFR-4.3:** Sub-1s automated cryptographic remote zeroization protocol deleting local SQLCipher databases, Hive stores, and Secure Enclave master keys upon remote wipe signal or 10 failed auth retries.
 - **NFR-4.4:** Encryption in Transit & Certificate Pinning (AES-128 BLE, HTTPS TLS 1.3 with SSL Certificate Pinning, gRPC mTLS internal service mesh).
 - **NFR-4.5:** Encryption at Rest (AES-256 SQLCipher local database encryption + Cloud KMS master key envelope encryption for Level 1 PHI fields).
+- **NFR-4.6:** SOLID Dependency Inversion Principle (`IBLESensorDriver` polymorphism across `BLESensorDriver`, `BleTelemetryService`, and `FlutterBlueSensorDriver` with Constructor Dependency Injection).
 - **NFR-5.1:** CHART-01 Live Airflow Telemetry Line Chart (`fl_chart` / Skia GPU, 60 FPS active / 0 FPS locked).
 - **NFR-5.2:** CHART-02 FFT Frequency Spectrum Graph (256-point FFT magnitude vs Hz).
 - **NFR-5.3:** CHART-03 Circular Progress Metric Rings (Animated stroke fill for calibration & sleep quality score).
@@ -125,12 +130,14 @@ This document provides the complete epic and story breakdown for Sleep Apnea Det
 - **FR-5.2:** Epic 1 (Mobile App Infrastructure & Biometric Passkey Onboarding)
 - **FR-5.3:** Epic 6 (Clinic & Attending Physician Diagnostic Portal - UNPLANNED)
 - **FR-5.4:** Epic 5 (Backoffice Hardware Provisioning - UNPLANNED)
+- **FR-5.5:** Epic 1 (Mobile App Infrastructure & Biometric Passkey Onboarding)
+- **FR-5.6:** Epic 1 (Mobile App Infrastructure & Biometric Passkey Onboarding)
 
 ## Epic List
 
 ### Epic 1: Mobile App Infrastructure, UI Kit & Biometric Passkey Onboarding (MVP1 - Active)
-Patients can perform passwordless FIDO2 Passkey registration using native biometrics (Face ID / Touch ID), set up their medical baseline profile, and navigate a responsive `flutter_shadcn` dark glassmorphic UI.
-**FRs covered:** FR-5.1, FR-5.2 | **NFRs:** NFR-4.1, NFR-4.4, NFR-4.5 | **UX-DRs:** UX-DR1
+Patients can perform passwordless FIDO2 Passkey registration using native biometrics (Face ID / Touch ID), set up their medical baseline profile, navigate a responsive `flutter_shadcn` dark glassmorphic UI, access developer onboarding documentation, and access the Developer Options Page with interactive BLE signal simulation controls.
+**FRs covered:** FR-5.1, FR-5.2, FR-5.5, FR-5.6 | **NFRs:** NFR-4.1, NFR-4.4, NFR-4.5 | **UX-DRs:** UX-DR1
 
 ### Epic 2: BLE Bluetooth Sensor Discovery, Pairing & Thermal Calibration (MVP1 - Active)
 Patients can turn on their D-BAND thermal sensor array, auto-discover and pair via encrypted BLE (BLE 4.0, 4.1, 4.2, 5.0+), execute Stage 1 room noise ($N_{\text{idle}}$) and Stage 2 active breath ($V_{pp}$) calibration, transform thermal $\Delta T$ into volumetric airflow rates, and enforce wear verification guardrails.
@@ -164,3 +171,202 @@ Expanded Flutter application modes for Athletic Respiration Training (Mode B), I
 Cloud big data pipeline for de-identified PHI data exports, clinical trial research integration (PolyU/CUHK), and cloud-side neural network re-classification.
 **FRs covered:** FR-2.5, FR-4.5 | **Status:** UNPLANNED
 
+---
+
+## Detailed User Stories (MVP1 Active Epics)
+
+### Epic 1: Mobile App Infrastructure, UI Kit & Biometric Passkey Onboarding
+
+#### Story 1.1: Passkey FIDO2/WebAuthn Biometric Authentication
+As a patient,  
+I want to authenticate passwordlessly using my device biometrics (Face ID / Touch ID / Android BiometricPrompt),  
+So that my PHI health data is securely encrypted under HIPAA §164.312 without requiring vulnerable passwords.
+
+**Acceptance Criteria:**
+- **Given** the app launches on `LoginPage`,
+- **When** I tap "Sign in with Passkey",
+- **Then** `AuthBloc` dispatches `AuthPasskeySubmitted` and triggers native OS biometric authentication.
+- **And** upon success, the state transitions to `AuthAuthenticated` and navigates to `MainContainerPage`.
+- **And** UI is composed of `BrandHeaderOrganism`, `PasskeyAuthCardOrganism`, and `SecurityBadgeOrganism`.
+
+#### Story 1.2: Patient Health Baseline & Demographics Setup
+As a patient,  
+I want to enter and edit my physical demographics (Age, Weight, Height) and Caregiver Emergency Phone Number,  
+So that the system can calculate my baseline BMI and alert my caregiver during nocturnal apnea emergencies.
+
+**Acceptance Criteria:**
+- **Given** I am on `ProfilePage`,
+- **When** I update my weight or height input fields,
+- **Then** `HealthDemographicsOrganism` dynamically recalculates and displays my computed BMI ($Weight / Height^2$).
+- **And** `EmergencyContactOrganism` preserves my caregiver emergency phone number.
+- **And** `UserHeaderOrganism` renders my custom persona title and dynamic initials avatar fallback.
+
+#### Story 1.3: App Navigation & Bottom Navigation Tab Bar
+As a patient,  
+I want to navigate between Home, Sleep Measurement, Morning Summary, and Settings screens via a bottom navigation bar,  
+So that I can quickly access monitoring tools and application options.
+
+**Acceptance Criteria:**
+- **Given** I am on `MainContainerPage`,
+- **When** I tap Tab 4 (Gear icon),
+- **Then** the page inline renders `SettingsPage`.
+- **And** `SettingsGroupCardOrganism` renders Profile and Advanced options card sections.
+
+#### Story 1.4: Mobile App Documentation & Developer Setup Guide
+As a developer or contributor,  
+I want a comprehensive `flutter/README.md` document covering project background, quick start, developer mode, debugging mode, and release build workflows,  
+So that I can quickly set up my local development environment and build production APKs without ambiguity.
+
+**Acceptance Criteria:**
+- **Given** the repository is cloned,
+- **When** a developer opens `flutter/README.md`,
+- **Then** it provides clear instructions for:
+  1. Product Overview & Architecture Summary (D-BAND Integrated Platform).
+  2. Quick Start setup commands (`flutter pub get`, `flutter test`, `flutter run`).
+  3. How to enable Developer Mode (`--dart-define=DEV_MODE=true` compile-time flag).
+  4. How to enable Debugging Mode (`debuggingEnabled: true` flag / `kDebugMode`).
+  5. How to build production release APKs (`flutter build apk --debug / --release`).
+
+#### Story 1.5: Developer Options Page & BLE Signal Simulator Controls
+As a developer or tester,  
+I want to navigate to a dedicated `DeveloperOptionsPage` when Developer Mode (`DEV_MODE=true`) is enabled,  
+So that I can trigger interactive BLE signal simulation controls to test the calibration lifecycle and nocturnal sleep apnea alarm cycles without requiring physical hardware.
+
+**Acceptance Criteria:**
+- **Given** Developer Mode (`DEV_MODE=true`) is enabled,
+- **When** I view `SettingsPage` under the Advanced section (`SettingsGroupCardOrganism`),
+- **Then** the "Developer" menu row (`SettingsMenuRow`) is displayed.
+- **And** tapping "Developer" navigates to `DeveloperOptionsPage`.
+- **And** `DeveloperOptionsPage` renders `BleSimulatorOrganism` with controls for:
+  1. **Calibration Lifecycle Simulation**: Triggering ambient idle noise ($N_{\text{idle}}$) and active breathing baseline ($V_{pp}$).
+  2. **Sleep Cycle Simulation**: Triggering normal 16 bpm respiration streams, $\ge 10\text{s}$ apnea breathing stop alerts, and 5s patient recovery signals.
+
+---
+
+### Epic 2: BLE Bluetooth Sensor Discovery, Pairing & Thermal Calibration
+
+#### Story 2.1: Encrypted BLE Sensor Auto-Discovery & Cloud Device Binding
+As a patient,  
+I want the app to automatically discover and pair with my D-BAND thermal sensor array over encrypted BLE 5.0+,  
+So that telemetry data can be securely streamed to my device.
+
+**Acceptance Criteria:**
+- **Given** I am on `MeasurementPage`,
+- **When** the app scans for `0x180D` GATT service,
+- **Then** `BleSensorStatusOrganism` displays connection status ("D-BAND Sensor Connected ✓" vs "Scanning...").
+- **And** `BleSensorDriver` establishes AES-128 link security.
+
+#### Story 2.2: 2-Stage Thermal Sensor Baseline Calibration
+As a patient,  
+I want to perform a 2-stage calibration (Stage 1 ambient noise $N_{\text{idle}}$ and Stage 2 active breath $V_{pp}$),  
+So that the zero-airflow apnea threshold ($0.10 \times V_{pp}$) is accurately established for my session.
+
+**Acceptance Criteria:**
+- **Given** I start sensor positioning on `MeasurementPage`,
+- **When** `ThermalCalibrationWizard` samples 10 seconds of idle ambient data,
+- **Then** it computes room thermal noise floor $N_{\text{idle}}$.
+- **And** following 10 seconds of active breathing, it sets apnea threshold to $0.10 \times V_{pp}$.
+
+#### Story 2.3: Airflow Volumetric Transformation & Wear Guardrails
+As a patient,  
+I want the system to verify sensor placement before recording,  
+So that invalid or unattached sensor readings do not produce false apnea readings.
+
+**Acceptance Criteria:**
+- **Given** active breath calibration is completed,
+- **When** active breathing delta $\Delta V < 1.5 \times N_{\text{idle}}$,
+- **Then** the system blocks sleep recording initiation and displays a sensor wear warning.
+
+---
+
+### Epic 3: Nocturnal Sleep Apnea Monitoring & Tier-1 Local Emergency Alarm
+
+#### Story 3.1: Low-Power Background Airflow Monitoring & 0-FPS Night Mode
+As a high-risk nocturnal apnea patient,  
+I want continuous 10Hz background sleep logging in a 0-FPS pitch-black screen state,  
+So that my phone battery is conserved (<8% consumption) while my breathing is continuously monitored overnight.
+
+**Acceptance Criteria:**
+- **Given** active monitoring is launched,
+- **When** Night Mode activates,
+- **Then** the screen throttles to 0-FPS pitch black (`#000000`) with dim pulsing heartbeat indicator.
+- **And** 10Hz respiratory data is written into a 1-hour circular RAM buffer.
+
+#### Story 3.2: Real-Time AASM Apnea Event Evaluation
+As a patient,  
+I want the app to evaluate net airflow against my calibrated baseline every 100ms,  
+So that obstructive apnea events ($\ge 90\%$ drop for $\ge 10$ seconds) are immediately flagged.
+
+**Acceptance Criteria:**
+- **Given** continuous 10Hz airflow data is streaming,
+- **When** net volumetric airflow drops below threshold continuously for $\ge 10$ seconds,
+- **Then** `ApneaEvaluator` flags an obstructive apnea breach event and transitions state to `breachAlert`.
+
+#### Story 3.3: Tier-1 Local Emergency Siren & Escalating Alarm Overlay
+As a patient,  
+I want an escalating local siren ($40\text{dB} \to 75+\text{dB}$) and full-screen haptic vibration pulse within <200ms of an apnea breach,  
+So that I am immediately awakened to resume breathing.
+
+**Acceptance Criteria:**
+- **Given** `ApneaEvaluator` flags a breach event,
+- **When** `ApneaAlertOverlay` renders within <200ms,
+- **Then** high-contrast red/yellow warning banner flashes with escalating siren tone.
+- **And** tapping "I'M SAFE" within 30 seconds silences the alarm and restores normal monitoring.
+- **And** continuous normal breathing for 5 seconds automatically silences the alarm.
+
+#### Story 3.4: Caregiver Emergency Dispatch Payload
+As a patient,  
+I want the app to transmit an emergency dispatch payload to designated caregivers if I do not respond within 30 seconds,  
+So that emergency assistance can be dispatched if I am unresponsive.
+
+**Acceptance Criteria:**
+- **Given** an apnea alarm has been sounding for 30 seconds,
+- **When** no "I'm Safe" tap or breathing restoration occurs,
+- **Then** the app transmits a Tier-2 emergency payload via cloud SMS/Voice call API to caregiver contacts.
+
+---
+
+### Epic 4: Morning Sleep Dashboard & Respiration Waveform Inspection
+
+#### Story 4.1: Morning Sleep Summary Dashboard
+As a patient,  
+I want a morning sleep summary displaying my overnight AHI score, total monitoring duration, and quality score,  
+So that I can quickly assess my sleep health upon waking.
+
+**Acceptance Criteria:**
+- **Given** I open `SummaryScreenPage`,
+- **When** the page loads,
+- **Then** `ReportHeaderOrganism` displays session date and report title.
+- **And** `SleepScoreOrganism` renders the 0–100 score ring (`92`) and AHI score badge (`3.2 Normal`).
+- **And** `SummaryMetricsGridOrganism` renders total apnea stops and safety tap metrics.
+
+#### Story 4.2: Respiration Waveform & Spectral Graphs
+As a patient,  
+I want to inspect overnight respiration waveforms rendered at 60 FPS via GPU,  
+So that I can visually review breathing patterns and apnea episodes.
+
+**Acceptance Criteria:**
+- **Given** I view `SummaryScreenPage`,
+- **When** rendering waveform graphs,
+- **Then** `LiveWaveformChart` renders smooth GPU-accelerated Skia line plots (`fl_chart`).
+
+#### Story 4.3: Historical Sessions & Educational Insights
+As a patient,  
+I want to filter historical sleep sessions by date and read educational articles on sleep apnea,  
+So that I can track long-term health progress and improve mask compliance.
+
+**Acceptance Criteria:**
+- **Given** I am on `HomePage`,
+- **When** I view the dashboard,
+- **Then** `WeeklyCalendarOrganism` supports date selection.
+- **And** `HealthInsightsOrganism` provides article cards ("Mask Use & Health" & "Understanding SpO2").
+
+#### Story 4.4: Signed Physician Report Export
+As a patient,  
+I want to export a signed FHIR JSON / PDF clinical report of my sleep session,  
+So that I can share verified health data with my attending physician.
+
+**Acceptance Criteria:**
+- **Given** I am on `SummaryScreenPage`,
+- **When** I tap "Export Signed Report for Physician",
+- **Then** the app compiles encrypted FHIR JSON and PDF clinical summary payloads for doctor sharing.

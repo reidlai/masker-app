@@ -1,0 +1,69 @@
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created, ready for development
+#   - in-progress: Developer actively working on implementation
+#   - review: Implementation complete, ready for review
+#   - done: Story completed
+
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+
+# Action Item Status:
+#   - open: Committed during a retrospective, not yet addressed
+#   - in-progress: Actively being worked on
+#   - done: Completed
+
+generated: '2026-09-03'
+last_updated: '2026-09-03'
+project: Sleep Apnea Detection App
+project_key: NOKEY
+tracking_system: file-system
+story_location: c:\Users\reidl\GitLocal\masker-app\_bmad-output
+development_status:
+  epic-1: done
+  1-1-passkey-fido2-webauthn-biometric-authentication: done
+  1-2-patient-health-baseline-demographics-setup: done
+  1-3-app-navigation-bottom-navigation-tab-bar: done
+  1-4-mobile-app-documentation-developer-setup-guide: done
+  1-5-developer-options-page-ble-signal-simulator-controls: done
+  epic-1-retrospective: done
+
+  epic-2: done
+  2-1-encrypted-ble-sensor-auto-discovery-cloud-device-binding: done
+  2-2-2-stage-thermal-sensor-baseline-calibration: done
+  2-3-airflow-volumetric-transformation-wear-guardrails: done
+  epic-2-retrospective: done
+
+  epic-3: done
+  3-1-low-power-background-airflow-monitoring-0-fps-night-mode: done
+  3-2-real-time-aasm-apnea-event-evaluation: done
+  3-3-tier-1-local-emergency-siren-escalating-alarm-overlay: done
+  3-4-caregiver-emergency-dispatch-payload: done
+  epic-3-retrospective: done
+
+  epic-4: done
+  4-1-morning-sleep-summary-dashboard: done
+  4-2-respiration-waveform-spectral-graphs: done
+  4-3-historical-sessions-educational-insights: done
+  4-4-signed-physician-report-export: done
+  epic-4-retrospective: done
+
+  epic-5: backlog
+  epic-5-retrospective: optional
+
+  epic-6: backlog
+  epic-6-retrospective: optional
+
+  epic-7: backlog
+  epic-7-retrospective: optional
+
+  epic-8: backlog
+  epic-8-retrospective: optional

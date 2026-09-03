@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../molecules/settings_menu_row.dart';
 import '../organisms/settings_group_card_organism.dart';
+import 'developer_options_page.dart';
 import 'profile_page.dart';
 
 /// App-level settings. Rendered inline as bottom-nav tab 4.
@@ -77,9 +78,16 @@ class SettingsPage extends StatelessWidget {
                         color: AppColors.cardBorder,
                       ),
                     if (_dev)
-                      const SettingsMenuRow(
+                      SettingsMenuRow(
                         leadingIcon: Icons.code,
                         label: "Developer",
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const DeveloperOptionsPage(),
+                            ),
+                          );
+                        },
                       ),
                   ],
                 ),

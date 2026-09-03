@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'dart:math';
+import 'i_ble_sensor_driver.dart';
 
 enum BLEDeviceState { disconnected, scanning, connecting, connected }
 
-class BLESensorDriver {
+class BLESensorDriver implements IBLESensorDriver {
   static const String serviceUuid = "0x180D";
   static const String characteristicUuid = "0x2A37";
 
@@ -11,6 +12,7 @@ class BLESensorDriver {
   BLEDeviceState get state => _state;
 
   StreamController<double>? _thermalStreamController;
+  @override
   Stream<double> get thermalStream {
     _thermalStreamController ??= StreamController<double>.broadcast();
     return _thermalStreamController!.stream;
@@ -23,8 +25,11 @@ class BLESensorDriver {
 
   double get ambientNoiseFloor => _ambientNoiseFloor;
   double get breathBaselineVpp => _breathBaselineVpp;
+
+  @override
   double get apneaThreshold => _apneaThreshold;
 
+  @override
   Future<bool> scanAndConnect() async {
     _state = BLEDeviceState.scanning;
     await Future.delayed(const Duration(milliseconds: 600));
@@ -35,6 +40,7 @@ class BLESensorDriver {
   }
 
   // Stage 1 Calibration: Sample idle room temperature noise (N_idle)
+  @override
   Future<double> calibrateStage1NoiseFloor() async {
     double noiseSum = 0.0;
     final Random rnd = Random();
@@ -47,6 +53,7 @@ class BLESensorDriver {
   }
 
   // Stage 2 Calibration: Sample active breathing thermal training (Delta T)
+  @override
   Future<double> calibrateStage2ActiveBreath() async {
     double maxBreath = 0.0;
     final Random rnd = Random();
@@ -60,6 +67,7 @@ class BLESensorDriver {
     return _apneaThreshold;
   }
 
+  @override
   void startTelemetryLogging() {
     _telemetryTimer?.cancel();
     double step = 0.0;
@@ -71,10 +79,12 @@ class BLESensorDriver {
     });
   }
 
+  @override
   void stopTelemetryLogging() {
     _telemetryTimer?.cancel();
   }
 
+  @override
   void disconnect() {
     stopTelemetryLogging();
     _thermalStreamController?.close();

@@ -55,6 +55,7 @@ components:
   - BottomNavBar
   - SettingsMenuRow
   - SettingsSectionHeader
+  - DeveloperSimulatorBarOrganism
 ---
 
 # 🎨 DESIGN.md — Visual Identity & Design System Specification
@@ -152,6 +153,9 @@ Caption:      12px / Medium (500) / Line Height 1.4  -->  Chart Axes, Timestamps
 
 ### 7. `SettingsSectionHeader` (Atom Component)
 * **Visual Structure:** Left-aligned label in `{typography.caption}` (`12px`, weight 500) `{colors.text_secondary}` (`#94A3B8`), `0.04em` letter-spacing, sentence case ("Advanced"). Spacing: `24px` (`{spacing.xl}`) above, `8px` (`{spacing.sm}`) below. **Rendered only when its section contains at least one visible row** — never shown above an empty section.
+
+### 8. `DeveloperSimulatorBarOrganism` (Organism Component)
+* **Visual Structure:** Dark amber/slate glassmorphic toolbar (`#1E293B` background with `#F59E0B` amber border) embedded at the top of `MeasurementPage` when `DEV_MODE=true`. Displays a header ("⚡ DEV MODE SIMULATOR") and horizontal scrolling action chips: `[Idle Noise]`, `[Active Baseline]`, `[Normal (16 bpm)]`, `[Apnea Drop (>10s)]`, and `[Recovery (5s)]`. Active scenario chip highlights in solid `{colors.warning_amber}` or `{colors.accent_green}`.
 
 ---
 

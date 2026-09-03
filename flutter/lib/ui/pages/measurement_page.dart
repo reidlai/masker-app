@@ -2,23 +2,36 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/ble/ble_sensor_driver.dart';
+import '../../core/ble/ble_telemetry_service.dart';
+import '../../core/ble/flutter_blue_sensor_driver.dart';
+import '../../core/ble/i_ble_sensor_driver.dart';
 import '../../core/monitoring/apnea_evaluator.dart';
 import '../organisms/thermal_calibration_wizard.dart';
 import '../organisms/apnea_alert_overlay.dart';
 import '../organisms/ble_sensor_status_organism.dart';
+import '../organisms/developer_simulator_bar_organism.dart';
 import '../atoms/app_button.dart';
 
 class MeasurementPage extends StatefulWidget {
-  const MeasurementPage({super.key});
+  final bool? developerEnabled;
+  final IBLESensorDriver? sensorDriver;
+
+  const MeasurementPage({
+    super.key,
+    this.developerEnabled,
+    this.sensorDriver,
+  });
 
   @override
   State<MeasurementPage> createState() => _MeasurementPageState();
 }
 
 class _MeasurementPageState extends State<MeasurementPage> {
-  final BLESensorDriver _bleDriver = BLESensorDriver();
+  late final IBLESensorDriver _bleDriver;
+  final BleTelemetryService _telemetryService = BleTelemetryService();
   ApneaEvaluator? _apneaEvaluator;
   StreamSubscription<double>? _telemetrySub;
+  StreamSubscription<double>? _serviceTelemetrySub;
   StreamSubscription<ApneaState>? _evaluatorStateSub;
 
   bool _isBleConnected = false;
@@ -27,9 +40,16 @@ class _MeasurementPageState extends State<MeasurementPage> {
   bool _showAlertOverlay = false;
   int _alertCountdown = 30;
 
+  bool get _isDevMode =>
+      widget.developerEnabled ??
+      const bool.fromEnvironment('DEV_MODE', defaultValue: true);
+
   @override
   void initState() {
     super.initState();
+    // SOLID Dependency Injection: Inject real Bluetooth HW driver in production, simulator in dev mode
+    _bleDriver = widget.sensorDriver ??
+        (_isDevMode ? BleTelemetryService() : FlutterBlueSensorDriver());
     _connectBle();
   }
 
@@ -68,7 +88,13 @@ class _MeasurementPageState extends State<MeasurementPage> {
       }
     });
 
+    // Listen to IBLESensorDriver thermal stream (Real Hardware or Simulator)
     _telemetrySub = _bleDriver.thermalStream.listen((signal) {
+      _apneaEvaluator?.evaluateSignal(signal);
+    });
+
+    // Listen to global BleTelemetryService background stream
+    _serviceTelemetrySub = _telemetryService.signalStream.listen((signal) {
       _apneaEvaluator?.evaluateSignal(signal);
     });
 
@@ -81,6 +107,7 @@ class _MeasurementPageState extends State<MeasurementPage> {
 
   void _stopSleepMonitoring() {
     _telemetrySub?.cancel();
+    _serviceTelemetrySub?.cancel();
     _evaluatorStateSub?.cancel();
     _apneaEvaluator?.dispose();
     _bleDriver.stopTelemetryLogging();
@@ -108,6 +135,7 @@ class _MeasurementPageState extends State<MeasurementPage> {
   @override
   void dispose() {
     _telemetrySub?.cancel();
+    _serviceTelemetrySub?.cancel();
     _evaluatorStateSub?.cancel();
     _apneaEvaluator?.dispose();
     _bleDriver.disconnect();
@@ -144,7 +172,7 @@ class _MeasurementPageState extends State<MeasurementPage> {
                       color: AppColors.accentGreen,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.accentGreen.withOpacity(0.6),
+                          color: AppColors.accentGreen.withValues(alpha: 0.6),
                           blurRadius: 16,
                           spreadRadius: 4,
                         ),
@@ -180,6 +208,9 @@ class _MeasurementPageState extends State<MeasurementPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Contextual Developer Simulator Bar (when DEV_MODE=true)
+              if (_isDevMode) DeveloperSimulatorBarOrganism(),
+
               // BLE Status Organism
               BleSensorStatusOrganism(isConnected: _isBleConnected),
               const SizedBox(height: 24),
@@ -189,7 +220,7 @@ class _MeasurementPageState extends State<MeasurementPage> {
               const SizedBox(height: 12),
 
               ThermalCalibrationWizard(
-                bleDriver: _bleDriver,
+                bleDriver: _bleDriver is BLESensorDriver ? (_bleDriver as BLESensorDriver) : BLESensorDriver(),
                 onCalibrationComplete: () {
                   if (mounted) {
                     setState(() {
