@@ -15,19 +15,25 @@ class MainContainerPage extends StatefulWidget {
 class _MainContainerPageState extends State<MainContainerPage> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = const [
-    HomePage(),
-    MeasurementPage(),
-    SummaryScreenPage(),
-    SettingsPage(),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final List<Widget> pages = [
+      HomePage(
+        onOpenSettings: () {
+          setState(() {
+            _currentIndex = 3;
+          });
+        },
+      ),
+      const MeasurementPage(),
+      const SummaryScreenPage(),
+      const SettingsPage(),
+    ];
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
-        children: _pages,
+        children: pages,
       ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
