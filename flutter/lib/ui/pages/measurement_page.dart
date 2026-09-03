@@ -7,10 +7,16 @@ import '../../core/monitoring/apnea_evaluator.dart';
 import '../organisms/thermal_calibration_wizard.dart';
 import '../organisms/apnea_alert_overlay.dart';
 import '../organisms/ble_sensor_status_organism.dart';
+import '../organisms/developer_simulator_bar_organism.dart';
 import '../atoms/app_button.dart';
 
 class MeasurementPage extends StatefulWidget {
-  const MeasurementPage({super.key});
+  final bool? developerEnabled;
+
+  const MeasurementPage({
+    super.key,
+    this.developerEnabled,
+  });
 
   @override
   State<MeasurementPage> createState() => _MeasurementPageState();
@@ -29,6 +35,10 @@ class _MeasurementPageState extends State<MeasurementPage> {
   bool _isMonitoringActive = false;
   bool _showAlertOverlay = false;
   int _alertCountdown = 30;
+
+  bool get _isDevMode =>
+      widget.developerEnabled ??
+      const bool.fromEnvironment('DEV_MODE', defaultValue: true);
 
   @override
   void initState() {
@@ -155,7 +165,7 @@ class _MeasurementPageState extends State<MeasurementPage> {
                       color: AppColors.accentGreen,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.accentGreen.withOpacity(0.6),
+                          color: AppColors.accentGreen.withValues(alpha: 0.6),
                           blurRadius: 16,
                           spreadRadius: 4,
                         ),
@@ -191,6 +201,9 @@ class _MeasurementPageState extends State<MeasurementPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Contextual Developer Simulator Bar (when DEV_MODE=true)
+              if (_isDevMode) DeveloperSimulatorBarOrganism(),
+
               // BLE Status Organism
               BleSensorStatusOrganism(isConnected: _isBleConnected),
               const SizedBox(height: 24),
