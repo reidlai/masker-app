@@ -1,2 +1,36 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Auto-detect text files and normalize line endings to LF in git repository
+* text=auto eol=lf
+
+# Explicitly specify line endings for source code and markup files
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.md text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.dart text eol=lf
+*.sh text eol=lf
+*.py text eol=lf
+
+# Windows-specific script files require CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary formats (prevent line-ending conversion)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg text eol=lf
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.zip binary
+*.tar.gz binary
