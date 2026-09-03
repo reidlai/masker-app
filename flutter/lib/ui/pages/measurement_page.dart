@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/ble/ble_sensor_driver.dart';
 import '../../core/ble/ble_telemetry_service.dart';
+import '../../core/ble/i_ble_sensor_driver.dart';
 import '../../core/monitoring/apnea_evaluator.dart';
 import '../organisms/thermal_calibration_wizard.dart';
 import '../organisms/apnea_alert_overlay.dart';
@@ -12,10 +13,12 @@ import '../atoms/app_button.dart';
 
 class MeasurementPage extends StatefulWidget {
   final bool? developerEnabled;
+  final IBLESensorDriver? sensorDriver;
 
   const MeasurementPage({
     super.key,
     this.developerEnabled,
+    this.sensorDriver,
   });
 
   @override
@@ -23,7 +26,7 @@ class MeasurementPage extends StatefulWidget {
 }
 
 class _MeasurementPageState extends State<MeasurementPage> {
-  final BLESensorDriver _bleDriver = BLESensorDriver();
+  late final IBLESensorDriver _bleDriver;
   final BleTelemetryService _telemetryService = BleTelemetryService();
   ApneaEvaluator? _apneaEvaluator;
   StreamSubscription<double>? _telemetrySub;
@@ -43,6 +46,7 @@ class _MeasurementPageState extends State<MeasurementPage> {
   @override
   void initState() {
     super.initState();
+    _bleDriver = widget.sensorDriver ?? BLESensorDriver();
     _connectBle();
   }
 
@@ -81,7 +85,7 @@ class _MeasurementPageState extends State<MeasurementPage> {
       }
     });
 
-    // Listen to BLE Driver thermal stream
+    // Listen to IBLESensorDriver thermal stream
     _telemetrySub = _bleDriver.thermalStream.listen((signal) {
       _apneaEvaluator?.evaluateSignal(signal);
     });
@@ -213,7 +217,7 @@ class _MeasurementPageState extends State<MeasurementPage> {
               const SizedBox(height: 12),
 
               ThermalCalibrationWizard(
-                bleDriver: _bleDriver,
+                bleDriver: _bleDriver is BLESensorDriver ? (_bleDriver as BLESensorDriver) : BLESensorDriver(),
                 onCalibrationComplete: () {
                   if (mounted) {
                     setState(() {

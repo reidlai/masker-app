@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:rxdart/rxdart.dart';
+import 'i_ble_sensor_driver.dart';
 
 enum SimulatorScenario {
   none,
@@ -11,7 +12,7 @@ enum SimulatorScenario {
   recovery,
 }
 
-class BleTelemetryService {
+class BleTelemetryService implements IBLESensorDriver {
   static final BleTelemetryService _instance = BleTelemetryService._internal();
   factory BleTelemetryService() => _instance;
   BleTelemetryService._internal();
@@ -22,6 +23,13 @@ class BleTelemetryService {
       BehaviorSubject<SimulatorScenario>.seeded(SimulatorScenario.none);
 
   ValueStream<double> get signalStream => _signalSubject.stream;
+
+  @override
+  Stream<double> get thermalStream => _signalSubject.stream;
+
+  @override
+  double get apneaThreshold => 0.5;
+
   ValueStream<bool> get isSimulatorStream => _isSimulatorSubject.stream;
   ValueStream<SimulatorScenario> get scenarioStream => _scenarioSubject.stream;
 
@@ -31,6 +39,27 @@ class BleTelemetryService {
 
   Timer? _simulationTimer;
   double _step = 0.0;
+
+  @override
+  Future<bool> scanAndConnect() async {
+    _isSimulatorSubject.add(true);
+    return true;
+  }
+
+  @override
+  void startTelemetryLogging() {
+    startSimulationScenario(SimulatorScenario.normalRespiration);
+  }
+
+  @override
+  void stopTelemetryLogging() {
+    stopSimulation();
+  }
+
+  @override
+  void disconnect() {
+    stopSimulation();
+  }
 
   void emitSignal(double value, {bool isSimulator = false}) {
     if (_signalSubject.isClosed) {
