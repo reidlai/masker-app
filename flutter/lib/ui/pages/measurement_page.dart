@@ -5,6 +5,7 @@ import '../../core/ble/ble_sensor_driver.dart';
 import '../../core/monitoring/apnea_evaluator.dart';
 import '../organisms/thermal_calibration_wizard.dart';
 import '../organisms/apnea_alert_overlay.dart';
+import '../organisms/ble_sensor_status_organism.dart';
 import '../atoms/app_button.dart';
 
 class MeasurementPage extends StatefulWidget {
@@ -179,43 +180,8 @@ class _MeasurementPageState extends State<MeasurementPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // BLE Status Card
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.cardBorder),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      _isBleConnected ? Icons.bluetooth_connected : Icons.bluetooth_searching,
-                      color: _isBleConnected ? AppColors.accentGreen : AppColors.warningAmber,
-                      size: 28,
-                    ),
-                    const SizedBox(width: 14),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _isBleConnected ? "D-BAND Sensor Connected ✓" : "Scanning for D-BAND (BLE 5.0+)...",
-                          style: TextStyle(
-                            color: _isBleConnected ? AppColors.accentGreen : AppColors.warningAmber,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        const Text(
-                          "Service: 0x180D · AES-128 Encrypted",
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+              // BLE Status Organism
+              BleSensorStatusOrganism(isConnected: _isBleConnected),
               const SizedBox(height: 24),
 
               // Calibration Wizard
