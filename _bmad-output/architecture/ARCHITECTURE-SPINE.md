@@ -57,6 +57,27 @@ Rel(system, doctor, "Delivers Morning Sleep Summaries & EHR/Big Data Reports", "
 
 ---
 
+### 1.1.1 🏛️ Architectural Decisions & System Invariants (AD-01 to AD-11)
+
+The following core invariants govern all mobile application, BLE sensor driver, data processing, security, and UI design layers:
+
+- **AD-01 (Atomic Design System Hierarchy):** Strict separation across UI Atoms, Molecules, 14 Organisms, and Page Templates.
+- **AD-02 (BLoC + RxDart Unidirectional Data Flow):** Event streams managed via `flutter_bloc` and `rxdart` using `throttleTime` (300ms) and `switchMap` event transformers.
+- **AD-03 (FIDO2 / WebAuthn Biometric Authentication):** Passwordless Passkey login enforcing HIPAA 45 CFR § 164.312(a) technical access control.
+- **AD-04 (2-Stage Thermal Sensor Calibration):** Stage 1 room noise floor ($N_{\text{idle}}$) + Stage 2 active breath baseline ($V_{pp}$) setting dynamic zero-airflow thresholds ($0.10 \times V_{pp}$).
+- **AD-05 (Wear Verification Guardrail):** Recording blocked if active breathing delta $\Delta V < 1.5 \times N_{\text{idle}}$.
+- **AD-06 (0-FPS Night Mode):** Pitch-black screen lock state (`#000000`, <8.0% battery drain over 8h) with 10Hz RAM ring buffer.
+- **AD-07 (Two-Tier Emergency Response):** Sub-200ms latency escalating siren tones ($40\text{dB} \to 75+\text{dB}$) & haptics, 30s "I'm Safe" tap, 5s auto-silence, and Tier-2 caregiver dispatch.
+- **AD-08 (Developer Options & Contextual Simulator Bar):** Interactive simulation of calibration ($N_{\text{idle}}$ & $V_{pp}$) and sleep cycle alarms via `DeveloperOptionsPage` and `DeveloperSimulatorBarOrganism`.
+- **AD-09 (Cryptographic Encryption):** AES-128 BLE link encryption, HTTPS TLS 1.3 in transit, AES-256 SQLCipher local database encryption at rest.
+- **AD-10 (Clinical Respiration & GPU Charting):** 60 FPS Skia GPU line plots (`fl_chart`), 256-point FFT spectral graphs, AHI score rings, and signed FHIR JSON / PDF exports.
+- **AD-11 (SOLID Dependency Inversion & `IBLESensorDriver` Interface Polymorphism):**  
+  * **Binds:** All BLE sensor telemetry drivers (`BLESensorDriver`, `BleTelemetryService`, `FlutterBlueSensorDriver`), stream evaluators (`ApneaEvaluator`, `BleBloc`), and live UI views (`MeasurementPage`).  
+  * **Prevents:** Tightly coupling UI pages or monitoring evaluators to specific hardware or simulation drivers, enabling zero-code-change driver swapping and unit test mocking.  
+  * **Rule:** High-level monitoring services (`ApneaEvaluator`, `BleBloc`) and UI pages (`MeasurementPage`) MUST depend exclusively on the abstract interface `IBLESensorDriver`. Physical hardware drivers (`FlutterBlueSensorDriver`), mock drivers (`BLESensorDriver`), and background simulation engines (`BleTelemetryService`) MUST implement `IBLESensorDriver`. Constructor Dependency Injection (DI) MUST be used to pass driver instances.
+
+---
+
 ### 1.2 C4 Level 2: Container Diagram
 
 The Container diagram decomposes the platform into its distinct deployable software applications, data stores, and backend microservices.
