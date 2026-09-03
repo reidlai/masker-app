@@ -3,7 +3,7 @@ import '../../core/theme/app_theme.dart';
 import 'home_page.dart';
 import 'measurement_page.dart';
 import 'summary_screen_page.dart';
-import 'profile_page.dart';
+import 'settings_page.dart';
 
 class MainContainerPage extends StatefulWidget {
   const MainContainerPage({super.key});
@@ -19,7 +19,7 @@ class _MainContainerPageState extends State<MainContainerPage> {
     HomePage(),
     MeasurementPage(),
     SummaryScreenPage(),
-    ProfilePage(),
+    SettingsPage(),
   ];
 
   @override
@@ -63,9 +63,9 @@ class _MainContainerPageState extends State<MainContainerPage> {
               label: 'Summary',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profile',
+              icon: Icon(Icons.settings_outlined),
+              activeIcon: Icon(Icons.settings),
+              label: 'Settings',
             ),
           ],
         ),

@@ -12,6 +12,7 @@ class AppColors {
   static const Color nightMode = Color(0xFF000000);       // 0-FPS Black
   static const Color textPrimary = Color(0xFFF8FAFC);     // Slate 50
   static const Color textSecondary = Color(0xFF94A3B8);   // Slate 400
+  static const Color pressedSurface = Color(0xFF273449);  // Slate 800 pressed / list-row active
 
   static const Color primaryTeal = Color(0xFF14B8A6);     // Teal 500 / primary accent
   static const Color accentPink = Color(0xFFEC4899);      // Pink 500 / secondary accent

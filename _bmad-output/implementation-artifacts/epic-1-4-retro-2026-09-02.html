@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>epic-1-4-retro-2026-09-02</title>
+  <style id="theme-css">
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { background-color: #ffffff; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                   'Helvetica Neue', Arial, sans-serif;
+      font-size: 16px;
+      max-width: 960px; /* matches GitHub / VS Code markdown preview width */
+      margin: 0 auto;
+      padding: 1em 1.5rem 4rem;
+      line-height: 1.7;
+      word-wrap: break-word;
+      color: #24292e;
+      background-color: #ffffff;
+    }
+    h1 { font-size: 2em; border-bottom: 2px solid #e1e4e8; padding-bottom: 0.3em; }
+    h2 { font-size: 1.5em; border-bottom: 1px solid #e1e4e8; padding-bottom: 0.2em; }
+    h3 { font-size: 1.25em; }
+    h1, h2, h3, h4, h5, h6 { margin-top: 1.5em; margin-bottom: 0.5em; scroll-margin-top: 1.5em; }
+    p { margin: 0.8em 0; }
+    a { color: #0366d6; }
+    a:visited { color: #6f42c1; }
+    code {
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 0.875em;
+      color: #24292e;
+      background: #f6f8fa;
+      padding: 0.2em 0.4em;
+      border-radius: 3px;
+    }
+    pre {
+      border: 1px solid #e1e4e8;
+      border-radius: 6px;
+      padding: 1em 1.2em;
+      overflow-x: auto;
+    }
+    pre code { background: none; padding: 0; font-size: 0.875em; }
+    table { border-collapse: collapse; display: block; width: 100%; overflow: auto; margin: 1em 0; word-break: keep-all; }
+    th, td { border: 1px solid #dfe2e5; padding: 0.5em 1em; text-align: left; }
+    th { background: #f6f8fa; font-weight: 600; }
+    tr:nth-child(even) { background: #fafbfc; }
+    blockquote {
+      border-left: 4px solid #dfe2e5;
+      margin: 0.8em 0; /* vertical margin so consecutive blockquotes stay separate, like GitHub */
+      padding: 0.5em 1em;
+      color: #6a737d;
+      background-color: #f6f8fa;
+    }
+    blockquote > :first-child { margin-top: 0; }
+    blockquote > :last-child { margin-bottom: 0; }
+    
+    .markdown-alert {
+      padding: 0.5em 1em;
+      margin: 0.8em 0;
+      border-left: 0.25em solid #0969da;
+      color: inherit;
+    }
+    .markdown-alert > :first-child { margin-top: 0; }
+    .markdown-alert > :last-child { margin-bottom: 0; }
+    .markdown-alert-title {
+      display: flex;
+      align-items: center;
+      font-weight: 600;
+      line-height: 1;
+      margin-bottom: 0.5em;
+    }
+    .markdown-alert-title .octicon {
+      margin-right: 0.5em;
+      fill: currentColor;
+      overflow: visible;
+      vertical-align: text-bottom;
+    }
+    .markdown-alert-note { border-left-color: #0969da; }
+    .markdown-alert-note > .markdown-alert-title { color: #0969da; }
+    .markdown-alert-tip { border-left-color: #1a7f37; }
+    .markdown-alert-tip > .markdown-alert-title { color: #1a7f37; }
+    .markdown-alert-important { border-left-color: #8250df; }
+    .markdown-alert-important > .markdown-alert-title { color: #8250df; }
+    .markdown-alert-warning { border-left-color: #9a6700; }
+    .markdown-alert-warning > .markdown-alert-title { color: #9a6700; }
+    .markdown-alert-caution { border-left-color: #d1242f; }
+    .markdown-alert-caution > .markdown-alert-title { color: #d1242f; }
+    hr { border: none; border-top: 2px solid #e1e4e8; margin: 2em 0; }
+    img { max-width: 100%; height: auto; }
+    .plantuml-diagram { margin: 1.5em 0; text-align: left; width: fit-content; }
+    .plantuml-diagram svg { height: auto; }
+    .mermaid-diagram { margin: 1.5em 0; text-align: left; width: fit-content; }
+    .mermaid-diagram pre.mermaid { visibility: hidden; overflow: visible; border: none; padding: 0; }
+    .mermaid-diagram svg { visibility: visible; height: auto; }
+    .mermaid-error { visibility: visible; color: #d32f2f; border-left: 3px solid #d32f2f; padding: 0.5em; white-space: pre-wrap; font-size: 0.85em; }
+    .d2-diagram { margin: 1.5em 0; text-align: left; }
+    .d2-diagram svg { height: auto; }
+    .d2-error { color: #d32f2f; border-left: 3px solid #d32f2f; padding: 0.5em; white-space: pre-wrap; font-size: 0.85em; }
+    .katex { color: inherit; }
+    .katex-display { margin: 1em 0; overflow-x: auto; overflow-y: hidden; }
+    body.preview { margin: 0; max-width: none; padding: 1em 26px; }
+    .hljs { background: #f6f8fa; color: #24292e; }
+    .hljs-comment, .hljs-prolog, .hljs-doctype, .hljs-cdata { color: #6a737d; font-style: italic; }
+    .hljs-keyword, .hljs-selector-tag { color: #d73a49; }
+    .hljs-string, .hljs-doctag { color: #032f62; }
+    .hljs-number, .hljs-literal { color: #005cc5; }
+    .hljs-attr, .hljs-attribute { color: #005cc5; }
+    .hljs-name, .hljs-tag, .hljs-selector-id, .hljs-selector-class { color: #22863a; }
+    .hljs-title, .hljs-section, .hljs-function { color: #6f42c1; font-weight: bold; }
+    .hljs-built_in, .hljs-type { color: #e36209; }
+    .hljs-symbol, .hljs-bullet, .hljs-link { color: #0366d6; }
+    .hljs-meta { color: #e36209; }
+    .hljs-addition { background: #e6ffed; color: #22863a; }
+    .hljs-deletion { background: #ffeef0; color: #b31d28; }
+    .hljs-strong { font-weight: bold; }
+    .hljs-emphasis { font-style: italic; }
+    #toc-sidebar { background-color: #ffffff; color: #24292e; }
+    #toc-sidebar::before { background-color: #e1e4e8; }
+    #toc-sidebar .toc-toggle { color: #24292e; }
+    #toc-sidebar a { color: #0366d6; }
+    #toc-sidebar a:hover { background: #f6f8fa; }
+    #toc-sidebar a.active { color: #0366d6; border-left-color: #0366d6; }
+    #nav-toolbar button { color: #24292e; }
+    #nav-toolbar button:hover, #nav-toolbar button.active { background: #f6f8fa; }
+  </style>
+  <style id="katex-css">@font-face{font-display:block;font-family:KaTeX_AMS;font-style:normal;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_AMS-Regular.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_AMS-Regular.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_AMS-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Caligraphic;font-style:normal;font-weight:700;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Caligraphic-Bold.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Caligraphic-Bold.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Caligraphic-Bold.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Caligraphic;font-style:normal;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Caligraphic-Regular.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Caligraphic-Regular.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Caligraphic-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Fraktur;font-style:normal;font-weight:700;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Fraktur-Bold.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Fraktur-Bold.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Fraktur-Bold.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Fraktur;font-style:normal;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Fraktur-Regular.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Fraktur-Regular.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Fraktur-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Main;font-style:normal;font-weight:700;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Main-Bold.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Main-Bold.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Main-Bold.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Main;font-style:italic;font-weight:700;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Main-BoldItalic.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Main-BoldItalic.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Main-BoldItalic.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Main;font-style:italic;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Main-Italic.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Main-Italic.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Main-Italic.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Main;font-style:normal;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Main-Regular.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Main-Regular.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Main-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Math;font-style:italic;font-weight:700;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Math-BoldItalic.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Math-BoldItalic.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Math-BoldItalic.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Math;font-style:italic;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Math-Italic.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Math-Italic.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Math-Italic.ttf) format("truetype")}@font-face{font-display:block;font-family:"KaTeX_SansSerif";font-style:normal;font-weight:700;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_SansSerif-Bold.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_SansSerif-Bold.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_SansSerif-Bold.ttf) format("truetype")}@font-face{font-display:block;font-family:"KaTeX_SansSerif";font-style:italic;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_SansSerif-Italic.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_SansSerif-Italic.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_SansSerif-Italic.ttf) format("truetype")}@font-face{font-display:block;font-family:"KaTeX_SansSerif";font-style:normal;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_SansSerif-Regular.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_SansSerif-Regular.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_SansSerif-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Script;font-style:normal;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Script-Regular.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Script-Regular.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Script-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Size1;font-style:normal;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Size1-Regular.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Size1-Regular.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Size1-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Size2;font-style:normal;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Size2-Regular.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Size2-Regular.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Size2-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Size3;font-style:normal;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Size3-Regular.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Size3-Regular.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Size3-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Size4;font-style:normal;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Size4-Regular.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Size4-Regular.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Size4-Regular.ttf) format("truetype")}@font-face{font-display:block;font-family:KaTeX_Typewriter;font-style:normal;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Typewriter-Regular.woff2) format("woff2"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Typewriter-Regular.woff) format("woff"),url(https://cdn.jsdelivr.net/npm/katex@0.16.35/dist/fonts/KaTeX_Typewriter-Regular.ttf) format("truetype")}.katex{font:normal 1.21em KaTeX_Main,Times New Roman,serif;line-height:1.2;position:relative;text-indent:0;text-rendering:auto}.katex *{-ms-high-contrast-adjust:none!important;border-color:currentColor}.katex .katex-version:after{content:"0.16.47"}.katex .katex-mathml{border:0;-webkit-clip-path:inset(50%);clip-path:inset(50%);height:1px;overflow:hidden;padding:0;position:absolute;width:1px}.katex .katex-html>.newline{display:block}.katex .base{position:relative;white-space:nowrap;width:-webkit-min-content;width:-moz-min-content;width:min-content}.katex .base,.katex .strut{display:inline-block}.katex .textbf{font-weight:700}.katex .textit{font-style:italic}.katex .textrm{font-family:KaTeX_Main}.katex .textsf{font-family:KaTeX_SansSerif}.katex .texttt{font-family:KaTeX_Typewriter}.katex .mathnormal{font-family:KaTeX_Math;font-style:italic}.katex .mathit{font-family:KaTeX_Main;font-style:italic}.katex .mathrm{font-style:normal}.katex .mathbf{font-family:KaTeX_Main;font-weight:700}.katex .boldsymbol{font-family:KaTeX_Math;font-style:italic;font-weight:700}.katex .amsrm,.katex .mathbb,.katex .textbb{font-family:KaTeX_AMS}.katex .mathcal{font-family:KaTeX_Caligraphic}.katex .mathfrak,.katex .textfrak{font-family:KaTeX_Fraktur}.katex .mathboldfrak,.katex .textboldfrak{font-family:KaTeX_Fraktur;font-weight:700}.katex .mathtt{font-family:KaTeX_Typewriter}.katex .mathscr,.katex .textscr{font-family:KaTeX_Script}.katex .mathsf,.katex .textsf{font-family:KaTeX_SansSerif}.katex .mathboldsf,.katex .textboldsf{font-family:KaTeX_SansSerif;font-weight:700}.katex .mathitsf,.katex .mathsfit,.katex .textitsf{font-family:KaTeX_SansSerif;font-style:italic}.katex .mainrm{font-family:KaTeX_Main;font-style:normal}.katex .vlist-t{border-collapse:collapse;display:inline-table;table-layout:fixed}.katex .vlist-r{display:table-row}.katex .vlist{display:table-cell;position:relative;vertical-align:bottom}.katex .vlist>span{display:block;height:0;position:relative}.katex .vlist>span>span{display:inline-block}.katex .vlist>span>.pstrut{overflow:hidden;width:0}.katex .vlist-t2{margin-right:-2px}.katex .vlist-s{display:table-cell;font-size:1px;min-width:2px;vertical-align:bottom;width:2px}.katex .vbox{align-items:baseline;display:inline-flex;flex-direction:column}.katex .hbox{width:100%}.katex .hbox,.katex .thinbox{display:inline-flex;flex-direction:row}.katex .thinbox{max-width:0;width:0}.katex .msupsub{text-align:left}.katex .mfrac>span>span{text-align:center}.katex .mfrac .frac-line{border-bottom-style:solid;display:inline-block;width:100%}.katex .hdashline,.katex .hline,.katex .mfrac .frac-line,.katex .overline .overline-line,.katex .rule,.katex .underline .underline-line{min-height:1px}.katex .mspace{display:inline-block}.katex .smash{display:inline;line-height:0}.katex .clap,.katex .llap,.katex .rlap{position:relative;width:0}.katex .clap>.inner,.katex .llap>.inner,.katex .rlap>.inner{position:absolute}.katex .clap>.fix,.katex .llap>.fix,.katex .rlap>.fix{display:inline-block}.katex .llap>.inner{right:0}.katex .clap>.inner,.katex .rlap>.inner{left:0}.katex .clap>.inner>span{margin-left:-50%;margin-right:50%}.katex .rule{border:0 solid;display:inline-block;position:relative}.katex .hline,.katex .overline .overline-line,.katex .underline .underline-line{border-bottom-style:solid;display:inline-block;width:100%}.katex .hdashline{border-bottom-style:dashed;display:inline-block;width:100%}.katex .sqrt>.root{margin-left:.2777777778em;margin-right:-.5555555556em}.katex .fontsize-ensurer.reset-size1.size1,.katex .sizing.reset-size1.size1{font-size:1em}.katex .fontsize-ensurer.reset-size1.size2,.katex .sizing.reset-size1.size2{font-size:1.2em}.katex .fontsize-ensurer.reset-size1.size3,.katex .sizing.reset-size1.size3{font-size:1.4em}.katex .fontsize-ensurer.reset-size1.size4,.katex .sizing.reset-size1.size4{font-size:1.6em}.katex .fontsize-ensurer.reset-size1.size5,.katex .sizing.reset-size1.size5{font-size:1.8em}.katex .fontsize-ensurer.reset-size1.size6,.katex .sizing.reset-size1.size6{font-size:2em}.katex .fontsize-ensurer.reset-size1.size7,.katex .sizing.reset-size1.size7{font-size:2.4em}.katex .fontsize-ensurer.reset-size1.size8,.katex .sizing.reset-size1.size8{font-size:2.88em}.katex .fontsize-ensurer.reset-size1.size9,.katex .sizing.reset-size1.size9{font-size:3.456em}.katex .fontsize-ensurer.reset-size1.size10,.katex .sizing.reset-size1.size10{font-size:4.148em}.katex .fontsize-ensurer.reset-size1.size11,.katex .sizing.reset-size1.size11{font-size:4.976em}.katex .fontsize-ensurer.reset-size2.size1,.katex .sizing.reset-size2.size1{font-size:.8333333333em}.katex .fontsize-ensurer.reset-size2.size2,.katex .sizing.reset-size2.size2{font-size:1em}.katex .fontsize-ensurer.reset-size2.size3,.katex .sizing.reset-size2.size3{font-size:1.1666666667em}.katex .fontsize-ensurer.reset-size2.size4,.katex .sizing.reset-size2.size4{font-size:1.3333333333em}.katex .fontsize-ensurer.reset-size2.size5,.katex .sizing.reset-size2.size5{font-size:1.5em}.katex .fontsize-ensurer.reset-size2.size6,.katex .sizing.reset-size2.size6{font-size:1.6666666667em}.katex .fontsize-ensurer.reset-size2.size7,.katex .sizing.reset-size2.size7{font-size:2em}.katex .fontsize-ensurer.reset-size2.size8,.katex .sizing.reset-size2.size8{font-size:2.4em}.katex .fontsize-ensurer.reset-size2.size9,.katex .sizing.reset-size2.size9{font-size:2.88em}.katex .fontsize-ensurer.reset-size2.size10,.katex .sizing.reset-size2.size10{font-size:3.4566666667em}.katex .fontsize-ensurer.reset-size2.size11,.katex .sizing.reset-size2.size11{font-size:4.1466666667em}.katex .fontsize-ensurer.reset-size3.size1,.katex .sizing.reset-size3.size1{font-size:.7142857143em}.katex .fontsize-ensurer.reset-size3.size2,.katex .sizing.reset-size3.size2{font-size:.8571428571em}.katex .fontsize-ensurer.reset-size3.size3,.katex .sizing.reset-size3.size3{font-size:1em}.katex .fontsize-ensurer.reset-size3.size4,.katex .sizing.reset-size3.size4{font-size:1.1428571429em}.katex .fontsize-ensurer.reset-size3.size5,.katex .sizing.reset-size3.size5{font-size:1.2857142857em}.katex .fontsize-ensurer.reset-size3.size6,.katex .sizing.reset-size3.size6{font-size:1.4285714286em}.katex .fontsize-ensurer.reset-size3.size7,.katex .sizing.reset-size3.size7{font-size:1.7142857143em}.katex .fontsize-ensurer.reset-size3.size8,.katex .sizing.reset-size3.size8{font-size:2.0571428571em}.katex .fontsize-ensurer.reset-size3.size9,.katex .sizing.reset-size3.size9{font-size:2.4685714286em}.katex .fontsize-ensurer.reset-size3.size10,.katex .sizing.reset-size3.size10{font-size:2.9628571429em}.katex .fontsize-ensurer.reset-size3.size11,.katex .sizing.reset-size3.size11{font-size:3.5542857143em}.katex .fontsize-ensurer.reset-size4.size1,.katex .sizing.reset-size4.size1{font-size:.625em}.katex .fontsize-ensurer.reset-size4.size2,.katex .sizing.reset-size4.size2{font-size:.75em}.katex .fontsize-ensurer.reset-size4.size3,.katex .sizing.reset-size4.size3{font-size:.875em}.katex .fontsize-ensurer.reset-size4.size4,.katex .sizing.reset-size4.size4{font-size:1em}.katex .fontsize-ensurer.reset-size4.size5,.katex .sizing.reset-size4.size5{font-size:1.125em}.katex .fontsize-ensurer.reset-size4.size6,.katex .sizing.reset-size4.size6{font-size:1.25em}.katex .fontsize-ensurer.reset-size4.size7,.katex .sizing.reset-size4.size7{font-size:1.5em}.katex .fontsize-ensurer.reset-size4.size8,.katex .sizing.reset-size4.size8{font-size:1.8em}.katex .fontsize-ensurer.reset-size4.size9,.katex .sizing.reset-size4.size9{font-size:2.16em}.katex .fontsize-ensurer.reset-size4.size10,.katex .sizing.reset-size4.size10{font-size:2.5925em}.katex .fontsize-ensurer.reset-size4.size11,.katex .sizing.reset-size4.size11{font-size:3.11em}.katex .fontsize-ensurer.reset-size5.size1,.katex .sizing.reset-size5.size1{font-size:.5555555556em}.katex .fontsize-ensurer.reset-size5.size2,.katex .sizing.reset-size5.size2{font-size:.6666666667em}.katex .fontsize-ensurer.reset-size5.size3,.katex .sizing.reset-size5.size3{font-size:.7777777778em}.katex .fontsize-ensurer.reset-size5.size4,.katex .sizing.reset-size5.size4{font-size:.8888888889em}.katex .fontsize-ensurer.reset-size5.size5,.katex .sizing.reset-size5.size5{font-size:1em}.katex .fontsize-ensurer.reset-size5.size6,.katex .sizing.reset-size5.size6{font-size:1.1111111111em}.katex .fontsize-ensurer.reset-size5.size7,.katex .sizing.reset-size5.size7{font-size:1.3333333333em}.katex .fontsize-ensurer.reset-size5.size8,.katex .sizing.reset-size5.size8{font-size:1.6em}.katex .fontsize-ensurer.reset-size5.size9,.katex .sizing.reset-size5.size9{font-size:1.92em}.katex .fontsize-ensurer.reset-size5.size10,.katex .sizing.reset-size5.size10{font-size:2.3044444444em}.katex .fontsize-ensurer.reset-size5.size11,.katex .sizing.reset-size5.size11{font-size:2.7644444444em}.katex .fontsize-ensurer.reset-size6.size1,.katex .sizing.reset-size6.size1{font-size:.5em}.katex .fontsize-ensurer.reset-size6.size2,.katex .sizing.reset-size6.size2{font-size:.6em}.katex .fontsize-ensurer.reset-size6.size3,.katex .sizing.reset-size6.size3{font-size:.7em}.katex .fontsize-ensurer.reset-size6.size4,.katex .sizing.reset-size6.size4{font-size:.8em}.katex .fontsize-ensurer.reset-size6.size5,.katex .sizing.reset-size6.size5{font-size:.9em}.katex .fontsize-ensurer.reset-size6.size6,.katex .sizing.reset-size6.size6{font-size:1em}.katex .fontsize-ensurer.reset-size6.size7,.katex .sizing.reset-size6.size7{font-size:1.2em}.katex .fontsize-ensurer.reset-size6.size8,.katex .sizing.reset-size6.size8{font-size:1.44em}.katex .fontsize-ensurer.reset-size6.size9,.katex .sizing.reset-size6.size9{font-size:1.728em}.katex .fontsize-ensurer.reset-size6.size10,.katex .sizing.reset-size6.size10{font-size:2.074em}.katex .fontsize-ensurer.reset-size6.size11,.katex .sizing.reset-size6.size11{font-size:2.488em}.katex .fontsize-ensurer.reset-size7.size1,.katex .sizing.reset-size7.size1{font-size:.4166666667em}.katex .fontsize-ensurer.reset-size7.size2,.katex .sizing.reset-size7.size2{font-size:.5em}.katex .fontsize-ensurer.reset-size7.size3,.katex .sizing.reset-size7.size3{font-size:.5833333333em}.katex .fontsize-ensurer.reset-size7.size4,.katex .sizing.reset-size7.size4{font-size:.6666666667em}.katex .fontsize-ensurer.reset-size7.size5,.katex .sizing.reset-size7.size5{font-size:.75em}.katex .fontsize-ensurer.reset-size7.size6,.katex .sizing.reset-size7.size6{font-size:.8333333333em}.katex .fontsize-ensurer.reset-size7.size7,.katex .sizing.reset-size7.size7{font-size:1em}.katex .fontsize-ensurer.reset-size7.size8,.katex .sizing.reset-size7.size8{font-size:1.2em}.katex .fontsize-ensurer.reset-size7.size9,.katex .sizing.reset-size7.size9{font-size:1.44em}.katex .fontsize-ensurer.reset-size7.size10,.katex .sizing.reset-size7.size10{font-size:1.7283333333em}.katex .fontsize-ensurer.reset-size7.size11,.katex .sizing.reset-size7.size11{font-size:2.0733333333em}.katex .fontsize-ensurer.reset-size8.size1,.katex .sizing.reset-size8.size1{font-size:.3472222222em}.katex .fontsize-ensurer.reset-size8.size2,.katex .sizing.reset-size8.size2{font-size:.4166666667em}.katex .fontsize-ensurer.reset-size8.size3,.katex .sizing.reset-size8.size3{font-size:.4861111111em}.katex .fontsize-ensurer.reset-size8.size4,.katex .sizing.reset-size8.size4{font-size:.5555555556em}.katex .fontsize-ensurer.reset-size8.size5,.katex .sizing.reset-size8.size5{font-size:.625em}.katex .fontsize-ensurer.reset-size8.size6,.katex .sizing.reset-size8.size6{font-size:.6944444444em}.katex .fontsize-ensurer.reset-size8.size7,.katex .sizing.reset-size8.size7{font-size:.8333333333em}.katex .fontsize-ensurer.reset-size8.size8,.katex .sizing.reset-size8.size8{font-size:1em}.katex .fontsize-ensurer.reset-size8.size9,.katex .sizing.reset-size8.size9{font-size:1.2em}.katex .fontsize-ensurer.reset-size8.size10,.katex .sizing.reset-size8.size10{font-size:1.4402777778em}.katex .fontsize-ensurer.reset-size8.size11,.katex .sizing.reset-size8.size11{font-size:1.7277777778em}.katex .fontsize-ensurer.reset-size9.size1,.katex .sizing.reset-size9.size1{font-size:.2893518519em}.katex .fontsize-ensurer.reset-size9.size2,.katex .sizing.reset-size9.size2{font-size:.3472222222em}.katex .fontsize-ensurer.reset-size9.size3,.katex .sizing.reset-size9.size3{font-size:.4050925926em}.katex .fontsize-ensurer.reset-size9.size4,.katex .sizing.reset-size9.size4{font-size:.462962963em}.katex .fontsize-ensurer.reset-size9.size5,.katex .sizing.reset-size9.size5{font-size:.5208333333em}.katex .fontsize-ensurer.reset-size9.size6,.katex .sizing.reset-size9.size6{font-size:.5787037037em}.katex .fontsize-ensurer.reset-size9.size7,.katex .sizing.reset-size9.size7{font-size:.6944444444em}.katex .fontsize-ensurer.reset-size9.size8,.katex .sizing.reset-size9.size8{font-size:.8333333333em}.katex .fontsize-ensurer.reset-size9.size9,.katex .sizing.reset-size9.size9{font-size:1em}.katex .fontsize-ensurer.reset-size9.size10,.katex .sizing.reset-size9.size10{font-size:1.2002314815em}.katex .fontsize-ensurer.reset-size9.size11,.katex .sizing.reset-size9.size11{font-size:1.4398148148em}.katex .fontsize-ensurer.reset-size10.size1,.katex .sizing.reset-size10.size1{font-size:.2410800386em}.katex .fontsize-ensurer.reset-size10.size2,.katex .sizing.reset-size10.size2{font-size:.2892960463em}.katex .fontsize-ensurer.reset-size10.size3,.katex .sizing.reset-size10.size3{font-size:.337512054em}.katex .fontsize-ensurer.reset-size10.size4,.katex .sizing.reset-size10.size4{font-size:.3857280617em}.katex .fontsize-ensurer.reset-size10.size5,.katex .sizing.reset-size10.size5{font-size:.4339440694em}.katex .fontsize-ensurer.reset-size10.size6,.katex .sizing.reset-size10.size6{font-size:.4821600771em}.katex .fontsize-ensurer.reset-size10.size7,.katex .sizing.reset-size10.size7{font-size:.5785920926em}.katex .fontsize-ensurer.reset-size10.size8,.katex .sizing.reset-size10.size8{font-size:.6943105111em}.katex .fontsize-ensurer.reset-size10.size9,.katex .sizing.reset-size10.size9{font-size:.8331726133em}.katex .fontsize-ensurer.reset-size10.size10,.katex .sizing.reset-size10.size10{font-size:1em}.katex .fontsize-ensurer.reset-size10.size11,.katex .sizing.reset-size10.size11{font-size:1.1996142719em}.katex .fontsize-ensurer.reset-size11.size1,.katex .sizing.reset-size11.size1{font-size:.2009646302em}.katex .fontsize-ensurer.reset-size11.size2,.katex .sizing.reset-size11.size2{font-size:.2411575563em}.katex .fontsize-ensurer.reset-size11.size3,.katex .sizing.reset-size11.size3{font-size:.2813504823em}.katex .fontsize-ensurer.reset-size11.size4,.katex .sizing.reset-size11.size4{font-size:.3215434084em}.katex .fontsize-ensurer.reset-size11.size5,.katex .sizing.reset-size11.size5{font-size:.3617363344em}.katex .fontsize-ensurer.reset-size11.size6,.katex .sizing.reset-size11.size6{font-size:.4019292605em}.katex .fontsize-ensurer.reset-size11.size7,.katex .sizing.reset-size11.size7{font-size:.4823151125em}.katex .fontsize-ensurer.reset-size11.size8,.katex .sizing.reset-size11.size8{font-size:.578778135em}.katex .fontsize-ensurer.reset-size11.size9,.katex .sizing.reset-size11.size9{font-size:.6945337621em}.katex .fontsize-ensurer.reset-size11.size10,.katex .sizing.reset-size11.size10{font-size:.8336012862em}.katex .fontsize-ensurer.reset-size11.size11,.katex .sizing.reset-size11.size11{font-size:1em}.katex .delimsizing.size1{font-family:KaTeX_Size1}.katex .delimsizing.size2{font-family:KaTeX_Size2}.katex .delimsizing.size3{font-family:KaTeX_Size3}.katex .delimsizing.size4{font-family:KaTeX_Size4}.katex .delimsizing.mult .delim-size1>span{font-family:KaTeX_Size1}.katex .delimsizing.mult .delim-size4>span{font-family:KaTeX_Size4}.katex .nulldelimiter{display:inline-block;width:.12em}.katex .delimcenter,.katex .op-symbol{position:relative}.katex .op-symbol.small-op{font-family:KaTeX_Size1}.katex .op-symbol.large-op{font-family:KaTeX_Size2}.katex .accent>.vlist-t,.katex .op-limits>.vlist-t{text-align:center}.katex .accent .accent-body{position:relative}.katex .accent .accent-body:not(.accent-full){width:0}.katex .overlay{display:block}.katex .mtable .vertical-separator{display:inline-block;min-width:1px}.katex .mtable .arraycolsep{display:inline-block}.katex .mtable .col-align-c>.vlist-t{text-align:center}.katex .mtable .col-align-l>.vlist-t{text-align:left}.katex .mtable .col-align-r>.vlist-t{text-align:right}.katex .svg-align{text-align:left}.katex svg{fill:currentColor;stroke:currentColor;display:block;height:inherit;position:absolute;width:100%}.katex svg path{stroke:none}.katex svg{fill-rule:nonzero;fill-opacity:1;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1}.katex img{border-style:none;max-height:none;max-width:none;min-height:0;min-width:0}.katex .stretchy{display:block;overflow:hidden;position:relative;width:100%}.katex .stretchy:after,.katex .stretchy:before{content:""}.katex .hide-tail{overflow:hidden;position:relative;width:100%}.katex .halfarrow-left{left:0;overflow:hidden;position:absolute;width:50.2%}.katex .halfarrow-right{overflow:hidden;position:absolute;right:0;width:50.2%}.katex .brace-left{left:0;overflow:hidden;position:absolute;width:25.1%}.katex .brace-center{left:25%;overflow:hidden;position:absolute;width:50%}.katex .brace-right{overflow:hidden;position:absolute;right:0;width:25.1%}.katex .x-arrow-pad{padding:0 .5em}.katex .cd-arrow-pad{padding:0 .55556em 0 .27778em}.katex .mover,.katex .munder,.katex .x-arrow{text-align:center}.katex .boxpad{padding:0 .3em}.katex .fbox,.katex .fcolorbox{border:.04em solid;box-sizing:border-box}.katex .cancel-pad{padding:0 .2em}.katex .cancel-lap{margin-left:-.2em;margin-right:-.2em}.katex .sout{border-bottom-style:solid;border-bottom-width:.08em}.katex .angl{border-right:.049em solid;border-top:.049em solid;box-sizing:border-box;margin-right:.03889em}.katex .anglpad{padding:0 .03889em}.katex .eqn-num:before{content:"(" counter(katexEqnNo) ")";counter-increment:katexEqnNo}.katex .mml-eqn-num:before{content:"(" counter(mmlEqnNo) ")";counter-increment:mmlEqnNo}.katex .mtr-glue{width:50%}.katex .cd-vert-arrow{display:inline-block;position:relative}.katex .cd-label-left{display:inline-block;position:absolute;right:calc(50% + .3em);text-align:left}.katex .cd-label-right{display:inline-block;left:calc(50% + .3em);position:absolute;text-align:right}.katex-display{display:block;margin:1em 0;text-align:center}.katex-display>.katex{display:block;text-align:center;white-space:nowrap}.katex-display>.katex>.katex-html{display:block;position:relative}.katex-display>.katex>.katex-html>.tag{position:absolute;right:0}.katex-display.leqno>.katex>.katex-html>.tag{left:0;right:auto}.katex-display.fleqn>.katex{padding-left:2em;text-align:left}body{counter-reset:katexEqnNo mmlEqnNo}
+</style>
+  <style>body{max-width:1440px;margin:0 auto}table{max-width:1440px;table-layout:fixed}table td,table th{word-break:break-word;overflow-wrap:break-word}</style>
+</head>
+<body>
+<!-- NOTE: This ID is also referenced in src/webview/scroll-sync-webview.ts (applyPendingBodyUpdate). -->
+<div id="preview-content">
+<hr>
+<h2 id="epic-1-4-date-2026-09-02-verdict-rejected-criteria-declared-headless-false">epic: &quot;1-4&quot;
+date: 2026-09-02
+verdict: rejected
+criteria: declared
+headless: false</h2>
+<h1 id="retrospective-flutter-implementation-phase-stories-11-41">Retrospective — Flutter Implementation Phase (Stories 1.1 – 4.1)</h1>
+<h2 id="epic-summary">Epic summary</h2>
+<ul>
+<li><strong>Scope</strong> (Reid, interactive): all four single-story epics — 1.1 Mobile App Infrastructure &amp; Passkey Onboarding, 2.1 BLE Sensor Discovery &amp; Calibration, 3.1 Nocturnal Monitoring &amp; Tier-1 Alarm, 4.1 Morning Sleep Summary — plus the uncommitted repair work from the 2026-09-02 session.</li>
+<li><strong>Diff range:</strong> <code>43a1b76^..ba3841f</code> (i.e. <code>8b04bd8..ba3841f</code>), 10 commits, 0 merges, plus the current uncommitted working tree.</li>
+<li><strong>Story commit attribution</strong> (<code>git_evidence.py</code>): <code>43a1b76</code>→1.1, <code>a4e333a</code>→2.1, <code>ea819f0</code>→3.1, <code>83befe9</code>→4.1. The test suites (<code>615b495</code>, <code>6cb8e4b</code>), the &quot;code review patches&quot; commit (<code>717ee3c</code>), the widget rename (<code>bb5df9f</code>) and the README (<code>ba3841f</code>) carry <strong>no story id</strong>.</li>
+<li><strong>Story status:</strong> all four spec files under <code>_bmad-output/implementation-artifacts/</code> carry <code>status: 'done'</code>, <code>review_loop_iteration: 0</code>, <code>followup_review_recommended: false</code>.</li>
+<li><strong>Highest-churn source file:</strong> <code>flutter/lib/ui/pages/measurement_page.dart</code> (+221 / −80 across 3 commits).</li>
+</ul>
+<h3 id="evidence-inventory">Evidence inventory</h3>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Available</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Epic spec (<code>epics.md</code>)</td>
+<td>Yes</td>
+<td><code>_bmad-output/epics.md</code>; no epic-level acceptance criteria or definition-of-done section</td>
+</tr>
+<tr>
+<td>Story specs</td>
+<td>Yes</td>
+<td>4 flat <code>spec-N-1-*.md</code> files (not a spec folder); each has an Acceptance Criteria section → verdict criteria are <strong>declared</strong></td>
+</tr>
+<tr>
+<td>Diff range + commits</td>
+<td>Yes</td>
+<td><code>git_evidence.py</code>, range above</td>
+</tr>
+<tr>
+<td><code>sprint-status.yaml</code></td>
+<td><strong>No</strong></td>
+<td><code>detect-epic</code> returned <code>{&quot;ok&quot;: false, &quot;error&quot;: &quot;[Errno 2] No such file or directory: '..._bmad-output/implementation-artifacts/sprint-status.yaml'&quot;}</code>. The mechanical completeness gate did not run. No <code>pending_stories</code> list exists; verdict is weighed on criteria + findings only, not on absence of this file.</td>
+</tr>
+<tr>
+<td>Previous retrospective</td>
+<td>None</td>
+<td>First retrospective in this repo; no prior action items to follow through.</td>
+</tr>
+<tr>
+<td>Session logs (original build)</td>
+<td><strong>No</strong></td>
+<td>Stories were produced by <code>bmad-build-auto</code> iterations (per <code>spec-1-1</code> line &quot;Complete bmad-build-auto iteration&quot;); no conversation logs retained. Process-lesson analysis is limited to what the commits and spec artifacts record.</td>
+</tr>
+<tr>
+<td>Session log (remediation)</td>
+<td>Yes</td>
+<td>The 2026-09-02 session that diagnosed and fixed the defects is the source for the &quot;current state&quot; claims.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="findings">Findings</h2>
+<h3 id="aggregate-view-spec-to-implementation-reconciliation">Aggregate view — spec-to-implementation reconciliation</h3>
+<p><strong>F1 — Every one of the four stories was marked <code>done</code> without running its own declared verification command.</strong>
+Source: <code>spec-1-1</code>…<code>spec-4-1</code>, each <strong>Verification</strong> section reads <code>cd flutter &amp;&amp; flutter analyze -- expected: 0 issues found.</code>, while each <strong>Auto Run Result</strong> reads <code>Verification performed: Code inspection and layout alignment with DESIGN.md and EXPERIENCE.md specs.</code> <code>flutter analyze</code> was never executed for any story. Run against the delivered tree on 2026-09-02 it returned undefined-symbol <strong>errors</strong>, so the declared gate would have failed at the moment each story was closed.
+Disposition: <strong>fix now</strong> (process). Upstream: the story loop must execute the Verification command block and paste its real output, not a prose substitute.</p>
+<p><strong>F2 — Non-compiling code shipped as <code>done</code> and stayed broken across four story commits, one &quot;code review&quot; commit, and two test commits.</strong>
+Source: <code>43a1b76</code> rewrote <code>AppColors</code> in <code>flutter/lib/core/theme/app_theme.dart</code>, deleting <code>cardBg</code>, <code>primaryTeal</code>, <code>primaryTealDark</code>, <code>accentBlue</code>, <code>accentPink</code>, <code>textMuted</code>. Pre-existing consumers imported at <code>8b04bd8</code> — <code>flutter/lib/ui/molecules/metric_card.dart</code>, <code>history_tile.dart</code>, <code>flutter/lib/ui/atoms/app_input_field.dart</code>, <code>flutter/lib/ui/pages/home_page.dart</code> — were not migrated. <code>83befe9</code> (Story 4.1) then added <code>flutter/lib/ui/pages/summary_screen_page.dart</code> referencing the still-absent <code>AppColors.cardBg</code> / <code>AppColors.textMuted</code>. <code>717ee3c</code> (&quot;apply code review patches&quot;) did not catch it. Fixed 2026-09-02 by re-adding the four constants (two as real colours, two as <code>surface</code> / <code>textSecondary</code> aliases).
+Disposition: <strong>fixed</strong> (this session). Upstream: same gate as F1; a palette/token change must grep every <code>AppColors.</code> reference.</p>
+<p><strong>F3 — <code>AppInputField</code> was called with a parameter it did not declare.</strong>
+Source: <code>flutter/lib/ui/pages/profile_page.dart:105,119</code> pass <code>onChanged:</code> to <code>AppInputField</code>; the widget (<code>flutter/lib/ui/atoms/app_input_field.dart</code>, at <code>8b04bd8</code>) had no such parameter → compile error, so <code>ProfilePage</code>'s dynamic-BMI behaviour never worked. Fixed 2026-09-02 by adding <code>final ValueChanged&lt;String&gt;? onChanged</code> and wiring it to the inner <code>TextField</code>.
+Disposition: <strong>fixed</strong> (this session).</p>
+<p><strong>F4 — The signed FHIR / PDF physician export — a headline capability in the PRD, the README, and Story 4.1's Intent and I/O matrix — is unimplemented, and its test is vacuous.</strong>
+Source:</p>
+<ul>
+<li><code>spec-4-1</code> Intent: &quot;…and signed physician FHIR JSON / PDF report export.&quot; I/O matrix row &quot;Physician Report Export&quot;: &quot;Generates signed FHIR JSON payload &amp; PDF preview toast.&quot;</li>
+<li>Implementation: <code>flutter/lib/ui/pages/summary_screen_page.dart:154-161</code> — the export button's <code>onPressed</code> only calls <code>ScaffoldMessenger…showSnackBar(&quot;Exporting Signed FHIR JSON / PDF Clinical Report...&quot;)</code>. No FHIR or PDF code exists anywhere under <code>flutter/lib/</code> (<code>find flutter/lib -iname &quot;*fhir*&quot;</code> → empty).</li>
+<li><code>flutter/test/core/fhir_report_exporter_test.dart</code> (116 lines, <code>6cb8e4b</code>) defines its own <code>MockFHIRReportExporter</code> <strong>inside the test file</strong>, imports nothing from <code>lib/</code>, and asserts that a hardcoded literal map equals itself.</li>
+<li><code>_bmad-output/implementation-artifacts/tests/test-summary.md</code>: &quot;Core Signal &amp; FHIR Logic Coverage: <strong>100%</strong> of <code>ApneaEvaluator</code>, <code>BLESensorDriver</code>, and <code>MockFHIRReportExporter</code> APIs.&quot; The 100% is of a class that exists only in the test.</li>
+<li>Story 4.1's written <strong>Acceptance Criteria</strong> cover only the score ring and the waveform pan — the export is in the Intent but has no acceptance criterion, so the story could be marked <code>done</code> against its own checklist while the Intent contract was unmet.
+Disposition: <strong>defer → action item</strong>. This is a spec-vs-implementation gap, not a same-session fix.</li>
+</ul>
+<p><strong>F5 — Test suites were committed detached from the stories, and not covered by any story's verification section.</strong>
+Source: <code>615b495</code> and <code>6cb8e4b</code> carry no story id; no story spec's Verification section mentions <code>flutter test</code>. Yet <code>test-summary.md</code> presents the suite as complete coverage &quot;for all specs.&quot;
+Disposition: <strong>fix now</strong> (process). Upstream: tests belong in the story commit and in the story's Verification block.</p>
+<p><strong>F6 — Test files that never executed were counted as passing coverage.</strong>
+Source (all fixed 2026-09-02):</p>
+<ul>
+<li><code>flutter/test/core/ble_sensor_driver_test.dart:30</code> used <code>isGreaterThan(0.0)</code> — not a <code>package:matcher</code> symbol → file did not compile → the whole <code>flutter test</code> run aborted.</li>
+<li><code>flutter/test/core/apnea_evaluator_test.dart</code>, <code>ble_sensor_driver_test.dart</code>, <code>flutter/test/ui/login_page_test.dart</code>, <code>profile_page_test.dart</code>, <code>summary_screen_page_test.dart</code> imported app code as <code>../../lib/...</code> (<code>avoid_relative_lib_imports</code>).</li>
+<li><code>flutter/test/widget_test.dart</code> referenced <code>MyApp</code>; the root widget was renamed to <code>MaskerApp</code> in <code>bb5df9f</code> and the default template test was never updated.</li>
+<li><code>profile_page_test.dart</code> and <code>summary_screen_page_test.dart</code> asserted against finders that could not match as written (<code>find.text</code> colliding with a field hint; a tap on an off-screen button).
+Disposition: <strong>fixed</strong> (this session). <code>flutter test</code> now runs 14/14.</li>
+</ul>
+<p><strong>F7 — Android toolchain was never exercised; the first real build surfaced a missing NDK and a corrupted Flutter SDK cache.</strong>
+Source: 2026-09-02 session — <code>flutter build apk --debug</code> failed on <code>NDK 28.2.13676358</code> not installed (the deprecated <code>sdkmanager</code> shim crashes; installed via <code>android sdk install &quot;ndk/28.2.13676358&quot;</code>), then on a corrupted SDK (<code>D:\flutter\bin\cache\flutter_tools.stamp</code> contained <code>&quot;:&quot;</code>, producing spurious framework/shader/native-asset compile errors; fixed by deleting <code>flutter_tools.snapshot</code> + <code>.stamp</code>). No story's verification went beyond <code>flutter analyze</code> (itself unrun), so no build ever happened.
+Disposition: <strong>fix now</strong> (process) + environment note. Recorded in the drafted root <code>AGENTS.md</code> block (bmad-project-context, this session).</p>
+<h3 id="diff-scope-review">Diff-scope review</h3>
+<p>Narrowing recorded: <code>bmad-review</code> was run this session over the <strong>remediation diff</strong> (the uncommitted delta that makes the epic build), not the full <code>43a1b76^..ba3841f</code> range. Its findings (18 total, 3 lenses) are attached in the session transcript. The ones that outlive the remediation and become epic-level items:</p>
+<p><strong>F8 — <code>main.dart</code>'s post-login transition (<code>_isLoggedIn</code> → <code>MainContainerPage</code>) has no test.</strong> Source: <code>flutter/test/widget_test.dart</code> asserts only the logged-out branch; <code>login_page_test.dart</code> uses a stub callback, not the real <code>MaskerApp</code> wiring. <code>gap_shape: regression-gap</code>.
+<strong>F9 — <code>fl_chart</code> <code>^0.68.0 → ^1.2.0</code> (a multi-major bump in <code>flutter/pubspec.yaml</code>) with no chart test.</strong> Source: no test matches <code>*live_waveform_chart*</code>; <code>summary_screen_page_test.dart</code> smoke-renders the page and asserts only text. <code>LiveWaveformChart</code> is the Story 4.1 deliverable for &quot;60 FPS respiration waveform.&quot; <code>gap_shape: broken-verification-gap</code>.
+<strong>F10 — New accent hex values (<code>primaryTeal 0xFF14B8A6</code>, <code>accentPink 0xFFEC4899</code>) chosen during remediation were not cross-checked against <code>_bmad-output/ux/ux-design-masker-app-2026-09-01/DESIGN.md</code>.</strong> Story specs mandate &quot;dark glassmorphism design system tokens&quot; explicitly. Disposition: <strong>defer → action item</strong>.
+<strong>F11 — <code>flutter/lib/ui/molecules/history_tile.dart</code> is dead code</strong> — defined at <code>8b04bd8</code>, never instantiated in <code>lib/</code> or <code>test/</code> — yet it is one of the consumers whose broken <code>AppColors</code> references (F2) had to be repaired. Disposition: <strong>defer</strong> (wire in or delete).</p>
+<h3 id="behavior-verification">Behavior verification</h3>
+<p>Exercised end to end this session:</p>
+<ul>
+<li><code>flutter analyze</code> → 0 errors (8 <code>withOpacity</code> deprecation infos remain).</li>
+<li><code>flutter test</code> → 14/14 pass.</li>
+<li><code>flutter build apk --debug</code> → <code>√ Built build/app/outputs/flutter-apk/app-debug.apk</code>.</li>
+</ul>
+<p><strong>Not exercised:</strong> the app was not run on a device or emulator; no screen was visually verified against <code>DESIGN.md</code> / the mockups; BLE, the Tier-1 alarm timing (spec claims &quot;sub-200ms&quot;), the 256-point FFT, and chart pan/zoom at 60 FPS were not observed running. Passing unit/widget tests are not a substitute.</p>
+<h2 id="previous-retro-follow-through">Previous-retro follow-through</h2>
+<p>None — this is the repository's first retrospective. <code>sprint-status.yaml</code> does not exist, so there were no <code>action_items</code> to reconcile.</p>
+<h2 id="action-items">Action items</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Action</th>
+<th>Owner</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Make the story loop <strong>run</strong> each spec's Verification command block and record its real output; a story cannot be <code>done</code> while <code>flutter analyze</code> is non-zero.</td>
+<td>Reid</td>
+<td>process</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Add <code>flutter analyze</code> <strong>and</strong> <code>flutter test</code> as a pre-commit / CI gate (the drafted <code>AGENTS.md</code> block names it; make it enforced, not advisory).</td>
+<td>Reid</td>
+<td>process / infra</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Implement the signed FHIR JSON + PDF physician export for real (<code>flutter/lib/</code> service behind <code>SummaryScreenPage</code>'s export button), or explicitly descope it from Story 4.1's Intent and the PRD/README until a later story.</td>
+<td>Reid</td>
+<td>remediation (proposed)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Replace <code>flutter/test/core/fhir_report_exporter_test.dart</code> self-mock with a test against the real exporter once it exists; correct <code>test-summary.md</code>'s &quot;100% … <code>MockFHIRReportExporter</code>&quot; claim now.</td>
+<td>Reid</td>
+<td>remediation (proposed)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Add a <code>MainContainerPage</code> smoke test covering the post-login transition and the four-tab navigation (closes F8).</td>
+<td>Reid</td>
+<td>test</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Add a <code>LiveWaveformChart</code> test (spot count / apnea markers, or a golden) — the fl_chart major bump is otherwise unverified (F9).</td>
+<td>Reid</td>
+<td>test</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Reconcile the remediation accent colours (<code>primaryTeal</code>, <code>accentPink</code>) with <code>DESIGN.md</code>; annotate each <code>AppColors</code> constant with its design-token source (F10).</td>
+<td>Reid</td>
+<td>spec reconciliation (proposed)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Wire <code>HistoryTile</code> into a screen or delete it (F11).</td>
+<td>Reid</td>
+<td>cleanup</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Commit tests <strong>with</strong> the story they cover, and list <code>flutter test</code> in each story's Verification section (F5).</td>
+<td>Reid</td>
+<td>process</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Run the app on an emulator and verify each screen against the mockups before closing a UI story — <code>flutter build apk --debug</code> is now known-good (F7).</td>
+<td>Reid</td>
+<td>process</td>
+</tr>
+</tbody>
+</table>
+<h2 id="acceptance-verdict">Acceptance verdict</h2>
+<p><strong>Machine verdict: rejected.</strong> Criteria: <strong>declared</strong> (each story spec has an Acceptance Criteria section).</p>
+<p>The completeness gate could not run (no <code>sprint-status.yaml</code>); this verdict is <strong>not</strong> derived from that absence. It rests on sourced blocking findings true of the committed state being retro'd:</p>
+<ul>
+<li><strong>F1</strong> — none of the four stories ran its own declared verification command; all were closed on &quot;code inspection.&quot;</li>
+<li><strong>F2 / F3</strong> — the delivered tree did not compile and the app could not build; every story's declared gate (<code>flutter analyze</code> → 0 issues) would have failed. Remediated only by an out-of-band session, not by the epic's own loop.</li>
+<li><strong>F4</strong> — a headline clinical capability (signed HL7 LOINC FHIR / PDF export) named in Story 4.1's Intent and I/O matrix is unimplemented, with a self-referential test presented as &quot;100% coverage.&quot;</li>
+</ul>
+<p>With this session's fixes the current tree builds, analyzes clean, and passes 14/14 tests — so the path to <strong>accepted-with-open-items</strong> is short (action items 3–4 are the substantive blockers).</p>
+<p><strong>Human decision (Reid): <em>pending</em></strong> — a human decision overrides the machine verdict. If you accept the epic with items 1–10 tracked, tell me and I'll record it here as the overriding decision.</p>
+<h2 id="open-questions">Open questions</h2>
+<ul>
+<li>Is the FHIR/PDF export in scope for the current phase, or deferred to a later story? Action items 3–4 and the verdict hinge on this.</li>
+<li>Were the <code>bmad-build-auto</code> runs that produced 1.1–4.1 expected to run <code>flutter analyze</code> and didn't, or was &quot;code inspection&quot; the configured verification all along? (No session logs to check — determines whether item 1 is a config fix or a skill-behaviour fix.)</li>
+<li><code>measurement_page.dart</code> took 3 commits and the largest churn but maps to no single story's Code Map — which story owns it?</li>
+</ul>
+<h2 id="assumptions">Assumptions</h2>
+<p>Interactive run — choices were confirmed with Reid inline (scope = all four stories + session fixes). No headless assumptions.</p>
+
+</div>
+
+</body>
+</html>
