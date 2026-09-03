@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/ble/ble_sensor_driver.dart';
+import '../../core/ble/ble_telemetry_service.dart';
 import '../../core/monitoring/apnea_evaluator.dart';
 import '../organisms/thermal_calibration_wizard.dart';
 import '../organisms/apnea_alert_overlay.dart';
@@ -17,8 +18,10 @@ class MeasurementPage extends StatefulWidget {
 
 class _MeasurementPageState extends State<MeasurementPage> {
   final BLESensorDriver _bleDriver = BLESensorDriver();
+  final BleTelemetryService _telemetryService = BleTelemetryService();
   ApneaEvaluator? _apneaEvaluator;
   StreamSubscription<double>? _telemetrySub;
+  StreamSubscription<double>? _serviceTelemetrySub;
   StreamSubscription<ApneaState>? _evaluatorStateSub;
 
   bool _isBleConnected = false;
@@ -68,7 +71,13 @@ class _MeasurementPageState extends State<MeasurementPage> {
       }
     });
 
+    // Listen to BLE Driver thermal stream
     _telemetrySub = _bleDriver.thermalStream.listen((signal) {
+      _apneaEvaluator?.evaluateSignal(signal);
+    });
+
+    // Listen to global BleTelemetryService background stream (e.g. Developer Simulator)
+    _serviceTelemetrySub = _telemetryService.signalStream.listen((signal) {
       _apneaEvaluator?.evaluateSignal(signal);
     });
 
@@ -81,6 +90,7 @@ class _MeasurementPageState extends State<MeasurementPage> {
 
   void _stopSleepMonitoring() {
     _telemetrySub?.cancel();
+    _serviceTelemetrySub?.cancel();
     _evaluatorStateSub?.cancel();
     _apneaEvaluator?.dispose();
     _bleDriver.stopTelemetryLogging();
@@ -108,6 +118,7 @@ class _MeasurementPageState extends State<MeasurementPage> {
   @override
   void dispose() {
     _telemetrySub?.cancel();
+    _serviceTelemetrySub?.cancel();
     _evaluatorStateSub?.cancel();
     _apneaEvaluator?.dispose();
     _bleDriver.disconnect();

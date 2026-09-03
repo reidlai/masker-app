@@ -53,6 +53,7 @@ class AppButton extends StatelessWidget {
           backgroundColor: bg,
           foregroundColor: fg,
           elevation: variant == AppButtonVariant.emergency ? 12 : 2,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
             side: variant == AppButtonVariant.secondary
@@ -71,12 +72,18 @@ class AppButton extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (icon != null) ...[icon!, const SizedBox(width: 8)],
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: variant == AppButtonVariant.emergency ? 18 : 16,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: variant == AppButtonVariant.emergency ? 1.0 : 0,
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        style: TextStyle(
+                          fontSize: variant == AppButtonVariant.emergency ? 18 : 15,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: variant == AppButtonVariant.emergency ? 1.0 : 0,
+                        ),
+                      ),
                     ),
                   ),
                 ],

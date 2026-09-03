@@ -11,12 +11,13 @@ void main() {
 
     setUp(() {
       service = BleTelemetryService();
+      service.resetForTest();
       bloc = BleBloc(telemetryService: service);
     });
 
     tearDown(() {
       bloc.close();
-      service.dispose();
+      service.resetForTest();
     });
 
     test('Initial state is BleInitialState', () {
