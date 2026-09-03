@@ -40,6 +40,7 @@ class BLESensorDriver implements IBLESensorDriver {
   }
 
   // Stage 1 Calibration: Sample idle room temperature noise (N_idle)
+  @override
   Future<double> calibrateStage1NoiseFloor() async {
     double noiseSum = 0.0;
     final Random rnd = Random();
@@ -52,6 +53,7 @@ class BLESensorDriver implements IBLESensorDriver {
   }
 
   // Stage 2 Calibration: Sample active breathing thermal training (Delta T)
+  @override
   Future<double> calibrateStage2ActiveBreath() async {
     double maxBreath = 0.0;
     final Random rnd = Random();

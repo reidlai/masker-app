@@ -47,6 +47,20 @@ class BleTelemetryService implements IBLESensorDriver {
   }
 
   @override
+  Future<double> calibrateStage1NoiseFloor() async {
+    startSimulationScenario(SimulatorScenario.idleNoise);
+    await Future.delayed(const Duration(milliseconds: 800));
+    return 0.4;
+  }
+
+  @override
+  Future<double> calibrateStage2ActiveBreath() async {
+    startSimulationScenario(SimulatorScenario.activeBreath);
+    await Future.delayed(const Duration(milliseconds: 800));
+    return 0.5;
+  }
+
+  @override
   void startTelemetryLogging() {
     startSimulationScenario(SimulatorScenario.normalRespiration);
   }

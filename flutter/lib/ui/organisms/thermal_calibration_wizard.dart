@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/ble/ble_sensor_driver.dart';
+import '../../core/ble/i_ble_sensor_driver.dart';
 import '../atoms/app_button.dart';
 
 class ThermalCalibrationWizard extends StatefulWidget {
-  final BLESensorDriver bleDriver;
+  final IBLESensorDriver bleDriver;
   final VoidCallback onCalibrationComplete;
 
   const ThermalCalibrationWizard({
@@ -79,7 +79,7 @@ class _ThermalCalibrationWizardState extends State<ThermalCalibrationWizard> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.accentGreen.withOpacity(0.2),
+                  color: AppColors.accentGreen.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(9999),
                   border: Border.all(color: AppColors.accentGreen),
                 ),
