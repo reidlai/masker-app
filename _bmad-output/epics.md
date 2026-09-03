@@ -54,6 +54,7 @@ This document provides the complete epic and story breakdown for Sleep Apnea Det
 - **FR-5.2:** Health Profile Management collecting and managing user health baseline profile (Weight, Height, Age, Gender, computed BMI, Emergency Contacts).
 - **FR-5.3:** Extensible Doctor Sharing Framework providing a dedicated "Share Profile with Doctor" UI module and extensible JSON data export engine formatted for physician chart sharing.
 - **FR-5.4:** Mobile Device Lost & Remote Session Revocation self-service Web Portal allowing users or emergency contacts to report a lost mobile phone, revoking active JWT session tokens and issuing a cryptographic remote wipe signal.
+- **FR-5.5:** Application Documentation & Developer Setup Guide providing comprehensive developer README covering project summary, product background, quick start, developer mode, debugging mode, and release build workflows.
 
 ### NonFunctional Requirements
 
@@ -127,12 +128,13 @@ This document provides the complete epic and story breakdown for Sleep Apnea Det
 - **FR-5.2:** Epic 1 (Mobile App Infrastructure & Biometric Passkey Onboarding)
 - **FR-5.3:** Epic 6 (Clinic & Attending Physician Diagnostic Portal - UNPLANNED)
 - **FR-5.4:** Epic 5 (Backoffice Hardware Provisioning - UNPLANNED)
+- **FR-5.5:** Epic 1 (Mobile App Infrastructure & Biometric Passkey Onboarding)
 
 ## Epic List
 
 ### Epic 1: Mobile App Infrastructure, UI Kit & Biometric Passkey Onboarding (MVP1 - Active)
-Patients can perform passwordless FIDO2 Passkey registration using native biometrics (Face ID / Touch ID), set up their medical baseline profile, and navigate a responsive `flutter_shadcn` dark glassmorphic UI.
-**FRs covered:** FR-5.1, FR-5.2 | **NFRs:** NFR-4.1, NFR-4.4, NFR-4.5 | **UX-DRs:** UX-DR1
+Patients can perform passwordless FIDO2 Passkey registration using native biometrics (Face ID / Touch ID), set up their medical baseline profile, navigate a responsive `flutter_shadcn` dark glassmorphic UI, and access comprehensive developer onboarding & build documentation.
+**FRs covered:** FR-5.1, FR-5.2, FR-5.5 | **NFRs:** NFR-4.1, NFR-4.4, NFR-4.5 | **UX-DRs:** UX-DR1
 
 ### Epic 2: BLE Bluetooth Sensor Discovery, Pairing & Thermal Calibration (MVP1 - Active)
 Patients can turn on their D-BAND thermal sensor array, auto-discover and pair via encrypted BLE (BLE 4.0, 4.1, 4.2, 5.0+), execute Stage 1 room noise ($N_{\text{idle}}$) and Stage 2 active breath ($V_{pp}$) calibration, transform thermal $\Delta T$ into volumetric airflow rates, and enforce wear verification guardrails.
@@ -206,6 +208,21 @@ So that I can quickly access monitoring tools and application options.
 - **When** I tap Tab 4 (Gear icon),
 - **Then** the page inline renders `SettingsPage`.
 - **And** `SettingsGroupCardOrganism` renders Profile and Advanced options card sections.
+
+#### Story 1.4: Mobile App Documentation & Developer Setup Guide
+As a developer or contributor,  
+I want a comprehensive `flutter/README.md` document covering project background, quick start, developer mode, debugging mode, and release build workflows,  
+So that I can quickly set up my local development environment and build production APKs without ambiguity.
+
+**Acceptance Criteria:**
+- **Given** the repository is cloned,
+- **When** a developer opens `flutter/README.md`,
+- **Then** it provides clear instructions for:
+  1. Product Overview & Architecture Summary (D-BAND Integrated Platform).
+  2. Quick Start setup commands (`flutter pub get`, `flutter test`, `flutter run`).
+  3. How to enable Developer Mode (`--dart-define=DEV_MODE=true` compile-time flag).
+  4. How to enable Debugging Mode (`debuggingEnabled: true` flag / `kDebugMode`).
+  5. How to build production release APKs (`flutter build apk --debug / --release`).
 
 ---
 

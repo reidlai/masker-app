@@ -1,135 +1,167 @@
-# 🫁 Masker App — Nocturnal Sleep Apnea Detection & Alert System (Flutter Mobile App)
+# Sleep Apnea Detection App (D-BAND Integrated Platform) 🫁📱
 
-Welcome to the **Masker App** Flutter codebase. This mobile application provides real-time nocturnal sleep apnea monitoring, 2-stage thermal sensor calibration, sub-200ms Tier-1 local emergency alarm alerts, 0-FPS pitch black Night Mode (`#000000`), and morning AHI clinical summary reports with signed HL7 LOINC FHIR JSON export.
-
----
-
-## 📋 Product Briefing
-
-### Key Capabilities & User Experience
-* **Passwordless Biometric Onboarding:** FIDO2 Passkey login interface (`LoginPage`) ensuring HIPAA-compliant biometric security.
-* **BLE Sensor Discovery & Pairing:** BLE 4.0, 4.1, 4.2, and 5.0+ auto-discovery of D-BAND thermal bio-signal sensor (`0x180D` service / `0x2A37` characteristic @ 10Hz) with AES-128 link security.
-* **2-Stage Thermal Calibration Wizard:** 
-  - **Stage 1 (10s):** Room ambient thermal noise floor sampling ($N_{\text{idle}}$).
-  - **Stage 2 (15s):** Active thermal breath baseline training ($V_{pp}$) establishing the dynamic AASM zero-airflow apnea threshold ($0.10 \times V_{pp}$).
-* **Nocturnal Sleep Monitoring (0-FPS Night Mode):** Display lock using pitch black `#000000` surface with dim 1Hz heartbeat LED indicator to prevent circadian disruption and eliminate battery drain.
-* **Real-time AASM Apnea Evaluator:** 100ms stream evaluation loop flagging continuous $\ge 90\%$ volumetric airflow drops lasting $\ge 10\text{s}$.
-* **Tier-1 Local Emergency Alarm System:** Sub-200ms local mobile audio siren alert (75+ dB) & haptic vibration overlay (`MOB_TIER1_ALARM`) featuring a high-contrast `#FF3B30` flashing banner, 30s countdown ring, prominent $64\text{dp}$ *"I'M SAFE / I'M AWAKE"* button, and 5s auto-silence recovery upon breathing restoration.
-* **Morning Sleep Summary & Respiration Waveforms:** AHI score ring (`92`), AHI severity badge (`Normal 3.2`), 60 FPS Skia GPU cubic-spline respiration line chart (`fl_chart`), 256-point FFT spectral peaks, metrics grid, and signed FHIR JSON / PDF doctor report export action.
+Cross-platform mobile application (Flutter / Dart) for at-home nocturnal sleep apnea monitoring, real-time AASM breathing event detection, thermal BLE sensor calibration, and HIPAA-compliant Passkey authentication.
 
 ---
 
-## 🚀 Quick Start Guide
+## 🚀 Product Background & Architecture Summary
+
+The **D-BAND Integrated Platform** captures continuous 10Hz respiratory thermal deviation data ($\Delta T = T_{\text{exhale}} - T_{\text{inhale}}$) streamed over encrypted Bluetooth Low Energy (BLE 5.0+, AES-128 link security). The application processes thermal signals into volumetric airflow estimates ($V_{\text{volumetric}}$) to detect obstructive sleep apnea episodes ($\ge 90\%$ drop for $\ge 10$ seconds) in real time.
+
+### Key Capabilities (MVP1 Active Scope)
+- **Passwordless FIDO2 / WebAuthn Biometrics**: Native OS biometric login (Face ID, Touch ID, Android BiometricPrompt) enforcing HIPAA 45 CFR § 164.312(a) technical access controls.
+- **Atomic Design System Hierarchy**: Strict separation of concerns across UI Atoms, Molecules, 13 Organisms, and Page Templates.
+- **BLoC & RxDart Unidirectional Data Flow**: Reactive event stream management (`flutter_bloc: ^8.1.3`, `rxdart: ^0.27.7`) using `throttleTime` (300ms) and `switchMap` event transformers.
+- **2-Stage Thermal Sensor Calibration**: Stage 1 room noise floor ($N_{\text{idle}}$) and Stage 2 active breathing baseline ($V_{pp}$) calibration setting dynamic zero-airflow thresholds ($0.10 \times V_{pp}$).
+- **Tier-1 Local Emergency Siren & Escalating Alarm**: Sub-200ms latency escalating siren tones ($40\text{dB} \to 75+\text{dB}$) and full-screen haptic vibration overlay with 30s countdown, "I'm Safe" manual tap, 5s auto-silence, and cloud caregiver dispatch.
+- **0-FPS Night Mode**: Pitch-black (`#000000`) screen lock state conserving phone battery (<8.0% over 8+ hours) during overnight logging.
+- **60 FPS GPU Waveform & Morning Summary**: Skia GPU-accelerated live line charts (`fl_chart`), 256-point FFT spectral graphs, AHI score rings, and signed FHIR JSON / PDF clinical report exports.
+
+---
+
+## 🛠️ Quick Start Guide
 
 ### Prerequisites
-- **Flutter SDK:** $\ge 3.19.0$
-- **Dart SDK:** $\ge 3.3.0$
-- **Target OS:** Android / iOS / Desktop (Flutter Web compatible)
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) (v3.27.0+ recommended)
+- Dart SDK (v3.6.0+)
+- Android Studio / Xcode for device emulators
 
-### 1. Install Dependencies
-Always execute Flutter CLI commands from the `flutter/` root folder:
+### Installation & Launch
+
+1. **Install Dependencies**:
+   ```bash
+   cd flutter
+   flutter pub get
+   ```
+
+2. **Run Automated Test Suite**:
+   ```bash
+   flutter test
+   ```
+
+3. **Launch in Debug Mode**:
+   ```bash
+   flutter run
+   ```
+
+---
+
+## ⚡ How to Start Developer Mode (`DEV_MODE`)
+
+Developer Mode exposes developer menu rows, internal state inspection, and manual BLE simulation tools inside the **Settings** tab.
+
+### Enabling via Compile-Time Flag (Recommended)
+
+Pass the `DEV_MODE=true` environment flag when launching or building the Flutter application:
 
 ```bash
-cd flutter
-flutter pub get
+flutter run --dart-define=DEV_MODE=true
 ```
 
-### 2. Run Application Locally
-Launch the application on an attached emulator, simulator, or connected device:
+### Verification
+1. Navigate to **Settings** (Tab 4 on the bottom navigation bar).
+2. The **Advanced** section card (`SettingsGroupCardOrganism`) will automatically render the **Developer** (`Icons.code`) menu row.
+
+---
+
+## 🐛 How to Start Debugging Mode (`debuggingEnabled`)
+
+Debugging Mode exposes internal diagnostic logs, BLE packet inspectors, and simulated apnea breach events.
+
+### Enabling via CLI Flag
+
+Run the Flutter app in debug mode (`kDebugMode` is true by default during `flutter run`):
 
 ```bash
-flutter run
+flutter run --debug
 ```
 
-### 3. Run Automated Unit & Widget Test Suites
-Execute the complete test suite including core signal evaluators, BLE state machines, FHIR report serialization mocks/stubs, and UI widget suites:
+### Enabling Programmatically
+
+You can explicitly pass `debuggingEnabled: true` when instantiating `SettingsPage`:
+
+```dart
+const SettingsPage(
+  debuggingEnabled: true,
+  developerEnabled: true,
+)
+```
+
+### Verification
+1. Navigate to **Settings** (Tab 4).
+2. The **Debugging** (`Icons.bug_report_outlined`) row will render under the **Advanced** section card.
+
+---
+
+## 📦 How to Build the Production Release Application
+
+### 1. Build Debug APK (For Manual Device Testing)
+```bash
+flutter build apk --debug
+```
+*Output location*: `build/app/intermediates/flutter/debug/flutter_assets/` & `build/app/outputs/flutter-apk/app-debug.apk`
+
+### 2. Build Production Release APK (For Distribution)
+```bash
+flutter build apk --release
+```
+*Output location*: `build/app/outputs/flutter-apk/app-release.apk`
+
+### 3. Build Production App Bundle (For Google Play Store)
+```bash
+flutter build appbundle --release
+```
+*Output location*: `build/app/outputs/bundle/release/app-release.aab`
+
+---
+
+## 💡 Troubleshooting: Windows Flutter Font Lock Workaround
+
+On Windows systems, if running `flutter run` or `flutter build apk` fails with a file lock error copying `MaterialIcons-Regular.otf`:
+
+```text
+Target debug_android_application failed: Error: Flutter failed to copy file from
+"D:\flutter\bin\cache\artifacts\material_fonts\MaterialIcons-Regular.otf" to
+"...\flutter_assets\fonts/MaterialIcons-Regular.otf". The flutter tool cannot access the file or directory.
+```
+
+**Solution**: Run `precache` and `doctor` to reset SDK artifact file locks:
+```bash
+flutter precache --force
+flutter doctor
+```
+
+---
+
+## 🧪 Running Unit & Widget Tests
+
+Run the complete test suite across all 13 Atomic Design Organisms, BLoC state managers, and BLE driver logic:
 
 ```bash
 flutter test
 ```
 
----
-
-## 🛡️ DevSecOps Architecture & Security Gates
-
-The Masker App enforces strict DevSecOps automation pipeline security gates before any release artifact is built or deployed (aligned with Section 5.3 of [`ARCHITECTURE-SPINE.md`](file:///c:/Users/reidl/GitLocal/masker-app/_bmad-output/architecture/ARCHITECTURE-SPINE.md)):
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                       DEVSECOPS CI/CD PIPELINE                              │
-├───────────────┬────────────────┬─────────────────┬──────────────────────────┤
-│ 1. SAST GATE  │ 2. SECRETS     │ 3. QA TEST      │ 4. BUILD & DEPLOY        │
-│ flutter       │ git leaks &    │ flutter test    │ Signed APK/IPA &         │
-│ analyze       │ PHI audit      │ --coverage      │ GCP Cloud Run Sync       │
-└───────────────┴────────────────┴─────────────────┴──────────────────────────┘
-```
-
-### Security Pipeline Commands
-
-#### Step 1: Static Application Security Testing (SAST)
-Run strict static code analysis to enforce zero lint warnings, type safety, and memory management invariants:
-
+To run a specific test file:
 ```bash
-cd flutter
-flutter analyze
-```
-
-#### Step 2: Dependency Security & Vulnerability Audit
-Audit project dependencies for known CVE vulnerabilities and package integrity:
-
-```bash
-cd flutter
-flutter pub deps
-```
-
-#### Step 3: Test Coverage & Quality Gate
-Run automated unit and widget tests with code coverage report generation:
-
-```bash
-cd flutter
-flutter test --coverage
-```
-
-#### Step 4: Secret Scanning & HIPAA PHI Protection Audit
-Verify no unencrypted Protected Health Information (PHI) or hardcoded credentials exist in source code or memory loggers:
-
-```bash
-git diff HEAD~1 HEAD | grep -iE "(password|secret|api_key|private_key|token)"
+flutter test test/ui/user_header_organism_test.dart
 ```
 
 ---
 
-## 📁 Repository Directory Map
+## 🏛️ Atomic Design Organism Index
 
-```
-flutter/
-  ├── README.md                                # Product Briefing, Quick Start & DevSecOps Guide
-  ├── pubspec.yaml                             # Flutter Dependencies & Assets Configuration
-  ├── lib/
-  │   ├── main.dart                            # Application Entry Point (MaskerApp Root)
-  │   ├── core/
-  │   │   ├── ble/ble_sensor_driver.dart       # BLE 4.0/5.0+ Driver, AES-128, 10Hz Stream & Calibration Math
-  │   │   ├── monitoring/apnea_evaluator.dart  # 100ms AASM Breach Evaluator, 30s Countdown & Auto-Recovery
-  │   │   └── theme/app_theme.dart             # Dark Glassmorphism Design Tokens (#0F172A, #10B981)
-  │   └── ui/
-  │       ├── atoms/app_button.dart            # Accessible Touch Targets & Emergency 64dp Buttons
-  │       ├── organisms/
-  │       │   ├── thermal_calibration_wizard.dart  # Stage 1 & Stage 2 Sensor Calibration Wizard Widget
-  │       │   ├── apnea_alert_overlay.dart     # MOB_TIER1_ALARM Emergency Overlay (#FF3B30 Banner)
-  │       │   └── live_waveform_chart.dart     # 60 FPS Skia GPU fl_chart Line Chart with Red Apnea Markers
-  │       └── pages/
-  │           ├── login_page.dart              # FIDO2 Passkey Biometric Login UI
-  │           ├── profile_page.dart            # David's Medical Profile & Dynamic BMI Computation
-  │           ├── measurement_page.dart        # BLE Status, Calibration & 0-FPS Night Mode Monitor
-  │           ├── summary_screen_page.dart    # Morning Sleep Summary Dashboard & FHIR Report Export
-  │           └── main_container_page.dart    # 4-Tab Bottom Navigation Container Widget
-  └── test/
-      ├── core/
-      │   ├── apnea_evaluator_test.dart        # Unit Test for 100ms Breach Evaluation & Auto-Recovery
-      │   ├── ble_sensor_driver_test.dart      # Unit Test for BLE Connection & Calibration Math
-      │   └── fhir_report_exporter_test.dart   # Serverless Mock/Stub Test for HL7 LOINC FHIR JSON Export
-      └── ui/
-          ├── login_page_test.dart             # Widget Test for Passkey Login UI
-          ├── summary_screen_page_test.dart    # Widget Test for Morning Summary Dashboard & Export Action
-          └── profile_page_test.dart           # Widget Test for Medical Baseline Inputs & Dynamic BMI
-```
+| Organism | File Path | Purpose |
+| :--- | :--- | :--- |
+| `UserHeaderOrganism` | `lib/ui/organisms/user_header_organism.dart` | Initials avatar fallback ("D"/"DM"), custom persona title, card decoration. |
+| `HealthDemographicsOrganism` | `lib/ui/organisms/health_demographics_organism.dart` | 2x2 demographics input grid and dynamic BMI calculation. |
+| `EmergencyContactOrganism` | `lib/ui/organisms/emergency_contact_organism.dart` | Caregiver emergency phone input section. |
+| `SleepScoreOrganism` | `lib/ui/organisms/sleep_score_organism.dart` | 0–100 score ring (`92`), AHI score (`3.2`), respiration status badge. |
+| `WeeklyCalendarOrganism` | `lib/ui/organisms/weekly_calendar_organism.dart` | Interactive weekly/monthly calendar selection strip. |
+| `HealthInsightsOrganism` | `lib/ui/organisms/health_insights_organism.dart` | Health articles and mask insight cards. |
+| `BrandHeaderOrganism` | `lib/ui/organisms/brand_header_organism.dart` | Glowing app logo badge, title, platform subtitle. |
+| `PasskeyAuthCardOrganism` | `lib/ui/organisms/passkey_auth_card_organism.dart` | Biometric fingerprint badge, passkey button, loading indicator. |
+| `SecurityBadgeOrganism` | `lib/ui/organisms/security_badge_organism.dart` | HIPAA compliance and FIDO2 encryption footer badge. |
+| `BleSensorStatusOrganism` | `lib/ui/organisms/ble_sensor_status_organism.dart` | BLE connection status badge card (`connected` vs `searching`). |
+| `ReportHeaderOrganism` | `lib/ui/organisms/report_header_organism.dart` | Session report title and date header row. |
+| `SummaryMetricsGridOrganism` | `lib/ui/organisms/summary_metrics_grid_organism.dart` | 2-column session metrics cards ("Total Apnea Stops" & "Safety Taps"). |
+| `SettingsGroupCardOrganism` | `lib/ui/organisms/settings_group_card_organism.dart` | Rounded card containers with anti-aliasing clips and section headers. |
