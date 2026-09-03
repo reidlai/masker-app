@@ -128,6 +128,9 @@ This iteration ships only the **Profile** row (plus the conditional Advanced sec
 ### 5. `SettingsMenuRowOrganism`
 * **Behavior:** Full-width tappable list row, minimum 48dp height (`{spacing.touch_target_min}`). **Navigable** rows (Profile) show a trailing right chevron and, on tap, push their destination with a light haptic. **Inert** rows (Debugging, Developer) render with no trailing chevron and a `{colors.text_secondary}` label; tap is a no-op. Conditional rows evaluate their build-flag gate at screen-build time — a flag flip takes effect on the next entry to `MOB_SETTINGS`, not live. The "Advanced" `SettingsSectionHeader` and its rows are omitted from the widget tree (not merely hidden) when both `debuggingMode` and `developerMode` are false.
 
+### 6. `DeveloperSimulatorBarOrganism`
+* **Behavior:** Conditionally rendered at the top of `MeasurementPage` when compile-time flag `DEV_MODE=true` is enabled. Emits simulated background telemetry streams into global `BleTelemetryService` singleton upon tapping scenario chips (`Idle Noise`, `Active Baseline`, `Normal 16 bpm`, `Apnea Drop >10s`, `Recovery 5s`). Enables developers to trigger AASM apnea alerts and 0-FPS Night Mode alarms anywhere in the application.
+
 ---
 
 ## State Patterns
