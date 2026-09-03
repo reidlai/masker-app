@@ -5,7 +5,7 @@ enum AppButtonVariant { primary, secondary, danger, emergency }
 
 class AppButton extends StatelessWidget {
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool isLoading;
   final AppButtonVariant variant;
   final Widget? icon;
@@ -13,7 +13,7 @@ class AppButton extends StatelessWidget {
   const AppButton({
     super.key,
     required this.label,
-    required this.onPressed,
+    this.onPressed,
     this.isLoading = false,
     this.variant = AppButtonVariant.primary,
     this.icon,

@@ -151,6 +151,7 @@ To deliver a production-ready mobile application (iOS & Android) and supporting 
 * **FR-5.2 (Health Profile Management):** The application shall collect and manage the user's health baseline profile: Weight, Height, Age, Gender, computed BMI, and Sleep Risk Factors.
 * **FR-5.3 (Extensible Doctor Sharing Framework):** Provides a dedicated **"Share Profile with Doctor"** UI module and extensible JSON data export engine formatted for future EHR/EMR physician integrations.
 * **FR-5.4 (Mobile Device Lost & Remote Session Revocation):** The platform shall provide a WebAuthn-backed self-service Web Portal allowing users or designated emergency contacts to report a lost or stolen mobile phone. The cloud platform shall immediately invalidate all active JWT tokens, revoke session refresh tokens, and issue an automated cryptographic remote wipe signal.
+* **FR-5.6 (Developer Options Page & BLE Signal Simulator):** When Developer Mode is enabled (via `DEV_MODE=true` compile-time flag), the application shall render a "Developer" menu item in Settings under the Advanced section. Tapping "Developer" shall navigate to the Developer Options Page, providing interactive BLE signal simulation controls to simulate 2-stage calibration lifecycles (ambient idle noise $N_{\text{idle}}$ and active breathing baseline $V_{pp}$) and nocturnal sleep cycles (normal 16 bpm respiration streams, $\ge 10\text{s}$ apnea breathing stop alerts, and 5s patient breathing recovery signals).
 
 ---
 

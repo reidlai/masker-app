@@ -55,16 +55,28 @@ void main() {
     await tester.pageBack();
     await tester.pumpAndSettle();
     expect(find.text('Medical Profile'), findsNothing);
-    expect(find.text('Profile'), findsOneWidget); // back on the Settings list
+    expect(find.text('Profile'), findsOneWidget);
   });
 
-  testWidgets('tapping an inert Advanced row does nothing', (tester) async {
+  testWidgets('tapping Developer pushes DeveloperOptionsPage; back returns to Settings', (tester) async {
+    await pumpSettings(tester, developerEnabled: true);
+
+    await tester.tap(find.text('Developer'));
+    await tester.pumpAndSettle();
+    expect(find.text('Developer Options'), findsOneWidget);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text('Developer Options'), findsNothing);
+    expect(find.text('Developer'), findsOneWidget);
+  });
+
+  testWidgets('tapping an inert Debugging row does nothing', (tester) async {
     await pumpSettings(tester, debuggingEnabled: true);
 
     await tester.tap(find.text('Debugging'));
     await tester.pumpAndSettle();
 
-    // Still on Settings — no navigation occurred.
     expect(find.text('Debugging'), findsOneWidget);
     expect(find.text('Medical Profile'), findsNothing);
   });
@@ -78,10 +90,9 @@ void main() {
     expect(find.text('Developer'), findsOneWidget);
   });
 
-  testWidgets('only the navigable Profile row shows a trailing chevron', (tester) async {
-    // Both inert rows present; still exactly one chevron (the Profile row).
+  testWidgets('navigable rows show trailing chevrons', (tester) async {
     await pumpSettings(tester, debuggingEnabled: true, developerEnabled: true);
 
-    expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+    expect(find.byIcon(Icons.chevron_right), findsNWidgets(2));
   });
 }
