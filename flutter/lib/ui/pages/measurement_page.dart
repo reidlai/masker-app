@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/ble/ble_sensor_driver.dart';
 import '../../core/ble/ble_telemetry_service.dart';
+import '../../core/ble/flutter_blue_sensor_driver.dart';
 import '../../core/ble/i_ble_sensor_driver.dart';
 import '../../core/monitoring/apnea_evaluator.dart';
 import '../organisms/thermal_calibration_wizard.dart';
@@ -46,7 +47,9 @@ class _MeasurementPageState extends State<MeasurementPage> {
   @override
   void initState() {
     super.initState();
-    _bleDriver = widget.sensorDriver ?? BLESensorDriver();
+    // SOLID Dependency Injection: Inject real Bluetooth HW driver in production, simulator in dev mode
+    _bleDriver = widget.sensorDriver ??
+        (_isDevMode ? BleTelemetryService() : FlutterBlueSensorDriver());
     _connectBle();
   }
 
@@ -85,12 +88,12 @@ class _MeasurementPageState extends State<MeasurementPage> {
       }
     });
 
-    // Listen to IBLESensorDriver thermal stream
+    // Listen to IBLESensorDriver thermal stream (Real Hardware or Simulator)
     _telemetrySub = _bleDriver.thermalStream.listen((signal) {
       _apneaEvaluator?.evaluateSignal(signal);
     });
 
-    // Listen to global BleTelemetryService background stream (e.g. Developer Simulator)
+    // Listen to global BleTelemetryService background stream
     _serviceTelemetrySub = _telemetryService.signalStream.listen((signal) {
       _apneaEvaluator?.evaluateSignal(signal);
     });
