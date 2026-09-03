@@ -166,3 +166,173 @@ Expanded Flutter application modes for Athletic Respiration Training (Mode B), I
 Cloud big data pipeline for de-identified PHI data exports, clinical trial research integration (PolyU/CUHK), and cloud-side neural network re-classification.
 **FRs covered:** FR-2.5, FR-4.5 | **Status:** UNPLANNED
 
+---
+
+## Detailed User Stories (MVP1 Active Epics)
+
+### Epic 1: Mobile App Infrastructure, UI Kit & Biometric Passkey Onboarding
+
+#### Story 1.1: Passkey FIDO2/WebAuthn Biometric Authentication
+As a patient,  
+I want to authenticate passwordlessly using my device biometrics (Face ID / Touch ID / Android BiometricPrompt),  
+So that my PHI health data is securely encrypted under HIPAA §164.312 without requiring vulnerable passwords.
+
+**Acceptance Criteria:**
+- **Given** the app launches on `LoginPage`,
+- **When** I tap "Sign in with Passkey",
+- **Then** `AuthBloc` dispatches `AuthPasskeySubmitted` and triggers native OS biometric authentication.
+- **And** upon success, the state transitions to `AuthAuthenticated` and navigates to `MainContainerPage`.
+- **And** UI is composed of `BrandHeaderOrganism`, `PasskeyAuthCardOrganism`, and `SecurityBadgeOrganism`.
+
+#### Story 1.2: Patient Health Baseline & Demographics Setup
+As a patient,  
+I want to enter and edit my physical demographics (Age, Weight, Height) and Caregiver Emergency Phone Number,  
+So that the system can calculate my baseline BMI and alert my caregiver during nocturnal apnea emergencies.
+
+**Acceptance Criteria:**
+- **Given** I am on `ProfilePage`,
+- **When** I update my weight or height input fields,
+- **Then** `HealthDemographicsOrganism` dynamically recalculates and displays my computed BMI ($Weight / Height^2$).
+- **And** `EmergencyContactOrganism` preserves my caregiver emergency phone number.
+- **And** `UserHeaderOrganism` renders my custom persona title and dynamic initials avatar fallback.
+
+#### Story 1.3: App Navigation & Bottom Navigation Tab Bar
+As a patient,  
+I want to navigate between Home, Sleep Measurement, Morning Summary, and Settings screens via a bottom navigation bar,  
+So that I can quickly access monitoring tools and application options.
+
+**Acceptance Criteria:**
+- **Given** I am on `MainContainerPage`,
+- **When** I tap Tab 4 (Gear icon),
+- **Then** the page inline renders `SettingsPage`.
+- **And** `SettingsGroupCardOrganism` renders Profile and Advanced options card sections.
+
+---
+
+### Epic 2: BLE Bluetooth Sensor Discovery, Pairing & Thermal Calibration
+
+#### Story 2.1: Encrypted BLE Sensor Auto-Discovery & Cloud Device Binding
+As a patient,  
+I want the app to automatically discover and pair with my D-BAND thermal sensor array over encrypted BLE 5.0+,  
+So that telemetry data can be securely streamed to my device.
+
+**Acceptance Criteria:**
+- **Given** I am on `MeasurementPage`,
+- **When** the app scans for `0x180D` GATT service,
+- **Then** `BleSensorStatusOrganism` displays connection status ("D-BAND Sensor Connected ✓" vs "Scanning...").
+- **And** `BleSensorDriver` establishes AES-128 link security.
+
+#### Story 2.2: 2-Stage Thermal Sensor Baseline Calibration
+As a patient,  
+I want to perform a 2-stage calibration (Stage 1 ambient noise $N_{\text{idle}}$ and Stage 2 active breath $V_{pp}$),  
+So that the zero-airflow apnea threshold ($0.10 \times V_{pp}$) is accurately established for my session.
+
+**Acceptance Criteria:**
+- **Given** I start sensor positioning on `MeasurementPage`,
+- **When** `ThermalCalibrationWizard` samples 10 seconds of idle ambient data,
+- **Then** it computes room thermal noise floor $N_{\text{idle}}$.
+- **And** following 10 seconds of active breathing, it sets apnea threshold to $0.10 \times V_{pp}$.
+
+#### Story 2.3: Airflow Volumetric Transformation & Wear Guardrails
+As a patient,  
+I want the system to verify sensor placement before recording,  
+So that invalid or unattached sensor readings do not produce false apnea readings.
+
+**Acceptance Criteria:**
+- **Given** active breath calibration is completed,
+- **When** active breathing delta $\Delta V < 1.5 \times N_{\text{idle}}$,
+- **Then** the system blocks sleep recording initiation and displays a sensor wear warning.
+
+---
+
+### Epic 3: Nocturnal Sleep Apnea Monitoring & Tier-1 Local Emergency Alarm
+
+#### Story 3.1: Low-Power Background Airflow Monitoring & 0-FPS Night Mode
+As a high-risk nocturnal apnea patient,  
+I want continuous 10Hz background sleep logging in a 0-FPS pitch-black screen state,  
+So that my phone battery is conserved (<8% consumption) while my breathing is continuously monitored overnight.
+
+**Acceptance Criteria:**
+- **Given** active monitoring is launched,
+- **When** Night Mode activates,
+- **Then** the screen throttles to 0-FPS pitch black (`#000000`) with dim pulsing heartbeat indicator.
+- **And** 10Hz respiratory data is written into a 1-hour circular RAM buffer.
+
+#### Story 3.2: Real-Time AASM Apnea Event Evaluation
+As a patient,  
+I want the app to evaluate net airflow against my calibrated baseline every 100ms,  
+So that obstructive apnea events ($\ge 90\%$ drop for $\ge 10$ seconds) are immediately flagged.
+
+**Acceptance Criteria:**
+- **Given** continuous 10Hz airflow data is streaming,
+- **When** net volumetric airflow drops below threshold continuously for $\ge 10$ seconds,
+- **Then** `ApneaEvaluator` flags an obstructive apnea breach event and transitions state to `breachAlert`.
+
+#### Story 3.3: Tier-1 Local Emergency Siren & Escalating Alarm Overlay
+As a patient,  
+I want an escalating local siren ($40\text{dB} \to 75+\text{dB}$) and full-screen haptic vibration pulse within <200ms of an apnea breach,  
+So that I am immediately awakened to resume breathing.
+
+**Acceptance Criteria:**
+- **Given** `ApneaEvaluator` flags a breach event,
+- **When** `ApneaAlertOverlay` renders within <200ms,
+- **Then** high-contrast red/yellow warning banner flashes with escalating siren tone.
+- **And** tapping "I'M SAFE" within 30 seconds silences the alarm and restores normal monitoring.
+- **And** continuous normal breathing for 5 seconds automatically silences the alarm.
+
+#### Story 3.4: Caregiver Emergency Dispatch Payload
+As a patient,  
+I want the app to transmit an emergency dispatch payload to designated caregivers if I do not respond within 30 seconds,  
+So that emergency assistance can be dispatched if I am unresponsive.
+
+**Acceptance Criteria:**
+- **Given** an apnea alarm has been sounding for 30 seconds,
+- **When** no "I'm Safe" tap or breathing restoration occurs,
+- **Then** the app transmits a Tier-2 emergency payload via cloud SMS/Voice call API to caregiver contacts.
+
+---
+
+### Epic 4: Morning Sleep Dashboard & Respiration Waveform Inspection
+
+#### Story 4.1: Morning Sleep Summary Dashboard
+As a patient,  
+I want a morning sleep summary displaying my overnight AHI score, total monitoring duration, and quality score,  
+So that I can quickly assess my sleep health upon waking.
+
+**Acceptance Criteria:**
+- **Given** I open `SummaryScreenPage`,
+- **When** the page loads,
+- **Then** `ReportHeaderOrganism` displays session date and report title.
+- **And** `SleepScoreOrganism` renders the 0–100 score ring (`92`) and AHI score badge (`3.2 Normal`).
+- **And** `SummaryMetricsGridOrganism` renders total apnea stops and safety tap metrics.
+
+#### Story 4.2: Respiration Waveform & Spectral Graphs
+As a patient,  
+I want to inspect overnight respiration waveforms rendered at 60 FPS via GPU,  
+So that I can visually review breathing patterns and apnea episodes.
+
+**Acceptance Criteria:**
+- **Given** I view `SummaryScreenPage`,
+- **When** rendering waveform graphs,
+- **Then** `LiveWaveformChart` renders smooth GPU-accelerated Skia line plots (`fl_chart`).
+
+#### Story 4.3: Historical Sessions & Educational Insights
+As a patient,  
+I want to filter historical sleep sessions by date and read educational articles on sleep apnea,  
+So that I can track long-term health progress and improve mask compliance.
+
+**Acceptance Criteria:**
+- **Given** I am on `HomePage`,
+- **When** I view the dashboard,
+- **Then** `WeeklyCalendarOrganism` supports date selection.
+- **And** `HealthInsightsOrganism` provides article cards ("Mask Use & Health" & "Understanding SpO2").
+
+#### Story 4.4: Signed Physician Report Export
+As a patient,  
+I want to export a signed FHIR JSON / PDF clinical report of my sleep session,  
+So that I can share verified health data with my attending physician.
+
+**Acceptance Criteria:**
+- **Given** I am on `SummaryScreenPage`,
+- **When** I tap "Export Signed Report for Physician",
+- **Then** the app compiles encrypted FHIR JSON and PDF clinical summary payloads for doctor sharing.
