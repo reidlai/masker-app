@@ -1,9 +1,9 @@
 ---
 title: Product Requirements Document — Sleep Apnea Detection App
-status: final
-version: 2.1.0
+status: draft
+version: 2.2.0
 created: 2026-08-31
-updated: 2026-09-01
+updated: 2026-09-04
 author: Mary (Business Analyst) & Winston (System Architect)
 ---
 
@@ -103,8 +103,8 @@ To deliver a production-ready mobile application (iOS & Android) and supporting 
 * **FR-1.3 (Offline Device Binding Queue):** If the device is paired without active internet connectivity, the application shall queue the device binding payload locally in an encrypted buffer and retry transmission upon network restoration.
 * **FR-1.4 (Stage-1 Idle Room Noise Calibration):** Prior to sensor positioning, the application shall execute a 5-to-10 second sampling phase of idle BLE data to compute ambient room thermal noise floor ($N_{\text{idle}}$).
 * **FR-1.5 (Stage-2 Active Thermal Breath Training):** Following device attachment, the application shall execute a 10-to-20 second active breathing calibration phase, sampling inhale temperature ($T_{\text{inhale}}$) and exhalation peak temperature ($T_{\text{exhale}}$).
-* **FR-1.6 (Thermal-to-Volumetric Airflow Transformation):** The application shall transform instantaneous thermal deviation data $\Delta T(t) = T_{\text{exhale}}(t) - T_{\text{inhale}}(t)$ into lung volumetric airflow rates $V_{\text{volumetric}}(t) = f(\Delta T(t), N_{\text{idle}})$.
-* **FR-1.7 (Dynamic Apnea Threshold Binding):** The application shall dynamically set the zero-airflow (Apnea) threshold for the session based on the calibrated net volumetric breathing baseline ($0.10 \times V_{pp}$).
+* **FR-1.6 (Thermal-to-Volumetric Airflow Transformation & Scientific Baseline):** The application shall transform instantaneous thermal deviation data $\Delta T(t) = T_{\text{exhale}}(t) - T_{\text{inhale}}(t)$ into lung volumetric airflow rates $V_{\text{volumetric}}(t) = f(\Delta T(t), N_{\text{idle}})$, calibrated against clinical adult respiratory physiology research establishing resting peak-to-peak tidal volume airflow ($V_{pp}$) centered at $5.0\text{ L/s}$ ($4.0\text{ L/s} - 6.0\text{ L/s}$ normal resting range).
+* **FR-1.7 (Dynamic Apnea Threshold Binding):** The application shall dynamically set the zero-airflow (Apnea) threshold for the session based on the calibrated net volumetric breathing baseline ($0.10 \times V_{pp}$, initialized at $0.5\text{ L/s}$ based on the $5.0\text{ L/s}$ physiological baseline).
 * **FR-1.8 (Wear Verification Guardrail):** The application shall block sleep recording initiation if active breathing signal $\Delta V < \text{Threshold}_{\min} = 1.5 \times N_{\text{idle}}$.
 * **FR-1.9 (Multi-Mode Application Support):** The application shall support 4 distinct operating modes:
   - **Mode A (Nocturnal Sleep Apnea Monitoring):** 0-FPS night mode, 8h continuous logging, 2-tier emergency alarm.
@@ -112,6 +112,7 @@ To deliver a production-ready mobile application (iOS & Android) and supporting 
   - **Mode C (Individual Respiratory Health Check):** Vital capacity & lung function baseline assessment.
   - **Mode D (Meditation & Breath Control):** Guided breathing rhythms & coherence metrics.
 * **FR-1.10 (D-BAND Hardware Sensor Lost & Unbinding Workflow):** The application and web portal shall provide a **"Report D-BAND Sensor Lost"** workflow. Upon invocation, the cloud gateway shall execute `POST /api/v1/devices/unbind`, mark the hardware serial number as `DEPRECATED/LOST`, revoke its paired BLE MAC binding, and allow immediate discovery and pairing of a replacement D-BAND sensor array without losing cloud session history.
+* **FR-1.11 (App-Boot Background BLE Receiver & RxDart Reactive Streaming Queue):** Upon application launch, the BLE background receiver service shall automatically start in the background (via Android Foreground Service / iOS `bluetooth-central` mode) and listen for incoming BLE packets (from either physical BLE hardware or `BleTelemetryService` simulator). Incoming signals MUST be pushed into a reactive `BehaviorSubject<double>` queue using RxDart `.add()` (`next`) so downstream consumers (including the Measure Page's Stage-1 5–10s idle calibration, Stage-2 10–30s active breath calibration, and 8+ hour sleep monitoring cycles) consume signals seamlessly from a single unified reactive stream.
 
 ---
 
