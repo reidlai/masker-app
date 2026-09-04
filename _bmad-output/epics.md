@@ -35,6 +35,7 @@ This document provides the complete epic and story breakdown for Sleep Apnea Det
 - **FR-1.8:** The application shall block sleep recording initiation if active breathing signal $\Delta V < \text{Threshold}_{\min} = 1.5 \times N_{\text{idle}}$.
 - **FR-1.9:** The application shall support multi-mode operating frameworks: Mode A (Nocturnal Sleep Apnea Monitoring), Mode B (Athletic Respiration Training), Mode C (Individual Respiratory Health Check), Mode D (Meditation & Breath Control).
 - **FR-1.10:** The application and web portal shall provide a "Report D-BAND Sensor Lost" workflow. Upon invocation, the cloud gateway shall execute `POST /api/v1/devices/unbind`, mark hardware serial as `DEPRECATED/LOST`, revoke BLE MAC binding, and allow pairing of a replacement sensor without losing cloud history.
+- **FR-1.11:** Upon application launch, the BLE background receiver service shall automatically start in the background (via Android Foreground Service / iOS `bluetooth-central` mode) and listen for incoming BLE packets (from either physical BLE hardware or `BleTelemetryService` simulator). Incoming signals MUST be pushed into a reactive `BehaviorSubject<double>` queue using RxDart `.add()` (`next`) so downstream consumers (including the Measure Page's Stage-1 5–10s idle calibration, Stage-2 10–30s active breath calibration, and 8+ hour sleep monitoring cycles) consume signals seamlessly from a single unified reactive stream.
 - **FR-2.1:** The application shall log continuous 10Hz respiratory airflow streams throughout an 8+ hour sleep window in a low-power background state.
 - **FR-2.2:** The application shall evaluate real-time net volumetric airflow against the calibrated threshold every 100 milliseconds.
 - **FR-2.3:** An obstructive apnea event shall be flagged whenever net airflow remains below threshold continuously for $\ge 10$ seconds.
@@ -111,6 +112,7 @@ This document provides the complete epic and story breakdown for Sleep Apnea Det
 - **FR-1.8:** Epic 2 (BLE Bluetooth Sensor Discovery & Thermal Calibration)
 - **FR-1.9:** Epic 3 (Mode A Monitoring - MVP1) & Epic 7 (Modes B/C/D - UNPLANNED)
 - **FR-1.10:** Epic 5 (Backoffice Hardware Provisioning - UNPLANNED)
+- **FR-1.11:** Epic 2 (BLE Bluetooth Sensor Discovery & Thermal Calibration)
 - **FR-2.1:** Epic 3 (Nocturnal Sleep Apnea Monitoring & Tier-1 Local Emergency Alarm)
 - **FR-2.2:** Epic 3 (Nocturnal Sleep Apnea Monitoring & Tier-1 Local Emergency Alarm)
 - **FR-2.3:** Epic 3 (Nocturnal Sleep Apnea Monitoring & Tier-1 Local Emergency Alarm)
@@ -141,7 +143,7 @@ Patients can perform passwordless FIDO2 Passkey registration using native biomet
 
 ### Epic 2: BLE Bluetooth Sensor Discovery, Pairing & Thermal Calibration (MVP1 - Active)
 Patients can turn on their D-BAND thermal sensor array, auto-discover and pair via encrypted BLE (BLE 4.0, 4.1, 4.2, 5.0+), execute Stage 1 room noise ($N_{\text{idle}}$) and Stage 2 active breath ($V_{pp}$) calibration, transform thermal $\Delta T$ into volumetric airflow rates, and enforce wear verification guardrails.
-**FRs covered:** FR-1.1, FR-1.2, FR-1.3, FR-1.4, FR-1.5, FR-1.6, FR-1.7, FR-1.8 | **NFRs:** NFR-1.1, NFR-6.5 | **UX-DRs:** UX-DR4
+**FRs covered:** FR-1.1, FR-1.2, FR-1.3, FR-1.4, FR-1.5, FR-1.6, FR-1.7, FR-1.8, FR-1.11 | **NFRs:** NFR-1.1, NFR-4.6, NFR-6.5 | **UX-DRs:** UX-DR4
 
 ### Epic 3: Nocturnal Sleep Apnea Monitoring & Tier-1 Local Emergency Alarm (MVP1 - Active)
 Patients can initiate overnight sleep monitoring in low-power 0-FPS Night Mode (`#000000`), record 10Hz background bio-signals into a circular RAM buffer, trigger real-time AASM apnea breach evaluation, sound an instant local audio siren & haptic alert (<200ms), tap "I'm Safe" within 30s or auto-silence upon 5s breathing recovery, and escalate to cloud caregiver SMS/Voice calls upon unacknowledged alerts.
@@ -276,6 +278,18 @@ So that invalid or unattached sensor readings do not produce false apnea reading
 - **Given** active breath calibration is completed,
 - **When** active breathing delta $\Delta V < 1.5 \times N_{\text{idle}}$,
 - **Then** the system blocks sleep recording initiation and displays a sensor wear warning.
+
+#### Story 2.4: App-Boot Background BLE Receiver & RxDart Reactive Streaming Queue
+As a patient or background monitoring service,  
+I want the BLE background receiver service to initialize automatically on app launch and publish incoming packets into a unified RxDart `BehaviorSubject<double>` queue,  
+So that downstream calibration stages and continuous sleep monitoring consume bio-signal streams seamlessly from a single reactive interface regardless of whether the source is physical BLE hardware (`BLESensorDriver`) or the developer simulator (`BleTelemetryService`).
+
+**Acceptance Criteria:**
+- **Given** the mobile application completes boot sequence,
+- **When** the BLE background receiver service starts (via Android Foreground Service / iOS `bluetooth-central` mode),
+- **Then** `IBLESensorDriver` begins listening for telemetry packets.
+- **And** incoming raw thermal/volumetric packets are pushed into an RxDart `BehaviorSubject<double>` reactive stream queue via `.add()`.
+- **And** downstream consumers (`MeasurementPage` calibration wizard, `ApneaEvaluator`, and `BleBloc`) subscribe directly to the `BehaviorSubject<double>` stream without needing to know if packets originate from physical hardware or `BleTelemetryService` simulator.
 
 ---
 
