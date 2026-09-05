@@ -11,23 +11,39 @@ class BLESensorDriver implements IBLESensorDriver {
   BLEDeviceState _state = BLEDeviceState.disconnected;
   BLEDeviceState get state => _state;
 
-  StreamController<double>? _thermalStreamController;
+  SensorMonitoringPhase _currentPhase = SensorMonitoringPhase.disconnected;
   @override
-  Stream<double> get thermalStream {
-    _thermalStreamController ??= StreamController<double>.broadcast();
-    return _thermalStreamController!.stream;
+  SensorMonitoringPhase get currentPhase => _currentPhase;
+
+  StreamController<SensorMonitoringPhase>? _phaseStreamController;
+  @override
+  Stream<SensorMonitoringPhase> get phaseStream {
+    _phaseStreamController ??= StreamController<SensorMonitoringPhase>.broadcast();
+    return _phaseStreamController!.stream;
+  }
+
+  void _updatePhase(SensorMonitoringPhase newPhase) {
+    _currentPhase = newPhase;
+    _phaseStreamController?.add(newPhase);
+  }
+
+  StreamController<double>? _signalStreamController;
+  @override
+  Stream<double> get signalStream {
+    _signalStreamController ??= StreamController<double>.broadcast();
+    return _signalStreamController!.stream;
   }
 
   Timer? _telemetryTimer;
   double _ambientNoiseFloor = 0.5; // N_idle
   double _breathBaselineVpp = 5.0; // V_pp
-  double _apneaThreshold = 0.5;    // 0.10 * V_pp
+  double _signalThreshold = 0.5;    // 0.10 * V_pp
 
   double get ambientNoiseFloor => _ambientNoiseFloor;
   double get breathBaselineVpp => _breathBaselineVpp;
 
   @override
-  double get apneaThreshold => _apneaThreshold;
+  double get signalThreshold => _signalThreshold;
 
   @override
   Future<bool> scanAndConnect() async {
@@ -36,12 +52,18 @@ class BLESensorDriver implements IBLESensorDriver {
     _state = BLEDeviceState.connecting;
     await Future.delayed(const Duration(milliseconds: 600));
     _state = BLEDeviceState.connected;
+    _updatePhase(SensorMonitoringPhase.idle);
     return true;
   }
 
-  // Stage 1 Calibration: Sample idle room temperature noise (N_idle)
+  // --- Stage 1 Calibration Lifecycle ---
   @override
-  Future<double> calibrateStage1NoiseFloor() async {
+  Future<void> startIdleCalibration() async {
+    _updatePhase(SensorMonitoringPhase.calibratingIdle);
+  }
+
+  @override
+  Future<double> stopIdleCalibration() async {
     double noiseSum = 0.0;
     final Random rnd = Random();
     for (int i = 0; i < 10; i++) {
@@ -49,12 +71,29 @@ class BLESensorDriver implements IBLESensorDriver {
       noiseSum += 0.3 + (rnd.nextDouble() * 0.2); // ~0.4°C noise
     }
     _ambientNoiseFloor = noiseSum / 10.0;
+    _updatePhase(SensorMonitoringPhase.idle);
     return _ambientNoiseFloor;
   }
 
-  // Stage 2 Calibration: Sample active breathing thermal training (Delta T)
   @override
-  Future<double> calibrateStage2ActiveBreath() async {
+  Future<double> calibrateStage1NoiseFloor() async {
+    await startIdleCalibration();
+    return await stopIdleCalibration();
+  }
+
+  @override
+  Future<double> calibrateStage1NoiseCeiling() async {
+    return await calibrateStage1NoiseFloor();
+  }
+
+  // --- Stage 2 Calibration Lifecycle ---
+  @override
+  Future<void> startTrainingCalibration() async {
+    _updatePhase(SensorMonitoringPhase.calibratingTraining);
+  }
+
+  @override
+  Future<double> stopTrainingCalibration() async {
     double maxBreath = 0.0;
     final Random rnd = Random();
     for (int i = 0; i < 15; i++) {
@@ -63,32 +102,39 @@ class BLESensorDriver implements IBLESensorDriver {
       if (sample > maxBreath) maxBreath = sample;
     }
     _breathBaselineVpp = maxBreath;
-    _apneaThreshold = 0.10 * _breathBaselineVpp;
-    return _apneaThreshold;
+    _signalThreshold = 0.10 * _breathBaselineVpp;
+    _updatePhase(SensorMonitoringPhase.idle);
+    return _signalThreshold;
   }
 
+  // --- Stage 3 Monitoring Lifecycle ---
   @override
-  void startTelemetryLogging() {
+  void startMonitoringSession() {
     _telemetryTimer?.cancel();
+    _updatePhase(SensorMonitoringPhase.monitoring);
     double step = 0.0;
     _telemetryTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
       step += 0.1;
       // 10Hz sine wave simulating thermal breath stream
       double signal = (_breathBaselineVpp / 2) * (1 + sin(step)) + _ambientNoiseFloor;
-      _thermalStreamController?.add(signal);
+      _signalStreamController?.add(signal);
     });
   }
 
   @override
-  void stopTelemetryLogging() {
+  void stopMonitoringSession() {
     _telemetryTimer?.cancel();
+    _updatePhase(SensorMonitoringPhase.idle);
   }
 
   @override
   void disconnect() {
-    stopTelemetryLogging();
-    _thermalStreamController?.close();
-    _thermalStreamController = null;
+    stopMonitoringSession();
+    _signalStreamController?.close();
+    _signalStreamController = null;
     _state = BLEDeviceState.disconnected;
+    _updatePhase(SensorMonitoringPhase.disconnected);
+    _phaseStreamController?.close();
+    _phaseStreamController = null;
   }
 }

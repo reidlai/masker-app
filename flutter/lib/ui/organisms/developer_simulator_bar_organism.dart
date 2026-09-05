@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../core/ble/ble_telemetry_service.dart';
+import '../../core/ble/ble_simulator_driver.dart';
 import '../../core/theme/app_theme.dart';
 
 class DeveloperSimulatorBarOrganism extends StatelessWidget {
-  final BleTelemetryService _telemetryService = BleTelemetryService();
+  final BleSimulatorDriver _telemetryService = BleSimulatorDriver();
 
   DeveloperSimulatorBarOrganism({super.key});
 

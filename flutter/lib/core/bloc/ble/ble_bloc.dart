@@ -1,16 +1,16 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rxdart/rxdart.dart';
-import '../../ble/ble_telemetry_service.dart';
+import '../../ble/ble_simulator_driver.dart';
 import 'ble_event.dart';
 import 'ble_state.dart';
 
 class BleBloc extends Bloc<BleEvent, BleState> {
-  final BleTelemetryService _telemetryService;
+  final BleSimulatorDriver _telemetryService;
   StreamSubscription<double>? _signalSubscription;
 
-  BleBloc({BleTelemetryService? telemetryService})
-      : _telemetryService = telemetryService ?? BleTelemetryService(),
+  BleBloc({BleSimulatorDriver? telemetryService})
+      : _telemetryService = telemetryService ?? BleSimulatorDriver(),
         super(const BleInitialState()) {
     on<BleSignalSampleReceived>(
       _onSignalSampleReceived,

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:rxdart/rxdart.dart';
 import 'i_ble_sensor_driver.dart';
-import 'ble_telemetry_service.dart';
+import 'ble_simulator_driver.dart';
 import 'ble_sensor_driver.dart';
 
 /// App-boot background BLE receiver service managing active [IBLESensorDriver]
@@ -29,9 +29,9 @@ class BleReceiverService implements IBLESensorDriver {
   // Private named constructor:
   // Dynamically selects initial driver based on compile-time environment flag.
   // Production (DEV_MODE=false) defaults to physical hardware BLESensorDriver().
-  // Developer Mode (DEV_MODE=true) defaults to BleTelemetryService() for simulator testing.
+  // Developer Mode (DEV_MODE=true) defaults to BleSimulatorDriver() for simulator testing.
   BleReceiverService._internal()
-      : _activeDriver = _isDevMode ? BleTelemetryService() : BLESensorDriver() {
+      : _activeDriver = _isDevMode ? BleSimulatorDriver() : BLESensorDriver() {
     _initializeStream();
   }
 
@@ -54,7 +54,7 @@ class BleReceiverService implements IBLESensorDriver {
     if (_thermalSubject.isClosed) {
       _thermalSubject = BehaviorSubject<double>.seeded(5.0);
     }
-    _driverSubscription = _activeDriver.thermalStream.listen(
+    _driverSubscription = _activeDriver.signalStream.listen(
       (double val) {
         if (!_thermalSubject.isClosed) {
           _thermalSubject.add(val);
@@ -69,7 +69,7 @@ class BleReceiverService implements IBLESensorDriver {
   }
 
   @override
-  Stream<double> get thermalStream {
+  Stream<double> get signalStream {
     if (_thermalSubject.isClosed) {
       _initializeStream();
     }
@@ -84,11 +84,28 @@ class BleReceiverService implements IBLESensorDriver {
   }
 
   @override
-  double get apneaThreshold => _activeDriver.apneaThreshold;
+  SensorMonitoringPhase get currentPhase => _activeDriver.currentPhase;
+
+  @override
+  Stream<SensorMonitoringPhase> get phaseStream => _activeDriver.phaseStream;
+
+  @override
+  double get signalThreshold => _activeDriver.signalThreshold;
 
   @override
   Future<bool> scanAndConnect() async {
     return await _activeDriver.scanAndConnect();
+  }
+
+  // --- Stage 1 Calibration Lifecycle ---
+  @override
+  Future<void> startIdleCalibration() async {
+    await _activeDriver.startIdleCalibration();
+  }
+
+  @override
+  Future<double> stopIdleCalibration() async {
+    return await _activeDriver.stopIdleCalibration();
   }
 
   @override
@@ -97,18 +114,30 @@ class BleReceiverService implements IBLESensorDriver {
   }
 
   @override
-  Future<double> calibrateStage2ActiveBreath() async {
-    return await _activeDriver.calibrateStage2ActiveBreath();
+  Future<double> calibrateStage1NoiseCeiling() async {
+    return await _activeDriver.calibrateStage1NoiseCeiling();
+  }
+
+  // --- Stage 2 Training Calibration Lifecycle ---
+  @override
+  Future<void> startTrainingCalibration() async {
+    await _activeDriver.startTrainingCalibration();
   }
 
   @override
-  void startTelemetryLogging() {
-    _activeDriver.startTelemetryLogging();
+  Future<double> stopTrainingCalibration() async {
+    return await _activeDriver.stopTrainingCalibration();
+  }
+
+  // --- Stage 3 Monitoring Lifecycle ---
+  @override
+  void startMonitoringSession() {
+    _activeDriver.startMonitoringSession();
   }
 
   @override
-  void stopTelemetryLogging() {
-    _activeDriver.stopTelemetryLogging();
+  void stopMonitoringSession() {
+    _activeDriver.stopMonitoringSession();
   }
 
   @override
@@ -122,8 +151,8 @@ class BleReceiverService implements IBLESensorDriver {
       _thermalSubject.close();
     }
     _thermalSubject = BehaviorSubject<double>.seeded(5.0);
-    _activeDriver = BleTelemetryService();
-    BleTelemetryService().resetForTest();
+    _activeDriver = BleSimulatorDriver();
+    BleSimulatorDriver().resetForTest();
     _initializeStream();
   }
 

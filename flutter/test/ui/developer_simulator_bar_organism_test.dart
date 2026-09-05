@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:masker_app/core/ble/ble_telemetry_service.dart';
+import 'package:masker_app/core/ble/ble_simulator_driver.dart';
 import 'package:masker_app/ui/organisms/developer_simulator_bar_organism.dart';
 
 void main() {
   tearDown(() {
-    BleTelemetryService().resetForTest();
+    BleSimulatorDriver().resetForTest();
   });
 
   testWidgets('DeveloperSimulatorBarOrganism renders developer toolbar and scenario chips', (WidgetTester tester) async {
@@ -28,8 +28,8 @@ void main() {
     await tester.tap(apneaChip);
     await tester.pump();
 
-    expect(BleTelemetryService().currentScenario, equals(SimulatorScenario.apneaAlert));
+    expect(BleSimulatorDriver().currentScenario, equals(SimulatorScenario.apneaAlert));
 
-    BleTelemetryService().resetForTest();
+    BleSimulatorDriver().resetForTest();
   });
 }

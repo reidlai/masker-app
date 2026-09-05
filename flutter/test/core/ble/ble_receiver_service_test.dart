@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:masker_app/core/ble/ble_receiver_service.dart';
 import 'package:masker_app/core/ble/ble_sensor_driver.dart';
-import 'package:masker_app/core/ble/ble_telemetry_service.dart';
+import 'package:masker_app/core/ble/ble_simulator_driver.dart';
 
 void main() {
   group('BleReceiverService Unit Tests (NFR-4.6 Polymorphism & RxDart Queue)', () {
@@ -19,14 +19,14 @@ void main() {
 
     test('App Boot Service Launch seeds initial reactive stream value', () async {
       expect(receiverService.reactiveStream.value, equals(5.0));
-      expect(receiverService.activeDriver, isA<BleTelemetryService>());
+      expect(receiverService.activeDriver, isA<BleSimulatorDriver>());
     });
 
     test('RxDart Stream Broadcast ingests telemetry values into BehaviorSubject queue', () async {
       final List<double> values = [];
-      final subscription = receiverService.thermalStream.listen(values.add);
+      final subscription = receiverService.signalStream.listen(values.add);
 
-      BleTelemetryService().emitSignal(12.5, isSimulator: true);
+      BleSimulatorDriver().emitSignal(12.5, isSimulator: true);
       await Future.delayed(const Duration(milliseconds: 50));
 
       expect(values, contains(12.5));
@@ -39,11 +39,11 @@ void main() {
       final List<double> listener1Values = [];
       final List<double> listener2Values = [];
 
-      final sub1 = receiverService.thermalStream.listen(listener1Values.add);
-      final sub2 = receiverService.thermalStream.listen(listener2Values.add);
+      final sub1 = receiverService.signalStream.listen(listener1Values.add);
+      final sub2 = receiverService.signalStream.listen(listener2Values.add);
 
-      BleTelemetryService().emitSignal(8.4, isSimulator: true);
-      BleTelemetryService().emitSignal(3.2, isSimulator: true);
+      BleSimulatorDriver().emitSignal(8.4, isSimulator: true);
+      BleSimulatorDriver().emitSignal(3.2, isSimulator: true);
       await Future.delayed(const Duration(milliseconds: 50));
 
       expect(listener1Values, containsAll([8.4, 3.2]));
@@ -54,12 +54,12 @@ void main() {
       await sub2.cancel();
     });
 
-    test('Driver Polymorphism allows dynamic switching between BLESensorDriver and BleTelemetryService', () async {
+    test('Driver Polymorphism allows dynamic switching between BLESensorDriver and BleSimulatorDriver', () async {
       final hardwareDriver = BLESensorDriver();
       receiverService.setActiveDriver(hardwareDriver);
 
       expect(receiverService.activeDriver, equals(hardwareDriver));
-      expect(receiverService.apneaThreshold, equals(hardwareDriver.apneaThreshold));
+      expect(receiverService.signalThreshold, equals(hardwareDriver.signalThreshold));
 
       bool connected = await receiverService.scanAndConnect();
       expect(connected, isTrue);

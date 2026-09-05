@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:masker_app/core/ble/ble_telemetry_service.dart';
+import 'package:masker_app/core/ble/ble_simulator_driver.dart';
 import 'package:masker_app/ui/organisms/ble_simulator_organism.dart';
 
 void main() {
   tearDown(() {
-    BleTelemetryService().resetForTest();
+    BleSimulatorDriver().resetForTest();
   });
 
   testWidgets('BleSimulatorOrganism renders controls and triggers callbacks', (WidgetTester tester) async {
@@ -35,6 +35,6 @@ void main() {
     await tester.tap(apneaBtn);
     expect(apneaTriggered, isTrue);
 
-    BleTelemetryService().resetForTest();
+    BleSimulatorDriver().resetForTest();
   });
 }
