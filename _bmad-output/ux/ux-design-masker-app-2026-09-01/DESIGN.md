@@ -1,9 +1,9 @@
 ---
 name: Sleep Apnea Detection App (D-BAND Integrated Platform)
 status: final
-version: 1.1.0
+version: 1.2.0
 created: 2026-09-01
-updated: 2026-09-02
+updated: 2026-09-04
 author: Sally (UX Designer) & Winston (System Architect)
 colors:
   primary: "#0F172A"       # Slate 900 (Deep Night Background)
@@ -56,6 +56,7 @@ components:
   - SettingsMenuRow
   - SettingsSectionHeader
   - DeveloperSimulatorBarOrganism
+  - BlePermissionPrimerOrganism
 ---
 
 # 🎨 DESIGN.md — Visual Identity & Design System Specification
@@ -157,6 +158,12 @@ Caption:      12px / Medium (500) / Line Height 1.4  -->  Chart Axes, Timestamps
 ### 8. `DeveloperSimulatorBarOrganism` (Organism Component)
 * **Visual Structure:** Dark amber/slate glassmorphic toolbar (`#1E293B` background with `#F59E0B` amber border) embedded at the top of `MeasurementPage` when `DEV_MODE=true`. Displays a header ("⚡ DEV MODE SIMULATOR") and horizontal scrolling action chips: `[Idle Noise]`, `[Active Baseline]`, `[Normal (16 bpm)]`, `[Apnea Drop (>10s)]`, and `[Recovery (5s)]`. Active scenario chip highlights in solid `{colors.warning_amber}` or `{colors.accent_green}`.
 
+### 9. `BlePermissionPrimerOrganism` (Organism Component)
+* **Visual Structure:** Full-screen onboarding beat on `{colors.primary}` (`#0F172A`) background, matching the Passkey auth screen's composition. Centered Bluetooth glyph icon (`{colors.accent_green}`, marked decorative and excluded from the accessibility tree — the headline carries the meaning), headline (`{typography.h2}`, `#F8FAFC`), body copy (`{typography.body}`, `#94A3B8`), and a single full-width primary `ShadButton` reading "Allow Bluetooth Access" (specced in #10 below), pinned above the safe-area inset. No secondary or skip button — a single-path screen, same visual weight as `MOB_PASSKEY_AUTH`.
+
+### 10. `ShadButton` — Primary Variant (Atom Component)
+* **Visual Structure:** Default primary-action styling, used wherever a single-path CTA button appears, for example `BlePermissionPrimerOrganism`'s "Allow Bluetooth Access." Solid `{colors.accent_green}` (`#10B981`) fill with `{colors.primary}` (`#0F172A`) bold text — ≈7.8:1 contrast, clears WCAG AA with headroom. Full-width within its container, `{rounded.md}` corners, minimum `{spacing.touch_target_min}` height.
+
 ---
 
 ## Do's and Don'ts
@@ -166,9 +173,11 @@ Caption:      12px / Medium (500) / Line Height 1.4  -->  Chart Axes, Timestamps
 * **DO** enforce pitch black `#000000` for Night Mode to prevent sleep disturbance.
 * **DO** maintain high contrast ($\ge 4.5:1$) for all medical text against dark surfaces.
 * **DO** gate the Debugging and Developer rows on build flags, and hide the "Advanced" `SettingsSectionHeader` whenever both are off.
+* **DO** frame native OS permission dialogs with in-app context first (`MOB_BLE_PERMISSION_PRIMER`) rather than firing a system prompt with no explanation.
 
 ### ❌ DON'T:
 * **DON'T** use bright white backgrounds (`#FFFFFF`) on primary mobile monitoring screens.
 * **DON'T** use subtle or small buttons for the emergency "I'm Safe" dismiss action.
 * **DON'T** introduce complex decorative animations during live 10Hz signal logging (keep GPU rendering streamlined).
 * **DON'T** give the inert Debugging / Developer rows a trailing chevron — the chevron is reserved for rows that navigate.
+* **DON'T** let `BleReceiverForegroundNotification` or `BleNotProtectedNotification` *initiate* anything beyond standard OS tap-to-open — no sound, no heads-up interruption, no notification-triggered screen wake (see `EXPERIENCE.md` Component Pattern #8 for the user-initiated-tap exception).

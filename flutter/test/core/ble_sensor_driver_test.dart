@@ -26,16 +26,17 @@ void main() {
     });
 
     test('Stage 1 room noise calibration computes positive N_idle floor', () async {
-      double nIdle = await driver.calibrateStage1NoiseFloor();
+      double nIdle = await driver.calibrateStage1NoiseCeiling();
       expect(nIdle, greaterThan(0.0));
       expect(driver.ambientNoiseFloor, equals(nIdle));
     });
 
-    test('Stage 2 active breath calibration computes apnea threshold as 10% of V_pp', () async {
-      await driver.calibrateStage1NoiseFloor();
-      double threshold = await driver.calibrateStage2ActiveBreath();
+    test('Stage 2 training calibration computes signal threshold as 10% of V_pp', () async {
+      await driver.calibrateStage1NoiseCeiling();
+      await driver.startTrainingCalibration();
+      double threshold = await driver.stopTrainingCalibration();
       expect(threshold, equals(0.10 * driver.breathBaselineVpp));
-      expect(driver.apneaThreshold, equals(threshold));
+      expect(driver.signalThreshold, equals(threshold));
     });
   });
 }

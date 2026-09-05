@@ -1,9 +1,9 @@
 ---
 title: Enterprise Architecture Specification — BPMN.js XML & PlantUML Data Architecture
-status: final
-version: 18.0.0
+status: draft
+version: 19.0.0
 created: 2026-08-31
-updated: 2026-09-01
+updated: 2026-09-04
 author: Winston (System Architect) & Mary (Business Analyst)
 ---
 
@@ -57,12 +57,12 @@ Rel(system, doctor, "Delivers Morning Sleep Summaries & EHR/Big Data Reports", "
 
 ---
 
-### 1.1.1 🏛️ Architectural Decisions & System Invariants (AD-01 to AD-11)
+### 1.1.1 🏛️ Architectural Decisions & System Invariants (AD-01 to AD-12)
 
 The following core invariants govern all mobile application, BLE sensor driver, data processing, security, and UI design layers:
 
 - **AD-01 (Atomic Design System Hierarchy):** Strict separation across UI Atoms, Molecules, 14 Organisms, and Page Templates.
-- **AD-02 (BLoC + RxDart Unidirectional Data Flow):** Event streams managed via `flutter_bloc` and `rxdart` using `throttleTime` (300ms) and `switchMap` event transformers.
+- **AD-02 (BLoC + RxDart Unidirectional Data Flow):** Event streams managed via `flutter_bloc` and `rxdart`; UI-facing BLoCs decimate the 10Hz bio-signal to ≤5 FPS via `sampleTime`/`throttleTime` and use `switchMap` event transformers. The single upstream bio-signal source that feeds every BLoC is the boot-time unified queue defined in **AD-12** — BLoCs subscribe to it, never to a driver or GATT channel directly.
 - **AD-03 (FIDO2 / WebAuthn Biometric Authentication):** Passwordless Passkey login enforcing HIPAA 45 CFR § 164.312(a) technical access control.
 - **AD-04 (2-Stage Thermal Sensor Calibration):** Stage 1 room noise floor ($N_{\text{idle}}$) + Stage 2 active breath baseline ($V_{pp}$) setting dynamic zero-airflow thresholds ($0.10 \times V_{pp}$).
 - **AD-05 (Wear Verification Guardrail):** Recording blocked if active breathing delta $\Delta V < 1.5 \times N_{\text{idle}}$.
@@ -75,6 +75,10 @@ The following core invariants govern all mobile application, BLE sensor driver, 
   * **Binds:** All BLE sensor telemetry drivers (`BLESensorDriver`, `BleTelemetryService`, `FlutterBlueSensorDriver`), stream evaluators (`ApneaEvaluator`, `BleBloc`), and live UI views (`MeasurementPage`).  
   * **Prevents:** Tightly coupling UI pages or monitoring evaluators to specific hardware or simulation drivers, enabling zero-code-change driver swapping and unit test mocking.  
   * **Rule:** High-level monitoring services (`ApneaEvaluator`, `BleBloc`) and UI pages (`MeasurementPage`) MUST depend exclusively on the abstract interface `IBLESensorDriver`. Physical hardware drivers (`FlutterBlueSensorDriver`), mock drivers (`BLESensorDriver`), and background simulation engines (`BleTelemetryService`) MUST implement `IBLESensorDriver`. Constructor Dependency Injection (DI) MUST be used to pass driver instances.
+- **AD-12 (App-Boot Unified Reactive Bio-Signal Ingestion Queue):**
+  * **Binds:** App bootstrap (`main()` / composition root), the BLE background receiver service, every `IBLESensorDriver` implementation (`FlutterBlueSensorDriver`, `BleTelemetryService`, `BLESensorDriver`), and all downstream bio-signal consumers (`BleBloc`, `ApneaEvaluator`, `MeasurementPage`, the Stage-1 idle and Stage-2 active-breath calibration controllers, and `SleepMonitoringBloc`).
+  * **Prevents:** Per-screen or per-phase BLE subscriptions that each open their own GATT channel; divergent queue primitives (a plain `StreamController` or `PublishSubject`) that drop the latest-value replay a late subscriber needs; calibration and nocturnal monitoring racing to own the connection lifecycle; a driver swap (AD-11) forcing consumers to re-subscribe.
+  * **Rule:** On application launch the BLE background receiver service MUST start and stay resident for the process lifetime — Android **Foreground Service** (`foregroundServiceType` `connectedDevice`\|`dataSync`, persistent notification) and iOS `UIBackgroundModes` = `bluetooth-central`. Bootstrap binds **exactly one** active `IBLESensorDriver` by Constructor DI (per AD-11). Every inbound sample — a physical GATT notification **or** a `BleTelemetryService` simulator tick — MUST be pushed with RxDart `.add()` into a **single process-wide `BehaviorSubject<double>`** exposed as the driver's `thermalStream` / `signalStream` (`ValueStream<double>`). All consumers (Stage-1 5–10 s idle calibration, Stage-2 10–30 s active-breath calibration, and 8+ h nocturnal monitoring) MUST consume that one stream; none may open its own BLE subscription or instantiate a second queue. Queue identity and the `ValueStream` reference are stable across a driver swap. The receiver **service and queue** start at boot; the physical BLE radio link (`scanAndConnect`) MAY be established lazily — when a bound D-BAND is in range or the first consumer requires it — and is then held alive by the Foreground Service for the session, preserving the AD-06 `<8%` / 8 h battery budget. `EndSession` calls `stopTelemetryLogging()` only; the receiver service and queue survive for the next session.
 
 ---
 
@@ -130,7 +134,7 @@ Rel(doctor, clinic_portal, "Reviews Patient AHI Trends & Clinical Research Data"
 #### 📖 Technical Container Subsystems & Invariants
 
 1. **D-BAND Sensor Hardware Firmware:** Patented conducting polymer thermal sensor array capturing 10Hz inhale ($T_{\text{inhale}}$) and exhalation ($T_{\text{exhale}}$) temperature deviations ($\Delta T = T_{\text{exhale}} - T_{\text{inhale}}$) streaming over Bluetooth Low Energy (`0x180D` service / `0x2A37` characteristic). Data packets are encrypted via AES-128 session keys.
-2. **Flutter Mobile Client (iOS & Android):** Primary edge node. It executes 2-stage thermal calibration, local 100ms signal conversion ($\Delta T \rightarrow V_{\text{volumetric}}$), 4-mode operational state management (Sleep Monitoring, Athletic Training, Health Check, Meditation), 0-FPS locked low-power display modes during sleep, and Tier-1 audio/haptic alarms. Telemetry is batched into 10-second compressed JSON payloads and pushed to the cloud gateway over HTTPS/TLS 1.3.
+2. **Flutter Mobile Client (iOS & Android):** Primary edge node. It executes 2-stage thermal calibration, local 100ms signal conversion ($\Delta T \rightarrow V_{\text{volumetric}}$), 4-mode operational state management (Sleep Monitoring, Athletic Training, Health Check, Meditation), 0-FPS locked low-power display modes during sleep, and Tier-1 audio/haptic alarms. Telemetry is batched into 10-second compressed JSON payloads and pushed to the cloud gateway over HTTPS/TLS 1.3. On launch it starts an **always-on background BLE receiver service** (Android Foreground Service / iOS `bluetooth-central` background mode) that pushes every inbound sample — physical D-BAND GATT notification or in-process simulator tick — into a single unified `BehaviorSubject<double>` reactive queue consumed by calibration and monitoring alike (**AD-12**).
 3. **Cloud Ingestion & Processing Workers (Data Streaming Service + Stream Processing Workers & AI Engine):** High-throughput data streaming service handling millions of concurrent device connections. Container stream workers process telemetry streams via gRPC, compute moving average baselines ($V_{pp}$ peak-to-trough breathing amplitude), execute AI waveform pattern analytics (PolyU / CUHK clinical model), and evaluate American Academy of Sleep Medicine (AASM) diagnostic rules:
    $$\text{Apnea Breach} \iff \text{Airflow Drop} \ge 90\% \text{ for } \ge 10\text{ seconds}$$
    $$\text{Hypopnea Breach} \iff \text{Airflow Drop} \ge 30\% \text{ for } \ge 10\text{ seconds}$$
@@ -505,7 +509,8 @@ Person(admin, "Backoffice Admin", "Platform administrator managing verification,
 
 Container_Boundary(mobile_edge, "Mobile Edge Client & Hardware (At-Home)") {
     Component(hardware, "Small Breathing Device", "Embedded Hardware Sensor", "Captures raw airflow differential pressure; streams 100ms GATT packets via BLE.")
-    Component(app_ui, "Patient App UI", "Flutter Screen Controllers", "Renders MOB_REGISTER_ACCOUNT, MOB_USER_PROFILE, MOB_REGISTER_PASSKEY, MOB_PASSKEY_AUTH, MOB_CALIBRATION, MOB_SLEEP_MONITOR, MOB_TIER1_ALARM.")
+    Component(ble_receiver, "BLE Background Receiver Service", "Android Foreground Service / iOS bluetooth-central + RxDart", "Starts at app boot; DI-binds one IBLESensorDriver (physical or simulator) and pushes every 10Hz sample into a single process-wide BehaviorSubject<double> unified queue (AD-12).")
+    Component(app_ui, "Patient App UI", "Flutter Screen Controllers", "Renders MOB_REGISTER_ACCOUNT, MOB_USER_PROFILE, MOB_REGISTER_PASSKEY, MOB_PASSKEY_AUTH, MOB_CALIBRATION, MOB_SLEEP_MONITOR, MOB_TIER1_ALARM; subscribes to the unified queue for calibration & monitoring.")
     Component(secure_enclave, "Secure Enclave", "OS Biometric Enclave", "Executes WebAuthn FIDO2 private key generation, challenge signing, and local biometric verification.")
 }
 
@@ -530,7 +535,8 @@ ContainerDb(app_db, "Application Database", "Relational / Document DB", "Stores 
 ContainerDb(timeseries_db, "Bio-Signal Time-Series Store", "Columnar Time-Series DB", "Stores compressed 100ms bio-signal telemetry streams.")
 
 Rel(patient, app_ui, "PatientUser credentials & HealthBaseline inputs")
-Rel(hardware, app_ui, "100ms BLE GATT AES-128 Notification Stream")
+Rel(hardware, ble_receiver, "100ms BLE GATT AES-128 Notification Stream")
+Rel(ble_receiver, app_ui, "Unified BehaviorSubject<double> bio-signal stream (calibration + monitoring subscribers)")
 Rel(app_ui, secure_enclave, "PatientUser passkey_credential_id & challenge nonces")
 Rel(app_ui, auth_svc, "PatientUser registration payload & passkey WebAuthn assertion")
 Rel(app_ui, profile_svc, "HealthBaseline (age, weight, height, BMI) & PatientUser caregiver_phone")
@@ -566,6 +572,7 @@ Rel(doctor, clinic_portal, "ClinicDoctorAssignment diagnostic notes & AHI review
 | :--- | :--- | :--- | :--- | :--- |
 | **`User`** | External Actor | `Patient` / `Dispatcher` / `Physician` / `Backoffice Admin` | `PatientUser` / Human Actor | Human actor triggering UI events or reviewing healthcare dashboards. |
 | **`Small Breathing Device (Sensor)`** | Hardware Device | `Small Breathing Device` | Differential Pressure Stream | Embedded hardware sensor sampling differential pressure and streaming 100ms BLE GATT notifications. |
+| **`BLE Background Receiver Service (Receiver)`** | `Mobile Application` | `BLE Background Receiver Service` | `TelemetryStream` (on-device, pre-batch) | Boot-time Android Foreground Service / iOS `bluetooth-central` singleton; DI-binds one `IBLESensorDriver` and pushes every 10Hz sample into the single process-wide `BehaviorSubject<double>` unified queue consumed by Stage-1/Stage-2 calibration and 8+ h monitoring (`AD-11`, `AD-12`, PRD `FR-1.11`). |
 | **`Backoffice Admin (Admin)`** | External Actor | `Backoffice Admin` | Human Administrator | Verifies patient identity, scans sensor barcodes, and locks caregiver contacts. |
 | **`Patient App UI (UI)`** | `Mobile Application` | `Patient App UI` | `PatientUser`, `HealthBaseline` | Renders Flutter onboarding, calibration, sleep monitoring, and Tier-1 alarm screens. |
 | **`Backoffice Web Portal (Admin UI)`** | `Web Operations Portals` | `Backoffice Web Portal` | `PatientUser`, `DeviceBinding` | Renders web panels for identity verification, device pairing, and caregiver contact locks. |
@@ -1031,6 +1038,7 @@ actor "Patient" as Patient
 box "Mobile Edge & Hardware (At-Home Patient)"
 participant "Small Breathing Device\n(Hardware Sensor)" as Sensor
 participant "Patient App UI\n(MOB_SLEEP_OPERATIONS)" as UI
+participant "BLE Background Receiver Service\n(BehaviorSubject<double> Unified Queue)" as Receiver
 participant "Secure Enclave\n(Biometrics)" as Enclave
 end box
 
@@ -1046,9 +1054,17 @@ database "Application Database\n(App DB)" as AppDB
 database "Bio-Signal Time-Series Store\n(Timeseries DB)" as TimeseriesDB
 end box
 
-== Phase 1: Passkey Biometric Login (Task_PasskeyAuth) ==
-Patient -> UI: 1. Launch Night App & Tap "Start Bedtime Monitoring" (MOB_PASSKEY_AUTH)
+== Phase 0: App Boot — BLE Background Receiver Start (AD-12, FR-1.11) ==
+Patient -> UI: A. Launch App
 activate UI
+UI -> Receiver: B. Bootstrap: start background receiver service (Android Foreground Service / iOS bluetooth-central) & DI-bind one IBLESensorDriver
+activate Receiver
+Receiver -> Receiver: C. Open single process-wide BehaviorSubject<double> unified queue (seeded)
+Receiver --> UI: D. Queue live — physical GATT notifications OR BleTelemetryService simulator ticks pushed via .add()
+note over Receiver: Physical radio link (scanAndConnect) established lazily when a bound D-BAND is in range;\nqueue & service stay resident for the whole process lifetime.
+
+== Phase 1: Passkey Biometric Login (Task_PasskeyAuth) ==
+Patient -> UI: 1. Tap "Start Bedtime Monitoring" (MOB_PASSKEY_AUTH)
 UI --> AuthSvc: 2. Fetch Challenge Nonce Request [IF-09]
 activate AuthSvc
 AuthSvc --> UI: 3. Challenge Nonce Response { challenge_nonce }
@@ -1071,19 +1087,21 @@ UI -> UI: 12. Auto-advance to MOB_CALIBRATION_STAGE1
 
 == Phase 2: Stage 1 Idle Noise Calibration (Task_Stage1Cal) ==
 Patient -> UI: 13. Tap "Start 10s Idle Calibration" (MOB_CALIBRATION_STAGE1)
-UI --> Sensor: 14. Open BLE Connection & Subscribe GATT Notification [IF-11]
-activate Sensor
-Sensor --> UI: 15. Stream 10s Ambient Noise Packets (10Hz BLE Stream [IF-11])
-deactivate Sensor
+UI -> Receiver: 14. Subscribe to unified BehaviorSubject<double> queue (streaming since boot — AD-12; no new GATT channel)
+activate Receiver
+Sensor -> Receiver: 15. 10s Ambient Noise Packets (10Hz) pushed to queue via .add() [IF-11]
+Receiver --> UI: 15a. Emit seeded latest + 10s idle window to subscriber
+deactivate Receiver
 UI -> UI: 16. Compute Idle Noise Baseline (N_idle) via Dart FFT Isolate
 UI -> UI: 17. Auto-advance to MOB_CALIBRATION_STAGE2
 
 == Phase 3: Stage 2 Active Breath Calibration (Task_Stage2Cal) ==
 Patient -> UI: 18. Attach Sensor Mask & Take 5 Normal Breaths (MOB_CALIBRATION_STAGE2)
-UI --> Sensor: 19. Sample 30s Breathing Waveform [IF-11]
-activate Sensor
-Sensor --> UI: 20. Stream 30s Peak-to-Trough Pressure Packets [IF-11]
-deactivate Sensor
+UI -> Receiver: 19. Read 30s Breathing Waveform from same unified queue (AD-12)
+activate Receiver
+Sensor -> Receiver: 20. 30s Peak-to-Trough Pressure Packets pushed to queue via .add() [IF-11]
+Receiver --> UI: 20a. Emit 30s active-breath window to subscriber
+deactivate Receiver
 UI -> UI: 21. Compute Baseline Breathing Amplitude (Vpp) & Threshold (0.10 * Vpp)
 UI --> AppDB: 22. Save Calibration Metrics Request (HealthBaseline)
 activate AppDB
@@ -1093,7 +1111,8 @@ UI -> UI: 24. Auto-advance to MOB_SLEEP_MONITOR
 
 == Phase 4: Continuous Sleep Monitoring & Bio-Signal Streaming (Task_SleepMonitoring) ==
 UI -> UI: 25. Enter Night Mode (0-FPS Locked Black Display #000000)
-Sensor --> UI: 26. Continuous 100ms Bio-Signal Telemetry Stream [IF-11]
+Sensor -> Receiver: 26. Continuous 100ms (10Hz) Bio-Signal samples pushed to unified queue via .add() [IF-11]
+Receiver --> UI: 26a. Same BehaviorSubject<double> stream now consumed by SleepMonitoringBloc (AD-12); BleBloc decimates to <=5 FPS (AD-02)
 UI --> StreamingSvc: 27. Async Flush 10s Compressed Telemetry Batches [IF-12]
 activate StreamingSvc
 StreamingSvc --> StreamWorkers: 28. Forward Telemetry Stream Batches (gRPC)
@@ -1106,7 +1125,8 @@ deactivate StreamWorkers
 deactivate StreamingSvc
 
 == Phase 5: Apnea Breach Detection & Tier-1 Local Alarm / Tap 'I'm Safe' (Task_TapSafe) ==
-Sensor --> UI: 31. Airflow Signal Drops below Threshold (< 0.10 * Vpp for 30s)
+Sensor -> Receiver: 31. Airflow samples pushed to unified queue drop below Threshold (< 0.10 * Vpp for 30s)
+Receiver --> UI: 31a. ApneaEvaluator (subscribed to same queue, AD-12) flags sustained breach
 UI -> UI: 32. Trigger Tier-1 Local Siren & High-Priority Visual Overlay (MOB_TIER1_ALARM)
 UI --> StreamingSvc: 33. Push Emergency Alert & 30s Countdown Token [IF-13]
 activate StreamingSvc
@@ -1128,7 +1148,8 @@ end
 
 == Phase 6: Morning Session Conclusion & Sleep Report Sync (Task_EndSession) ==
 Patient -> UI: 40. Wake Up & Tap "End Sleep Session" (MOB_SLEEP_SUMMARY)
-UI --> Sensor: 41. Disconnect BLE GATT Channel
+UI -> Receiver: 41. stopTelemetryLogging() — stop pushing samples; receiver service + unified queue stay resident for next session (AD-12)
+deactivate Receiver
 UI --> StreamingSvc: 42. End Session Notification [IF-16]\n{ session_id, end_time, total_duration_seconds, final_ahi_score }
 activate StreamingSvc
 StreamingSvc --> AppDB: 43. Finalize SleepSession Record & Update AHI Score
@@ -1148,25 +1169,28 @@ deactivate UI
 
 #### 📖 Detailed End-to-End Execution Flow Narrative (`Patient Sleep Operations Journey`)
 
-The **Patient Sleep Operations Journey** (`Lane_PatientAtHome` / Swimlane 3) models the complete nocturnal lifecycle from biometric login through morning report generation across 6 sequential phases:
+The **Patient Sleep Operations Journey** (`Lane_PatientAtHome` / Swimlane 3) models the complete nocturnal lifecycle from app boot through morning report generation across 7 sequential phases:
+
+0. **Phase 0: App Boot — BLE Background Receiver Start (`AD-12`, PRD `FR-1.11`):**  
+   On application launch the composition root starts the **BLE Background Receiver Service** (Android Foreground Service with a persistent notification / iOS `bluetooth-central` background mode) and DI-binds exactly one `IBLESensorDriver` (physical `FlutterBlueSensorDriver` in production, `BleTelemetryService` simulator in `DEV_MODE`). The service opens a single process-wide `BehaviorSubject<double>` unified queue (seeded) and, from this point on, every inbound sample — a physical D-BAND GATT notification or an in-process simulator tick — is pushed into that one queue via RxDart `.add()`. The physical radio link (`scanAndConnect`) is established lazily when a bound D-BAND is in range or the first consumer requires it; the service and queue then stay resident for the whole process lifetime, so no later phase opens its own BLE subscription.
 
 1. **Phase 1: Passkey Biometric Login (`Task_PasskeyAuth`):**  
-   The patient launches the app at bedtime on `MOB_PASSKEY_AUTH`. The Patient App UI fetches a WebAuthn challenge nonce from the **Auth Service** (`IF-09`), prompts the OS **Secure Enclave** for biometric scan (`FaceID / TouchID`), signs the nonce in hardware, and submits the assertion payload (`IF-10`) to the Auth Service. Upon verification and non-blocking audit logging by the **Audit Service** (`IF-19`), the App UI receives a session authorization confirmation and auto-advances to `MOB_CALIBRATION_STAGE1`.
+   The patient taps *"Start Bedtime Monitoring"* on `MOB_PASSKEY_AUTH`. The Patient App UI fetches a WebAuthn challenge nonce from the **Auth Service** (`IF-09`), prompts the OS **Secure Enclave** for biometric scan (`FaceID / TouchID`), signs the nonce in hardware, and submits the assertion payload (`IF-10`) to the Auth Service. Upon verification and non-blocking audit logging by the **Audit Service** (`IF-19`), the App UI receives a session authorization confirmation and auto-advances to `MOB_CALIBRATION_STAGE1`.
 
 2. **Phase 2: Stage 1 Idle Noise Calibration (`Task_Stage1Cal`):**  
-   The patient places the sensor on the bedside table and taps *"Start 10s Calibration"* on `MOB_CALIBRATION_STAGE1`. The App UI opens a BLE GATT channel to the **Small Breathing Device** (`0x2A37` characteristic [IF-11]) and samples ambient differential pressure for 10s. The local Dart FFT isolate computes $N_{\text{idle}}$ baseline noise floor and advances to `MOB_CALIBRATION_STAGE2`.
+   The patient places the sensor on the bedside table and taps *"Start 10s Calibration"* on `MOB_CALIBRATION_STAGE1`. The App UI **subscribes to the unified queue already streaming since Phase 0** (`AD-12`; no new GATT channel) and reads a 10s window of ambient differential pressure. The local Dart FFT isolate computes $N_{\text{idle}}$ baseline noise floor and advances to `MOB_CALIBRATION_STAGE2`.
 
 3. **Phase 3: Stage 2 Active Breath Calibration (`Task_Stage2Cal`):**  
-   The patient attaches the sensor mask and breathes normally for 30s on `MOB_CALIBRATION_STAGE2`. The App UI processes 30s peak-to-trough pressure waves (`IF-11`), calculates moving average breathing amplitude ($V_{pp}$), computes apnea threshold ($0.10 \times V_{pp}$), saves baseline metrics to the **Application Database**, and auto-advances to `MOB_SLEEP_MONITOR`.
+   The patient attaches the sensor mask and breathes normally for 30s on `MOB_CALIBRATION_STAGE2`. Reading the **same unified queue** (`IF-11`, `AD-12`), the App UI processes 30s peak-to-trough pressure waves, calculates moving average breathing amplitude ($V_{pp}$), computes apnea threshold ($0.10 \times V_{pp}$), saves baseline metrics to the **Application Database**, and auto-advances to `MOB_SLEEP_MONITOR`.
 
 4. **Phase 4: Continuous Sleep Monitoring & Bio-Signal Streaming (`Task_SleepMonitoring`):**  
-   The App UI locks the screen in 0-FPS Night Mode (`#000000` with pulsing green heartbeat dot). The **Small Breathing Device** streams 100ms bio-signal GATT notifications over BLE (`IF-11`). The App UI buffers data in a local 1-hour circular RAM ring buffer and asynchronously flushes 10s compressed telemetry batches to the **Data Streaming Service** (`IF-12`). The Streaming Service forwards batches via gRPC to **Stream Processing Workers**, which store compressed blobs in the **Bio-Signal Time-Series Store** and evaluate AASM 90% airflow drop rules.
+   The App UI locks the screen in 0-FPS Night Mode (`#000000` with pulsing green heartbeat dot). The **BLE Background Receiver Service** continues pushing 100ms (10Hz) bio-signal samples into the unified `BehaviorSubject<double>` queue (`IF-11`, `AD-12`); `SleepMonitoringBloc` and `ApneaEvaluator` consume that one stream while `BleBloc` decimates it to ≤5 FPS for UI rendering (`AD-02`). The App UI buffers data in a local 1-hour circular RAM ring buffer and asynchronously flushes 10s compressed telemetry batches to the **Data Streaming Service** (`IF-12`). The Streaming Service forwards batches via gRPC to **Stream Processing Workers**, which store compressed blobs in the **Bio-Signal Time-Series Store** and evaluate AASM 90% airflow drop rules.
 
 5. **Phase 5: Apnea Breach Detection & Tier-1 Local Alarm / Safety Tap (`Task_TapSafe`):**  
    When airflow drops below threshold ($< 0.10 \times V_{pp}$ for $\ge 10\text{s}$), the App UI immediately pops `MOB_TIER1_ALARM`, triggering a local 120dB siren and flashing visual overlay in $<200\text{ms}$. Simultaneously, a 30s cancellation token is pushed to the **Application Database** (`IF-13`). If the patient taps *"I'M SAFE - DISMISS ALARM"* within 30s, the App UI silences the siren, updates `patient_acknowledged = true`, and transitions to `MOB_ALARM_CANCELED`. If the 30s timer expires without a tap, the system triggers Tier-2 Command Center escalation (`IF-13`).
 
 6. **Phase 6: Morning Session Conclusion & Sleep Report Sync (`Task_EndSession`):**  
-   In the morning, the patient taps *"End Sleep Session"* on `MOB_SLEEP_SUMMARY`. The App UI closes the BLE GATT connection and sends a session end payload (`IF-16`) to the **Data Streaming Service**. The backend updates the `SleepSession` record in the **Application Database**, computes overnight AHI index, records an audit log entry in the **Audit Service** (`IF-19`), and returns the report summary payload to render on `MOB_SLEEP_SUMMARY`.
+   In the morning, the patient taps *"End Sleep Session"* on `MOB_SLEEP_SUMMARY`. The App UI calls `stopTelemetryLogging()` — the driver stops pushing samples, but per `AD-12` the **BLE Background Receiver Service and the unified queue stay resident** for the next session (they are torn down only on process exit). The App UI sends a session end payload (`IF-16`) to the **Data Streaming Service**. The backend updates the `SleepSession` record in the **Application Database**, computes overnight AHI index, records an audit log entry in the **Audit Service** (`IF-19`), and returns the report summary payload to render on `MOB_SLEEP_SUMMARY`.
 
 ---
 
@@ -1538,19 +1562,23 @@ The mobile application is engineered using **Flutter (Dart)** to deliver a produ
 
 #### 1. Atomic Design System Hierarchy
 
-Component architecture is partitioned into 4 distinct design system layers:
+Component architecture is partitioned into 4 distinct design system layers. Each layer may compose only the layer directly above it — an Organism combines Molecules and Atoms, never another Organism:
 
-```
-[ Atoms: flutter_shadcn / shadcn_ui ]  <-- Indivisible UI Primitives
-                   |
-                   v
-[ Molecules: Pure Visual Composite Widgets ]  <-- Presentation Only (Zero Business Logic)
-                   |
-                   v
-[ Organisms: Feature State & Logic Bound Widgets ]  <-- BLoC Binders & Reactive Streams
-                   |
-                   v
-[ Templates & Pages: Full Screen Navigation Views ]  <-- Screen Layouts & Routing
+```mermaid
+graph TD
+    Atoms["Atoms — flutter_shadcn / shadcn_ui<br/>Indivisible UI primitives (ShadButton, ShadCard, ...)"]
+    Molecules["Molecules — pure visual composite widgets<br/>Presentation only · zero business logic, API calls or state imports"]
+    Organisms["Organisms — feature state and logic-bound widgets<br/>Bind to BLoC / RxDart controllers · own local event streams"]
+    Pages["Templates and Pages — full-screen navigation views<br/>Screen layouts, BLoC injection and routing"]
+
+    Atoms -- "composed into" --> Molecules
+    Molecules -- "composed into" --> Organisms
+    Organisms -- "composed into" --> Pages
+
+    style Atoms fill:#EFF6FF,stroke:#1D4ED8,stroke-width:2px
+    style Molecules fill:#F0FDF4,stroke:#166534,stroke-width:2px
+    style Organisms fill:#FFFBEB,stroke:#B45309,stroke-width:2px
+    style Pages fill:#FDF4FF,stroke:#7E22CE,stroke-width:2px
 ```
 
 * **Atoms (UI Kit Base — `flutter_shadcn` / `shadcn_ui`):**  
@@ -1572,24 +1600,43 @@ Component architecture is partitioned into 4 distinct design system layers:
 
 #### 2. Unidirectional Data Flow & ReactiveX (RxDart / BLoC) Architecture
 
-To prevent state corruption and race conditions during high-frequency telemetry streaming, the client enforces a **Single Source of Truth & One-Way Data Binding Invariant**:
+To prevent state corruption and race conditions during high-frequency telemetry streaming, the client enforces a **Single Source of Truth & One-Way Data Binding Invariant** — one queue in, immutable state out, and the View is a passive observer that never writes back:
 
-```
-[ User Interaction / BLE Event ]  --->  [ BLoC Event Input Stream ]
-                                                 |
-                                          RxDart Pipeline
-                                  (map, debounce, switchMap)
-                                                 |
-                                                 v
-[ UI View (BlocBuilder / StreamBuilder) ]  <---  [ Immutable State Output Stream ]
+```mermaid
+graph TD
+    GATT["D-BAND GATT notification<br/>(FlutterBlueSensorDriver)"]
+    Sim["Simulator tick<br/>(BleTelemetryService · DEV_MODE)"]
+    Queue["Single process-wide BehaviorSubject&lt;double&gt; unified queue<br/>App-Boot Background BLE Receiver · one active IBLESensorDriver by DI (AD-11, AD-12)"]
+    Stage1["Stage-1 idle calibration<br/>full 10Hz window → N_idle"]
+    Stage2["Stage-2 active-breath calibration<br/>full 10Hz window → V_pp, 0.10·V_pp threshold"]
+    Monitor["SleepMonitoringBloc / ApneaEvaluator<br/>AASM breach detection"]
+    Pipeline["RxDart UI pipeline<br/>sampleTime(200ms) · distinct · switchMap<br/>(10Hz decimated to ≤5 FPS — AD-02, AD-06)"]
+    State["Immutable State output stream"]
+    View["UI View — BlocBuilder / StreamBuilder<br/>passive observer · no state mutation or side-effects in build()"]
+
+    GATT -- ".add()" --> Queue
+    Sim -- ".add()" --> Queue
+    Queue --> Stage1
+    Queue --> Stage2
+    Queue --> Monitor
+    Monitor --> Pipeline
+    Pipeline --> State
+    State --> View
+
+    style Queue fill:#F0FDF4,stroke:#166534,stroke-width:2px
+    style Pipeline fill:#FFFBEB,stroke:#B45309,stroke-width:2px
+    style State fill:#FDF4FF,stroke:#7E22CE,stroke-width:2px
+    style View fill:#EFF6FF,stroke:#1D4ED8,stroke-width:2px
 ```
 
+* **Single On-Device Ingestion Entry Point (`AD-12`):** Every bio-signal consumer subscribes to **one** `BehaviorSubject<double>` owned by the boot-time BLE background receiver service. Both the physical driver (`FlutterBlueSensorDriver`) and the simulator (`BleTelemetryService`) feed it through the same `IBLESensorDriver.thermalStream` contract (`AD-11`), so swapping drivers by DI never changes the queue or forces a re-subscribe. No screen or BLoC opens its own BLE subscription or a second queue.
 * **One-Way Data Binding:** UI Views are strictly passive observers. They NEVER mutate state directly or trigger side-effects inside layout build methods. Views render exclusively based on the latest immutable `State` object emitted by a `Bloc` or `BehaviorSubject`.
 * **ReactiveX Stream Operators (`RxDart`):**  
   State controllers and repositories utilize `RxDart` stream transformers to manage continuous telemetry streams and async API workflows:
-  * `BehaviorSubject<TelemetryPacket>`: Holds latest BLE 10Hz notification payload for instant UI subscriber initialization.
+  * `BehaviorSubject<double>` (seeded): The unified bio-signal queue above — holds the latest 10Hz sample so a screen opened mid-stream (e.g. the calibration page after boot) initializes instantly.
+  * `sampleTime(Duration(milliseconds: 200))`: Decimates the 10Hz queue to ≤5 FPS for UI-facing BLoCs, protecting the AD-06 battery budget (`BleBloc` uses `sampleTime(200ms).distinct().switchMap(...)`).
   * `debounceTime(Duration(milliseconds: 300))`: Throttles rapid UI touch events (e.g. search inputs, history filter toggles).
-  * `distinctUntilChanged()`: Filters redundant state emissions, eliminating unnecessary widget re-builds.
+  * `distinctUntilChanged()` / `distinct()`: Filters redundant state emissions, eliminating unnecessary widget re-builds.
   * `switchMap()`: Cancels inflight API requests when a new search or filter event arrives.
   * `catchError()`: Encapsulates network/BLE exceptions into typed failure states (`BleConnectionFailure`, `ApiTimeoutFailure`).
 
@@ -1604,6 +1651,19 @@ Building upon the chart implementations in `dennis-masker` (which utilized `vict
 | **`CHART-03: CircularProgressMetricRings`** | **Molecule Component:** Animated Progress Metric Rings | CustomPainter / Shader Mask | Stage 1/2 Calibration progress %, Sleep Quality Score % (0–100), and AHI severity ring. | GPU animated stroke sweep with HSL dynamic status colors (Green = Normal, Orange = Hypopnea, Red = Apnea). |
 | **`CHART-04: MultiAxisHistoricalSessionChart`** | **Organism Component:** Interactive Multi-Series Chart | `fl_chart` + Touch Gestures | 8-hour overnight AHI event markers, SpO2 trend, and respiratory amplitude curves with pinch-to-zoom. | Interactive panning & zoom with lazy segment loading from local SQLCipher database. |
 
+#### 4. App-Boot Background BLE Receiver & OS Background-Execution Envelope (`AD-12`, PRD `FR-1.11`)
+
+The unified `BehaviorSubject<double>` bio-signal queue is owned by a **process-wide singleton receiver service started from the composition root at `main()`**, before the first route is pushed. It must keep receiving BLE GATT notifications while the screen is locked in 0-FPS Night Mode (`AD-06`) across an 8+ hour session, which requires explicit OS background-execution grants:
+
+| Platform | Background-Execution Mechanism | Required Manifest / Capability Keys | Notes |
+| :--- | :--- | :--- | :--- |
+| **Android** | Foreground Service with persistent notification | `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE` (API 34+), `POST_NOTIFICATIONS` (API 33+), `BLUETOOTH_SCAN` / `BLUETOOTH_CONNECT` (API 31+); `foregroundServiceType="connectedDevice\|dataSync"` | Service starts at boot; ongoing notification is non-dismissible during an active session. Doze / App Standby exempt while the FGS runs. |
+| **iOS** | Core Bluetooth central background mode | `UIBackgroundModes` = `bluetooth-central`; `NSBluetoothAlwaysUsageDescription` | State-preservation & restoration keyed to the single central manager instance; no background *scanning* for unbound devices — the bound D-BAND is reconnected on advertisement. |
+
+* **Lifecycle invariant:** the receiver service and its queue are created once per process and torn down only on process exit. `EndSession` (`Task_EndSession`) calls `stopTelemetryLogging()` on the bound driver; it does **not** dispose the queue.
+* **Battery:** the always-resident service is signal-plumbing only (no FFT, no rendering); FFT/detection stay on `FFTIsolate` / `TelemetryIsolate` (`AD-10`), keeping the `<8%` / 8 h budget (`AD-06`).
+* **`DEV_MODE`:** the DI-bound driver is `BleTelemetryService` (in-process simulator, `AD-08`), which needs no OS background grant — the simulator `Timer` feeds the same queue, so calibration/monitoring code paths are identical to production.
+
 ---
 
 ## 4. 🛡️ Security Architecture & Threat Modeling (PRD & HIPAA Aligned)
@@ -1616,24 +1676,34 @@ The platform's functional requirements (FR-1 through FR-5), data schema invarian
 
 The system architecture spans **4 distinct Trust Boundaries (TB)** across edge hardware, mobile operating systems, cloud microservices, and external partner gateways:
 
+The five zones stack from the physical edge down to external partners. **Each gap between two boxes is a trust boundary (`TB-n`)** — the labelled table below gives the transport, control, and primary threats for that crossing.
+
+```mermaid
+flowchart TB
+    Z1["🔌 Edge Hardware<br/>D-BAND BLE Sensor"]
+    Z2["📱 Patient Mobile / Web Clients<br/>Mobile App · Web Portals · untrusted device OS"]
+    Z3["🌐 Cloud Public Ingress<br/>API Gateway · Load Balancer"]
+    Z4["🔒 Internal Microservice Mesh<br/>Auth · Profile · Streaming · Audit · Data Stores"]
+    Z5["📤 External Partner Gateways<br/>Twilio Telephony · EMS 911 CAD"]
+
+    Z1 <== "TB-1" ==> Z2
+    Z2 <== "TB-2" ==> Z3
+    Z3 <== "TB-3" ==> Z4
+    Z4 <== "TB-4" ==> Z5
+
+    style Z1 fill:#EFF6FF,stroke:#1D4ED8,stroke-width:2px,color:#0F172A
+    style Z2 fill:#F0FDF4,stroke:#166534,stroke-width:2px,color:#0F172A
+    style Z3 fill:#FFFBEB,stroke:#B45309,stroke-width:2px,color:#0F172A
+    style Z4 fill:#FDF4FF,stroke:#7E22CE,stroke-width:2px,color:#0F172A
+    style Z5 fill:#FEF2F2,stroke:#991B1B,stroke-width:2px,color:#0F172A
 ```
-[ Trust Boundary 1: Hardware-to-Mobile Edge ]
-  Small Breathing Device (Sensor) <--- BLE GATT (AES-128 Encryption) ---> Patient Edge Mobile App
 
-[ Trust Boundary 2: Client-to-Cloud Public Ingress ]
-  Patient Mobile App / Web Portals <--- HTTPS TLS 1.3 / WSS ---> Cloud API Gateway / Load Balancer
-
-[ Trust Boundary 3: Internal Microservice Mesh & Event Bus ]
-  API Gateway <--- Service Mesh mTLS / gRPC ---> Microservices (Auth, Profile, Streaming, Audit) <---> Data Stores
-
-[ Trust Boundary 4: External Partner & Emergency Gateways ]
-  Platform Backend <--- REST / mTLS ---> Twilio SMS & Telephony / EMS 911 CAD Gateway
-```
-
-* **Trust Boundary 1 (TB-1: Edge Hardware Link):** Covers 100ms BLE GATT notifications between `Small Breathing Device` and `Patient Edge Mobile App`. Vulnerable to BLE MAC spoofing, RF jamming, or unencrypted telemetry eavesdropping.
-* **Trust Boundary 2 (TB-2: Client Ingress Gateway):** Covers all public ingress connections over HTTPS TLS 1.3 and WSS. Vulnerable to MITM interception, brute-force passkey credential stuffing, JWT token forgery, or DDoS floods.
-* **Trust Boundary 3 (TB-3: Internal Service Mesh):** Covers internal microservice-to-microservice gRPC calls and event streaming (`PhiAuditLog`, `TelemetryStream`). Vulnerable to lateral movement, internal privilege escalation, or unauthorized database mutations.
-* **Trust Boundary 4 (TB-4: External Gateways):** Covers outbound integrations to Twilio Telephony (`IF-14`) and Local EMS CAD Gateways (`IF-15`). Vulnerable to webhook spoofing, SMS interception, or unauthenticated CAD command injection.
+| Boundary | Crossing | Transport & control | Primary threats |
+| :--- | :--- | :--- | :--- |
+| **TB-1** — Edge hardware link | BLE Sensor ↔ Mobile App | 100 ms BLE GATT notifications; AES-128 link encryption; out-of-band MAC pairing | BLE MAC spoofing, RF jamming, telemetry eavesdropping |
+| **TB-2** — Client ingress | Mobile App / Web Portals ↔ Cloud API Gateway | HTTPS **TLS 1.3** + certificate pinning; WSS | MITM interception, passkey credential stuffing, JWT forgery, DDoS floods |
+| **TB-3** — Internal service mesh | API Gateway ↔ Microservices ↔ Data Stores | Service-mesh **mTLS** over gRPC/HTTP2; private DB endpoints; event streams (`PhiAuditLog`, `TelemetryStream`) | Lateral movement, internal privilege escalation, unauthorized DB mutation |
+| **TB-4** — External gateways | Platform backend ↔ Twilio (`IF-14`) / EMS 911 CAD (`IF-15`) | REST over **mTLS**; HMAC-signed webhooks; egress FQDN allowlist | Webhook spoofing, SMS interception, unauthenticated CAD command injection |
 
 ---
 
@@ -1813,48 +1883,29 @@ The platform architecture is designed to satisfy both **US HIPAA Security & Priv
 
 To satisfy HIPAA §164.312(e)(1) Transmission Security and protect the platform against Layer 3/4/7 Distributed Denial of Service (DDoS) attacks, OWASP Top 10 web vulnerabilities, unauthorized lateral network movement, and malicious data exfiltration, the cloud infrastructure is partitioned across **generic network security zones** guarded by **Cloud WAF, Global CDN, i-DMZ (Ingress DMZ), e-DMZ (Egress DMZ), and Next-Gen Firewalls**.
 
+```mermaid
+architecture-beta
+    group vpc[Private Cloud VPC]
+
+    service internet(internet)[Public Internet]
+    service edge(cloud)[Edge Perimeter CDN and WAF]
+    service idmz(server)[i-DMZ Ingress Zone] in vpc
+    service core(server)[Application Core Zone] in vpc
+    service data(database)[Isolated Data Zone] in vpc
+    service edmz(server)[e-DMZ Egress Zone] in vpc
+    service partners(cloud)[Allowlisted External Partners]
+
+    internet:B --> T:edge
+    edge:B --> T:idmz
+    idmz:B --> T:core
+    core:B --> T:data
+    core:R --> L:edmz
+    edmz:R --> L:partners
 ```
-                           [ PUBLIC INTERNET ]
-                                    |
-                    (HTTPS TLS 1.3 / WSS Port 443)
-                                    v
-     +-------------------------------------------------------------+
-     | 🌐 EDGE PERIMETER: Global CDN + Cloud WAF                   |
-     | - Layer 3/4/7 DDoS Mitigation (Cloud DDoS Defense)          |
-     | - OWASP Top 10 Inspection & Bot Management                  |
-     | - IP Rate Limiting (Max 100 req/min per IP)                |
-     +-------------------------------------------------------------+
-                                    |
-                    (Strict TLS 1.3 Pinning / WSS)
-                                    v
-     +-------------------------------------------------------------+
-     | 🛡️ i-DMZ (INGRESS DMZ ZONE): Public Ingress Subnets          |
-     | - Application Load Balancer (ALB / NLB)                     |
-     | - API Gateway Proxies & WSS Ingress Gateway                 |
-     | - TLS 1.3 Termination & Certificate Pinning Validation     |
-     +-------------------------------------------------------------+
-                                    |
-                    (Internal Network Load Balancer)
-                                    v
-     +-------------------------------------------------------------+
-     | 🔒 APPLICATION CORE ZONE: Private App Subnets (Container)   |
-     | - Microservices: Auth, Profile, Device, Telephony, Audit   |
-     | - Stream Ingestion Workers & AASM Rules Engine              |
-     | - Encrypted Service Mesh (Istio / Linkerd mTLS over HTTP/2) |
-     +-------------------------------------------------------------+
-                    |                               |
-       (Private Endpoint / mTLS)        (Egress Proxy / NAT)
-                    v                               v
-+-----------------------+   +------------------------------------+
-| 💾 ISOLATED DATA ZONE |   | 📤 e-DMZ (EGRESS DMZ ZONE)         |
-| - Application DB      |   | - NAT Gateways                     |
-| - Timeseries DB       |   | - Egress Next-Gen Firewall (NGFW)  |
-| - Cloud KMS / HSM     |   | - Outbound Domain FQDN Whitelist:  |
-| (Zero Internet Access)|   |   * api.twilio.com (SMS/Voice)     |
-+-----------------------+   |   * fcm.googleapis.com (Push Wipes)|
-                            |   * cad.ems.gov (911 Dispatch)     |
-                            +------------------------------------+
-```
+
+> **Zone contents.** **Edge Perimeter** — Global CDN + Cloud WAF: Layer 3/4/7 DDoS mitigation, OWASP Top 10 inspection, bot management, IP rate limiting (100 req/min per IP). **i-DMZ** — public ingress subnets: ALB / NLB, API Gateway proxies, WSS ingress gateway, TLS 1.3 termination + certificate-pinning validation. **Application Core** — private container subnets: `Auth` / `Profile` / `Device` / `Telephony` / `Audit` microservices, stream ingestion workers + AASM rules engine, Istio / Linkerd mTLS service mesh. **Isolated Data Zone** — no internet gateway: Application DB, Timeseries DB, Cloud KMS / HSM. **e-DMZ** — outbound only: NAT gateways, Egress NGFW, strict outbound FQDN allowlist (`api.twilio.com`, `fcm.googleapis.com`, `cad.ems.gov`).
+>
+> **Transport per hop.** Internet → Edge `HTTPS TLS 1.3 / WSS :443` · Edge → i-DMZ `strict TLS 1.3 + cert pinning / WSS` · i-DMZ → Core `internal NLB` · Core → Data `private endpoint / service-mesh mTLS` · Core → e-DMZ `egress proxy / NAT` · e-DMZ → Partners `TLS 1.3 + HMAC, allowlisted FQDN only`.
 
 #### 1. Edge Perimeter Defense: Cloud WAF & Global CDN
 * **DDoS Mitigation (Layer 3/4/7):** All public entry points pass through **Enterprise Cloud DDoS Protection Services**, automatically absorbing volumetric SYN floods, UDP amplification, and Layer 7 HTTP flood attacks.
@@ -1895,78 +1946,30 @@ To support real-time 10Hz bio-signal stream processing, high availability, sub-s
 
 The conceptual infrastructure architecture organizes cloud services into 7 decoupled operational zones, establishing clean separation between edge devices, public ingress, real-time streaming, core application processing, persistent storage, and outbound integrations:
 
+The diagram shows the **flow between the 7 zones** (one `architecture-beta` node per zone); the services inside each zone are enumerated in *Conceptual Zone Specifications* below.
+
 ```mermaid
-graph TD
-    subgraph ZONE1["📱 Zone 1: Edge Client & Sensor Array"]
-        Sensor["Small Breathing Device<br/>(BLE GATT Sensor)"]
-        MobileApp["Flutter Mobile Application<br/>(OS Secure Enclave & SQLCipher DB)"]
-    end
+architecture-beta
+    service z1(server)[Zone 1 Edge Client and Sensor Array]
+    service z2(cloud)[Zone 2 Global Edge Perimeter and Ingress iDMZ]
+    service z3(server)[Zone 3 Realtime Telemetry and Event Streaming Bus]
+    service z4(server)[Zone 4 Microservices and Serverless Core]
+    service z5(database)[Zone 5 Air Gapped Data Storage]
+    service z6(cloud)[Zone 6 Egress Proxy and Outbound Integration eDMZ]
+    service z7(cloud)[Zone 7 Observability and Mobile Integrity]
 
-    subgraph ZONE2["🌐 Zone 2: Global Edge Perimeter & Ingress (i-DMZ)"]
-        CDN_WAF["Global Edge CDN & Cloud WAF<br/>(Layer 3/4/7 DDoS & OWASP Rules)"]
-        LoadBalancer["Ingress Application Load Balancer<br/>(TLS 1.3 Termination & Cert Pinning)"]
-        APIGateway["Public API Gateway & WSS Feed<br/>(Rate Limiting & Token Check)"]
-    end
-
-    subgraph ZONE3["⚡ Zone 3: Real-Time Telemetry & Event Streaming Bus"]
-        MessageQueue["High-Throughput Streaming Bus<br/>(PubSub Message Queue)"]
-        StreamWorker["Stream Processing Pipeline<br/>(Snappy/Zstd Compression & AASM Rules)"]
-    end
-
-    subgraph ZONE4["⚙️ Zone 4: Microservices & Serverless Execution Core"]
-        AuthSvc["Authentication Service<br/>(WebAuthn FIDO2 & Token Provider)"]
-        ProfileSvc["Patient Profile & FHIR Service<br/>(Demographics & EHR Export)"]
-        DeviceSvc["Device Management Service<br/>(Hardware Binding & Revocation)"]
-        DispatchSvc["Emergency Command Portal Backend<br/>(30s Apnea Alert Manager)"]
-        AuditSvc["HIPAA Audit Logging Service<br/>(Write-Once Event Logger)"]
-    end
-
-    subgraph ZONE5["💾 Zone 5: Air-Gapped Persistent Data Storage Zone"]
-        RelationalDB["Managed Relational Database<br/>(PatientUser, HealthBaseline, Access Controls)"]
-        TimeseriesDB["Time-Series Telemetry DB<br/>(Compressed Bio-Signals & AHI Events)"]
-        KMS["Cloud Key Management Service (KMS/HSM)<br/>(Master Key & Envelope AES-256-GCM)"]
-    end
-
-    subgraph ZONE6["📤 Zone 6: Egress Proxy & Outbound Integration (e-DMZ)"]
-        EgressProxy["Egress NAT Gateway & Firewall Proxy<br/>(FQDN Whitelist Inspection)"]
-        TwilioGateway["Telephony Gateway<br/>(Twilio Voice & SMS Alerts)"]
-        EMSCadGateway["Local EMS CAD Gateway<br/>(911 CAD Dispatch Integration)"]
-        PushNotification["Push Notification Service<br/>(Apple APNs & FCM Priority Wipes)"]
-    end
-
-    subgraph ZONE7["📊 Zone 7: Observability, Crash Analytics & App Attestation"]
-        AppAttest["App Attest & Integrity Service<br/>(Anti-Tampering & Device Attestation)"]
-        Monitoring["Telemetry & Performance Monitoring<br/>(Crashlytics, Tracing & Metrics)"]
-    end
-
-    %% Flow Connections
-    Sensor -- "BLE GATT (AES-128 @ 10Hz)" --> MobileApp
-    MobileApp -- "HTTPS TLS 1.3 / WSS" --> CDN_WAF
-    CDN_WAF --> LoadBalancer
-    LoadBalancer --> APIGateway
-
-    APIGateway -- "10s Batch Stream" --> MessageQueue
-    MessageQueue --> StreamWorker
-    StreamWorker --> TimeseriesDB
-    StreamWorker -- "30s Unacknowledged Apnea" --> DispatchSvc
-
-    APIGateway --> AuthSvc
-    APIGateway --> ProfileSvc
-    APIGateway --> DeviceSvc
-
-    AuthSvc & ProfileSvc & DeviceSvc & DispatchSvc --> RelationalDB
-    AuthSvc & ProfileSvc & DeviceSvc & DispatchSvc -- "gRPC mTLS" --> AuditSvc
-    AuditSvc --> RelationalDB
-    RelationalDB <--> KMS
-
-    DispatchSvc --> EgressProxy
-    EgressProxy --> TwilioGateway
-    EgressProxy --> EMSCadGateway
-    EgressProxy --> PushNotification
-
-    MobileApp -. "App Attestation" .-> AppAttest
-    MobileApp -. "Crash & Performance" .-> Monitoring
+    z1:R --> L:z2
+    z2:R --> L:z3
+    z2:B --> T:z4
+    z3:R --> L:z4
+    z3:B --> T:z5
+    z4:B --> T:z5
+    z4:R --> L:z6
+    z1:B --> T:z7
 ```
+
+> **Inter-zone transport (`architecture-beta` has no edge labels):**
+> Z1 → Z2 `HTTPS TLS 1.3 / WSS` · Z2 → Z3 `10 s Snappy/Zstd-compressed telemetry batches` · Z2 → Z4 `authenticated REST / WebAuthn` · Z3 → Z4 `AASM apnea events` · Z3 → Z5 `compressed bio-signals + AHI events` · Z4 → Z5 `persist + write-once PhiAuditLog via gRPC mTLS; Relational DB ↔ KMS AES-256-GCM envelope` · Z4 → Z6 `30 s unacknowledged apnea → dispatch, behind FQDN allowlist` · Z1 ↔ Z7 `app attestation + crash / perf telemetry` (out-of-band).
 
 #### 📖 Conceptual Zone Specifications
 1. **Zone 1 (Edge Client & Sensor Array):** BLE sensor captures 10Hz differential pressure readings; Flutter mobile app executes Stage 1/2 calibration, stores local SQLCipher history, and buffers bio-signals.
@@ -2010,7 +2013,10 @@ To achieve production excellence, maximum operational efficiency, and sub-second
 To optimize mobile battery performance and eliminate network overhead on mobile devices, bio-signal telemetry streaming uses a **hybrid Firebase & GCP Cloud Pub/Sub ingestion architecture**:
 
 ```
-[ Sensor BLE (10Hz) ]  --->  [ Flutter App (10s Ring Buffer) ]
+[ Sensor BLE (10Hz) OR Simulator ]
+              |  .add()  (App-Boot BLE Background Receiver, AD-12)
+              v
+[ BehaviorSubject<double> Unified Queue ]  --->  [ Flutter App (10s Ring Buffer) ]
                                              |
                               (Protobuf / Snappy Compressed)
                                              |
@@ -2164,8 +2170,10 @@ This Architecture Specification provides the complete build substrate for downst
 
 * **Visual & Technical Precision:** Standard BPMN 2.0 vector diagram (`.svg`) + full `.bpmn` artifact for workflow engines, paired with PlantUML C4 Context, C4 Container, Conceptual Data Models, 7 End-to-End Sequence Diagrams, Cloud-Agnostic Infrastructure Mermaid Diagrams, and Firebase/GCP Mapping Tables.
 * **100% Traceability:** Links business process flows directly to software containers, generic integration patterns (`IF-01` to `IF-22`), database entities, STRIDE security threats, IAM/RBAC matrices, HIPAA/FDA regulatory compliance rules, i-DMZ/e-DMZ perimeter network defenses, and Firebase/GCP streaming pipelines under HIPAA Level 1 PHI vs Level 2 PII rules.
+* **System Invariants:** 12 architectural decisions (`AD-01` … `AD-12`) govern the mobile, BLE-driver, data, security, and UI layers. `AD-11` fixes `IBLESensorDriver` polymorphism + DI; `AD-12` (new, PRD `FR-1.11`) fixes the app-boot background BLE receiver service and the single process-wide `BehaviorSubject<double>` unified bio-signal queue that calibration and 8+ h monitoring both consume.
+* **Open call for confirmation (`AD-12`):** the receiver *service + queue* start at boot while the *physical radio link* (`scanAndConnect`) is established lazily. If `FR-1.11` intends a truly always-on radio link from launch, `AD-12`'s Rule and Sequence Diagram 4 Phase 0 need tightening — and the `AD-06` `<8%` / 8 h battery budget must be re-validated.
 * **Next Steps in BMad Workflow:**
-  1. **`bmad-create-epics-and-stories`**: Decompose this architecture into feature epics (Mobile Edge Engine, Cloud Ingestion Worker, WSS Dispatch Portal, Data Pipeline).
+  1. **`bmad-create-epics-and-stories`**: Decompose this architecture into feature epics (Mobile Edge Engine, Cloud Ingestion Worker, WSS Dispatch Portal, Data Pipeline). Refresh the requirements inventory with `FR-1.11` → `AD-12`.
   2. **`bmad-build`**: Implement clean, compliant working code artifacts following the invariants established in this specification.
 
 

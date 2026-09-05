@@ -12,10 +12,12 @@ enum SimulatorScenario {
   recovery,
 }
 
-class BleTelemetryService implements IBLESensorDriver {
-  static final BleTelemetryService _instance = BleTelemetryService._internal();
-  factory BleTelemetryService() => _instance;
-  BleTelemetryService._internal();
+/// Developer & QA Telemetry Simulator implementing [IBLESensorDriver].
+/// Generates synthetic 10Hz bio-signal streams and customizable test scenarios.
+class BleSimulatorDriver implements IBLESensorDriver {
+  static final BleSimulatorDriver _instance = BleSimulatorDriver._internal();
+  factory BleSimulatorDriver() => _instance;
+  BleSimulatorDriver._internal();
 
   BehaviorSubject<double> _signalSubject = BehaviorSubject<double>.seeded(5.0);
   BehaviorSubject<bool> _isSimulatorSubject = BehaviorSubject<bool>.seeded(true);
@@ -25,10 +27,7 @@ class BleTelemetryService implements IBLESensorDriver {
   ValueStream<double> get signalStream => _signalSubject.stream;
 
   @override
-  Stream<double> get thermalStream => _signalSubject.stream;
-
-  @override
-  double get apneaThreshold => 0.5;
+  double get signalThreshold => 0.5;
 
   ValueStream<bool> get isSimulatorStream => _isSimulatorSubject.stream;
   ValueStream<SimulatorScenario> get scenarioStream => _scenarioSubject.stream;
@@ -40,39 +39,78 @@ class BleTelemetryService implements IBLESensorDriver {
   Timer? _simulationTimer;
   double _step = 0.0;
 
+  BehaviorSubject<SensorMonitoringPhase> _phaseSubject =
+      BehaviorSubject<SensorMonitoringPhase>.seeded(SensorMonitoringPhase.disconnected);
+
+  @override
+  SensorMonitoringPhase get currentPhase => _phaseSubject.value;
+
+  @override
+  Stream<SensorMonitoringPhase> get phaseStream => _phaseSubject.stream;
+
   @override
   Future<bool> scanAndConnect() async {
     _isSimulatorSubject.add(true);
+    _phaseSubject.add(SensorMonitoringPhase.idle);
     return true;
   }
 
+  // --- Stage 1: Idle Room Noise Calibration Lifecycle ---
   @override
-  Future<double> calibrateStage1NoiseFloor() async {
+  Future<void> startIdleCalibration() async {
+    _phaseSubject.add(SensorMonitoringPhase.calibratingIdle);
     startSimulationScenario(SimulatorScenario.idleNoise);
+  }
+
+  @override
+  Future<double> stopIdleCalibration() async {
     await Future.delayed(const Duration(milliseconds: 800));
+    _phaseSubject.add(SensorMonitoringPhase.idle);
     return 0.4;
   }
 
   @override
-  Future<double> calibrateStage2ActiveBreath() async {
-    startSimulationScenario(SimulatorScenario.activeBreath);
-    await Future.delayed(const Duration(milliseconds: 800));
-    return 0.5;
+  Future<double> calibrateStage1NoiseFloor() async {
+    await startIdleCalibration();
+    return await stopIdleCalibration();
   }
 
   @override
-  void startTelemetryLogging() {
+  Future<double> calibrateStage1NoiseCeiling() async {
+    return await calibrateStage1NoiseFloor();
+  }
+
+  // --- Stage 2: Training Calibration Lifecycle ---
+  @override
+  Future<void> startTrainingCalibration() async {
+    _phaseSubject.add(SensorMonitoringPhase.calibratingTraining);
+    startSimulationScenario(SimulatorScenario.activeBreath);
+  }
+
+  @override
+  Future<double> stopTrainingCalibration() async {
+    await Future.delayed(const Duration(milliseconds: 800));
+    _phaseSubject.add(SensorMonitoringPhase.idle);
+    return 0.5;
+  }
+
+  // --- Stage 3: Nocturnal Sleeping Monitoring Lifecycle ---
+  @override
+  void startMonitoringSession() {
+    _phaseSubject.add(SensorMonitoringPhase.monitoring);
     startSimulationScenario(SimulatorScenario.normalRespiration);
   }
 
   @override
-  void stopTelemetryLogging() {
+  void stopMonitoringSession() {
     stopSimulation();
+    _phaseSubject.add(SensorMonitoringPhase.idle);
   }
 
   @override
   void disconnect() {
     stopSimulation();
+    _phaseSubject.add(SensorMonitoringPhase.disconnected);
   }
 
   void emitSignal(double value, {bool isSimulator = false}) {

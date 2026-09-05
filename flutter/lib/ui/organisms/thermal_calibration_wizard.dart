@@ -18,44 +18,24 @@ class ThermalCalibrationWizard extends StatefulWidget {
 }
 
 class _ThermalCalibrationWizardState extends State<ThermalCalibrationWizard> {
-  int _currentStep = 1;
   bool _isCalibrating = false;
   double _progress = 0.0;
-  String _statusText = "Place D-BAND on bedside table for room noise sampling";
+  String _statusText = "Place D-BAND on bedside table for ambient noise ceiling sampling";
 
-  void _runStage1() async {
+  void _runNoiseCeilingCalibration() async {
     setState(() {
       _isCalibrating = true;
-      _progress = 0.3;
-      _statusText = "Sampling ambient room noise floor (N_idle)...";
+      _progress = 0.5;
+      _statusText = "Sampling ambient room noise ceiling (N_idle)...";
     });
 
-    await widget.bleDriver.calibrateStage1NoiseFloor();
-
-    if (mounted) {
-      setState(() {
-        _isCalibrating = false;
-        _progress = 0.5;
-        _currentStep = 2;
-        _statusText = "Attach D-BAND to face & breathe normally for active training";
-      });
-    }
-  }
-
-  void _runStage2() async {
-    setState(() {
-      _isCalibrating = true;
-      _progress = 0.8;
-      _statusText = "Measuring active inhale/exhale thermal deviation (ΔT)...";
-    });
-
-    await widget.bleDriver.calibrateStage2ActiveBreath();
+    await widget.bleDriver.calibrateStage1NoiseCeiling();
 
     if (mounted) {
       setState(() {
         _isCalibrating = false;
         _progress = 1.0;
-        _statusText = "Calibration Verified ✓ — Apnea Threshold: ${widget.bleDriver.apneaThreshold.toStringAsFixed(2)} L/s";
+        _statusText = "Calibration Complete ✓ — Signal Threshold Set: ${widget.bleDriver.signalThreshold.toStringAsFixed(2)} L/s";
       });
       widget.onCalibrationComplete();
     }
@@ -83,9 +63,9 @@ class _ThermalCalibrationWizardState extends State<ThermalCalibrationWizard> {
                   borderRadius: BorderRadius.circular(9999),
                   border: Border.all(color: AppColors.accentGreen),
                 ),
-                child: Text(
-                  "STEP $_currentStep OF 2",
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.accentGreen),
+                child: const Text(
+                  "AUTOMATIC CALIBRATION",
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.accentGreen),
                 ),
               ),
               Text(
@@ -103,9 +83,9 @@ class _ThermalCalibrationWizardState extends State<ThermalCalibrationWizard> {
             borderRadius: BorderRadius.circular(3),
           ),
           const SizedBox(height: 16),
-          Text(
-            _currentStep == 1 ? "Stage 1: Ambient Room Noise Floor" : "Stage 2: Active Thermal Breath Baseline",
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+          const Text(
+            "Ambient Noise Ceiling Calibration",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
           ),
           const SizedBox(height: 6),
           Text(
@@ -113,20 +93,12 @@ class _ThermalCalibrationWizardState extends State<ThermalCalibrationWizard> {
             style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 20),
-          if (_currentStep == 1)
-            AppButton(
-              label: "Start Stage 1 Calibration",
-              isLoading: _isCalibrating,
-              variant: AppButtonVariant.primary,
-              onPressed: _runStage1,
-            )
-          else
-            AppButton(
-              label: "Start Stage 2 Calibration",
-              isLoading: _isCalibrating,
-              variant: AppButtonVariant.primary,
-              onPressed: _runStage2,
-            ),
+          AppButton(
+            label: "Calibrate Noise Ceiling",
+            isLoading: _isCalibrating,
+            variant: AppButtonVariant.primary,
+            onPressed: _runNoiseCeilingCalibration,
+          ),
         ],
       ),
     );

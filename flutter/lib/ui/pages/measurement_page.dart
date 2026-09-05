@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/ble/ble_sensor_driver.dart';
-import '../../core/ble/ble_telemetry_service.dart';
+import '../../core/ble/ble_simulator_driver.dart';
 import '../../core/ble/flutter_blue_sensor_driver.dart';
 import '../../core/ble/i_ble_sensor_driver.dart';
 import '../../core/monitoring/apnea_evaluator.dart';
@@ -28,7 +28,7 @@ class MeasurementPage extends StatefulWidget {
 
 class _MeasurementPageState extends State<MeasurementPage> {
   late final IBLESensorDriver _bleDriver;
-  final BleTelemetryService _telemetryService = BleTelemetryService();
+  final BleSimulatorDriver _telemetryService = BleSimulatorDriver();
   ApneaEvaluator? _apneaEvaluator;
   StreamSubscription<double>? _telemetrySub;
   StreamSubscription<double>? _serviceTelemetrySub;
@@ -49,7 +49,7 @@ class _MeasurementPageState extends State<MeasurementPage> {
     super.initState();
     // SOLID Dependency Injection: Inject real Bluetooth HW driver in production, simulator in dev mode
     _bleDriver = widget.sensorDriver ??
-        (_isDevMode ? BleTelemetryService() : FlutterBlueSensorDriver());
+        (_isDevMode ? BleSimulatorDriver() : FlutterBlueSensorDriver());
     _connectBle();
   }
 
@@ -65,7 +65,7 @@ class _MeasurementPageState extends State<MeasurementPage> {
   void _startSleepMonitoring() {
     if (!mounted) return;
 
-    _apneaEvaluator = ApneaEvaluator(threshold: _bleDriver.apneaThreshold);
+    _apneaEvaluator = ApneaEvaluator(threshold: _bleDriver.signalThreshold);
 
     _evaluatorStateSub = _apneaEvaluator!.stateStream.listen((state) {
       if (!mounted) return;
@@ -88,12 +88,12 @@ class _MeasurementPageState extends State<MeasurementPage> {
       }
     });
 
-    // Listen to IBLESensorDriver thermal stream (Real Hardware or Simulator)
-    _telemetrySub = _bleDriver.thermalStream.listen((signal) {
+    // Listen to IBLESensorDriver signal stream (Real Hardware or Simulator)
+    _telemetrySub = _bleDriver.signalStream.listen((signal) {
       _apneaEvaluator?.evaluateSignal(signal);
     });
 
-    // Listen to global BleTelemetryService background stream
+    // Listen to global BleSimulatorDriver background stream
     _serviceTelemetrySub = _telemetryService.signalStream.listen((signal) {
       _apneaEvaluator?.evaluateSignal(signal);
     });
@@ -102,7 +102,7 @@ class _MeasurementPageState extends State<MeasurementPage> {
       _isMonitoringActive = true;
     });
 
-    _bleDriver.startTelemetryLogging();
+    _bleDriver.startMonitoringSession();
   }
 
   void _stopSleepMonitoring() {
@@ -110,7 +110,7 @@ class _MeasurementPageState extends State<MeasurementPage> {
     _serviceTelemetrySub?.cancel();
     _evaluatorStateSub?.cancel();
     _apneaEvaluator?.dispose();
-    _bleDriver.stopTelemetryLogging();
+    _bleDriver.stopMonitoringSession();
 
     if (mounted) {
       setState(() {

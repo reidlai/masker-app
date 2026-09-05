@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/ble/ble_telemetry_service.dart';
+import '../../core/ble/ble_simulator_driver.dart';
 import '../../core/theme/app_theme.dart';
 import '../atoms/app_button.dart';
 
@@ -26,7 +26,7 @@ class BleSimulatorOrganism extends StatefulWidget {
 }
 
 class _BleSimulatorOrganismState extends State<BleSimulatorOrganism> {
-  final BleTelemetryService _telemetryService = BleTelemetryService();
+  final BleSimulatorDriver _telemetryService = BleSimulatorDriver();
 
   String _getScenarioName(SimulatorScenario scenario) {
     switch (scenario) {

@@ -17,6 +17,11 @@ The **D-BAND Integrated Platform** captures continuous 10Hz respiratory thermal 
 - **0-FPS Night Mode**: Pitch-black (`#000000`) screen lock state conserving phone battery (<8.0% over 8+ hours) during overnight logging.
 - **60 FPS GPU Waveform & Morning Summary**: Skia GPU-accelerated live line charts (`fl_chart`), 256-point FFT spectral graphs, AHI score rings, and signed FHIR JSON / PDF clinical report exports.
 
+### 🫁 Volumetric Airflow Baseline & Stream Seeding Rationale ($5.0\text{ L/s}$)
+- **Physiological Baseline ($5.0\text{ L/s}$)**: In adult respiratory physiology ($V_{\text{volumetric}} = f(\Delta T)$), resting peak-to-peak tidal volume airflow deviation ($V_{pp}$) averages between **4.0 L/s and 6.0 L/s** (centered at **5.0 L/s**).
+- **RxDart `BehaviorSubject` Seeding**: The background BLE receiver service (`BleReceiverService`) initializes its central RxDart `BehaviorSubject<double>` queue with a seeded baseline of `5.0 L/s` (`BehaviorSubject.seeded(5.0)`). This guarantees immediate valid baseline data to UI rendering widgets (`LiveWaveformChart`, `MeasurementPage`) upon subscription prior to receiving the first raw 10Hz BLE telemetry packet, eliminating zero-division or visual layout jump artifacts.
+- **AASM Apnea Ratio ($0.10 \times V_{pp}$)**: Seeding `5.0 L/s` establishes an initial zero-airflow AASM Obstructive Apnea threshold at $0.10 \times 5.0 = \mathbf{0.5\text{ L/s}}$, providing a physically accurate threshold ratio ($0.5\text{ L/s} \ll 5.0\text{ L/s}$) during initial calibration.
+
 ---
 
 ## 🛠️ Quick Start Guide

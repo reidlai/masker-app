@@ -1,16 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:masker_app/core/ble/ble_telemetry_service.dart';
+import 'package:masker_app/core/ble/ble_simulator_driver.dart';
 import 'package:masker_app/core/bloc/ble/ble_bloc.dart';
 import 'package:masker_app/core/bloc/ble/ble_event.dart';
 import 'package:masker_app/core/bloc/ble/ble_state.dart';
 
 void main() {
   group('BleBloc Unit Tests', () {
-    late BleTelemetryService service;
+    late BleSimulatorDriver service;
     late BleBloc bloc;
 
     setUp(() {
-      service = BleTelemetryService();
+      service = BleSimulatorDriver();
       service.resetForTest();
       bloc = BleBloc(telemetryService: service);
     });
