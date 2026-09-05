@@ -99,6 +99,7 @@ This document provides the complete epic and story breakdown for Sleep Apnea Det
 - **UX-DR3:** Implement Tier-1 local alarm overlay (`MOB_TIER1_ALARM`) featuring high-contrast flashing red/yellow banner (`#FF3B30`), 120dB siren, haptics, 30s countdown, and 64dp button ("I'M SAFE - DISMISS ALARM").
 - **UX-DR4:** Implement 2-stage thermal calibration wizard (`MOB_CALIBRATION_STAGE1` & `MOB_CALIBRATION_STAGE2`) with 10s circular progress ring and live thermal wave canvas.
 - **UX-DR5:** Implement Morning Sleep Summary Dashboard (`MOB_SLEEP_SUMMARY`) with total sleep duration, AHI severity badge, quality score ring, and doctor share trigger.
+- **UX-DR6:** Implement Bluetooth background-access priming (`MOB_BLE_PERMISSION_PRIMER`, first-run only) with native OS permission hand-off (Android sequential `BLUETOOTH_SCAN`/`BLUETOOTH_CONNECT` dialogs, iOS `bluetooth-central` disclosure), denial and partial-grant recovery on `MOB_DEVICE_PAIRING`, and the `BleReceiverForegroundNotification` / `BleNotProtectedNotification` persistent-notification pair confirming monitoring status.
 
 ### FR Coverage Map
 
@@ -142,8 +143,8 @@ Patients can perform passwordless FIDO2 Passkey registration using native biomet
 **FRs covered:** FR-5.1, FR-5.2, FR-5.5, FR-5.6 | **NFRs:** NFR-4.1, NFR-4.4, NFR-4.5 | **UX-DRs:** UX-DR1
 
 ### Epic 2: BLE Bluetooth Sensor Discovery, Pairing & Thermal Calibration (MVP1 - Active)
-Patients can turn on their D-BAND thermal sensor array, auto-discover and pair via encrypted BLE (BLE 4.0, 4.1, 4.2, 5.0+), execute Stage 1 room noise ($N_{\text{idle}}$) and Stage 2 active breath ($V_{pp}$) calibration, transform thermal $\Delta T$ into volumetric airflow rates, and enforce wear verification guardrails.
-**FRs covered:** FR-1.1, FR-1.2, FR-1.3, FR-1.4, FR-1.5, FR-1.6, FR-1.7, FR-1.8, FR-1.11 | **NFRs:** NFR-1.1, NFR-4.6, NFR-6.5 | **UX-DRs:** UX-DR4
+Patients grant Bluetooth background-access permission via a one-time priming screen, turn on their D-BAND thermal sensor array, auto-discover and pair via encrypted BLE (BLE 4.0, 4.1, 4.2, 5.0+), execute Stage 1 room noise ($N_{\text{idle}}$) and Stage 2 active breath ($V_{pp}$) calibration, transform thermal $\Delta T$ into volumetric airflow rates, and enforce wear verification guardrails.
+**FRs covered:** FR-1.1, FR-1.2, FR-1.3, FR-1.4, FR-1.5, FR-1.6, FR-1.7, FR-1.8, FR-1.11 | **NFRs:** NFR-1.1, NFR-4.6, NFR-6.5 | **UX-DRs:** UX-DR4, UX-DR6
 
 ### Epic 3: Nocturnal Sleep Apnea Monitoring & Tier-1 Local Emergency Alarm (MVP1 - Active)
 Patients can initiate overnight sleep monitoring in low-power 0-FPS Night Mode (`#000000`), record 10Hz background bio-signals into a circular RAM buffer, trigger real-time AASM apnea breach evaluation, sound an instant local audio siren & haptic alert (<200ms), tap "I'm Safe" within 30s or auto-silence upon 5s breathing recovery, and escalate to cloud caregiver SMS/Voice calls upon unacknowledged alerts.
@@ -290,6 +291,24 @@ So that downstream calibration stages and continuous sleep monitoring consume bi
 - **Then** `IBLESensorDriver` begins listening for telemetry packets.
 - **And** incoming raw thermal/volumetric packets are pushed into an RxDart `BehaviorSubject<double>` reactive stream queue via `.add()`.
 - **And** downstream consumers (`MeasurementPage` calibration wizard, `ApneaEvaluator`, and `BleBloc`) subscribe directly to the `BehaviorSubject<double>` stream without needing to know if packets originate from physical hardware or `BleTelemetryService` simulator.
+
+> **Depends on Story 2.5:** on Android 12+, the Foreground Service in this story cannot start until `BLUETOOTH_CONNECT` is granted — see Story 2.5's permission-priming flow, which runs once ahead of this story's first boot.
+
+#### Story 2.5: Bluetooth Background-Access Priming & Permission Recovery
+As a patient,  
+I want to understand why the app needs Bluetooth access before the OS asks for it, and have a clear way to recover if I decline,  
+So that I grant the permission Story 2.4's background receiver depends on with confidence, instead of encountering an unexplained system dialog or a broken pairing screen.
+
+**Acceptance Criteria:**
+- **Given** this is the first app launch after Profile Setup,
+- **When** the user reaches `MOB_BLE_PERMISSION_PRIMER`,
+- **Then** it renders reassuring rationale copy and a single primary CTA ("Allow Bluetooth Access") with no skip path.
+- **And** tapping the CTA hands off to the native OS permission flow (Android: sequential `BLUETOOTH_SCAN` then `BLUETOOTH_CONNECT` dialogs; iOS: the `bluetooth-central` background-mode disclosure).
+- **And** on full grant, the app proceeds to `MOB_DEVICE_PAIRING` and the Story 2.4 receiver service becomes eligible to start on this and all future boots.
+- **And** on denial or partial grant (Android: one of `BLUETOOTH_SCAN` / `BLUETOOTH_CONNECT` granted, the other denied), `MOB_DEVICE_PAIRING` renders a blocked state naming the missing permission, with an "Open Settings" deep-link CTA in place of the scan UI.
+- **And** if the OS will no longer reissue its own dialog after a prior denial (iOS one-shot behavior; Android "Don't ask again"), the primer's CTA routes straight to the "Open Settings" deep-link instead of re-tapping a dialog that cannot fire.
+- **And** once the receiver service is running, a persistent `BleReceiverForegroundNotification` ("Sleep Monitoring Ready — D-BAND connection active, you're covered tonight") confirms status; if the service isn't running because permission is missing, revoked, or partial, a `BleNotProtectedNotification` ("Bluetooth Permission Needed — Sleep monitoring can't start until Bluetooth access is granted. Tap to fix.") is shown instead — the state is never left to be inferred from the absence of a notification.
+- **And** during `State_MonitoringActive` (Night Mode), the screen's root semantics node carries a persistent accessible label ("Sleep monitoring active — D-BAND connected") so a screen-reader user opening the app mid-session gets confirmation without needing to background the app and read the notification shade.
 
 ---
 

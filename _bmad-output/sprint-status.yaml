@@ -22,7 +22,7 @@
 #   - done: Completed
 
 generated: '2026-09-03'
-last_updated: '09-04-2026 11:38'
+last_updated: '09-04-2026 22:25'
 project: masker-app
 project_key: NOKEY
 tracking_system: file-system
@@ -36,11 +36,12 @@ development_status:
   1-5-developer-options-page-ble-signal-simulator-controls: done
   epic-1-retrospective: done
 
-  epic-2: done
+  epic-2: in-progress
   2-1-encrypted-ble-sensor-auto-discovery-cloud-device-binding: done
   2-2-2-stage-thermal-sensor-baseline-calibration: done
   2-3-airflow-volumetric-transformation-wear-guardrails: done
   2-4-app-boot-background-ble-receiver-rxdart-reactive-streaming-q: done
+  2-5-bluetooth-background-access-priming-permission-recovery: backlog
   epic-2-retrospective: done
 
   epic-3: done
