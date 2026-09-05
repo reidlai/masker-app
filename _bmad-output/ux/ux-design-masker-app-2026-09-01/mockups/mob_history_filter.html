@@ -1,0 +1,322 @@
+<!-- SHARED TEMPLATE — iPhone 17 Pro Max standard artboard (440x956 pt logical resolution).
+     Do not alter the chrome markup/CSS below (.device-frame, .status-bar, .dynamic-island, .home-indicator).
+     Every mockup embeds this verbatim so the set reads as one consistent iPhone. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session History — Sleep Apnea Detection App</title>
+<style>
+  /*
+    MOB_HISTORY_FILTER illustrates:
+    - DESIGN.md Components #4 SessionHistoryListItem (session date, duration, color-coded
+      AHI score badge, right chevron) — EXPLICIT spec, reused verbatim for each list row.
+    - DESIGN.md Colors table AHI severity mapping (accent_green Normal <5, warning_amber
+      Moderate 15-30, danger_red Severe >30) — EXPLICIT spec.
+    - EXPERIENCE.md Primary Navigation (PrimaryNavBarOrganism, Summary tab active, per the
+      IA flow map placing this screen inside the Summary tab's flow) — EXPLICIT spec.
+    - THIN / INFERRED SPEC: per .memlog.md, MOB_HISTORY_FILTER is named only in the flow-map
+      ASCII diagram ("Calendar History") and never specified elsewhere. The date-range filter
+      row (chip presets: 7 Days / 30 Days / 90 Days / All Time), the screen title "History",
+      and the specific session dates/AHI values shown are all COMPOSED for this mockup using
+      only established components (chip styled as a ShadButton outline variant, list rows as
+      SessionHistoryListItem). Reviewer: spot-check this whole screen composition, especially
+      whether a calendar-style date picker (implied by "Calendar History") was intended
+      instead of chip presets.
+    - Redrawn on the iPhone 17 Pro Max 440x956 artboard (was 390x844 Android chrome); the
+      composition is unchanged (thin-spec, flagged above) — filter chips and list rows are
+      given more generous padding, and the whole content column is vertically centered so
+      the 6-row list reads as filling the frame rather than leaving a dead strip below it.
+  */
+  :root {
+    --bg-primary: #0F172A;
+    --surface: #1E293B;
+    --surface-border: #334155;
+    --accent-green: #10B981;
+    --warning-amber: #F59E0B;
+    --danger-red: #EF4444;
+    --purple-analytics: #6D28D9;
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --night-mode: #000000;
+    --pressed-surface: #273449;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); }
+  body {
+    background-color: #020617;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  /* IPHONE 17 PRO MAX DEVICE CHROME — 440x956pt logical resolution, shared across all mockups */
+  .device-frame {
+    width: 440px;
+    height: 956px;
+    background-color: var(--bg-primary);
+    border-radius: 55px;
+    border: 8px solid #0B1220;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    color: var(--text-primary);
+  }
+  .status-bar {
+    flex: 0 0 auto;
+    height: 59px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 28px 10px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    position: relative;
+    z-index: 2;
+  }
+  .dynamic-island {
+    position: absolute;
+    top: 11px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 37px;
+    border-radius: 19px;
+    background: #000;
+    z-index: 3;
+  }
+  .status-bar .clock { letter-spacing: 0.01em; }
+  .status-bar .icons { display: flex; align-items: center; gap: 6px; }
+  .status-bar .icons svg { display: block; }
+  .screen-content {
+    flex: 1 1 auto;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .home-indicator {
+    flex: 0 0 auto;
+    height: 34px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2;
+  }
+  .home-indicator .bar {
+    width: 148px;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(248,250,252,0.7);
+  }
+  /* Night Mode variant: pure-black screen, chrome stays low-contrast against #000 */
+  .device-frame.night-mode { background-color: var(--night-mode); }
+  .device-frame.night-mode .home-indicator .bar { background: rgba(148,163,184,0.35); }
+
+  /* ---- Screen-specific CSS (MOB_HISTORY_FILTER) ---- */
+  .app-bar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 22px 20px 16px;
+  }
+  .app-bar .back { font-size: 26px; line-height: 1; color: var(--text-primary); width: 22px; }
+  .app-bar .title { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+  .app-content {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 0 20px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 20px;
+  }
+  .filter-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    letter-spacing: 0.04em;
+  }
+  .chip-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+  .chip {
+    padding: 10px 16px;
+    border-radius: 9999px;
+    border: 1px solid var(--surface-border);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .chip.active {
+    background: var(--accent-green);
+    border-color: var(--accent-green);
+    color: var(--bg-primary);
+  }
+  .list-group { display: flex; flex-direction: column; gap: 10px; }
+  .session-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    min-height: 56px;
+  }
+  .session-left .session-date { font-size: 14px; color: var(--text-primary); font-weight: 600; }
+  .session-left .session-duration { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+  .session-right { display: flex; align-items: center; gap: 12px; }
+  .ahi-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    white-space: nowrap;
+  }
+  .ahi-badge.normal { background: rgba(16,185,129,0.15); color: var(--accent-green); border: 1px solid var(--accent-green); }
+  .ahi-badge.moderate { background: rgba(245,158,11,0.15); color: var(--warning-amber); border: 1px solid var(--warning-amber); }
+  .ahi-badge.severe { background: rgba(239,68,68,0.15); color: var(--danger-red); border: 1px solid var(--danger-red); }
+  .chev { width: 17px; height: 17px; color: var(--text-secondary); flex: 0 0 auto; }
+
+  /* PrimaryNavBarOrganism (shared pattern across post-onboarding tab shells) */
+  .primary-nav-bar {
+    flex: 0 0 auto;
+    display: flex;
+    background: var(--surface);
+    border-top: 1px solid var(--surface-border);
+    padding: 12px 0 8px;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    color: var(--text-secondary);
+  }
+  .nav-item.active { color: var(--accent-green); }
+  .nav-item svg { width: 24px; height: 24px; }
+  .nav-item span { font-size: 12px; font-weight: 500; }
+</style>
+</head>
+<body>
+  <div class="device-frame">
+    <div class="status-bar">
+      <div class="dynamic-island"></div>
+      <span class="clock">07:12</span>
+      <span class="icons">
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="0.5"/><rect x="5" y="5" width="3" height="7" rx="0.5"/><rect x="10" y="2" width="3" height="10" rx="0.5"/><rect x="15" y="0" width="3" height="12" rx="0.5"/></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 10.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM4.2 6.3a5.4 5.4 0 017.6 0l-1.4 1.4a3.4 3.4 0 00-4.8 0L4.2 6.3zM1.4 3.5a9.4 9.4 0 0113.2 0L13.2 5A7.4 7.4 0 008 3a7.4 7.4 0 00-5.2 2L1.4 3.5z"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="18" height="8" rx="2" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.5"/></svg>
+      </span>
+    </div>
+    <div class="screen-content">
+      <div class="app-bar">
+        <span class="back">‹</span>
+        <span class="title">History</span>
+      </div>
+
+      <div class="app-content">
+        <div>
+          <div class="filter-label">Filter by date range</div>
+          <div class="chip-row">
+            <span class="chip active">7 Days</span>
+            <span class="chip">30 Days</span>
+            <span class="chip">90 Days</span>
+            <span class="chip">All Time</span>
+          </div>
+        </div>
+
+        <div class="list-group">
+          <div class="session-item">
+            <div class="session-left">
+              <div class="session-date">Sep 1, 2026</div>
+              <div class="session-duration">7h 45m</div>
+            </div>
+            <div class="session-right">
+              <span class="ahi-badge normal">AHI 3.2 Normal</span>
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+          </div>
+          <div class="session-item">
+            <div class="session-left">
+              <div class="session-date">Aug 31, 2026</div>
+              <div class="session-duration">7h 12m</div>
+            </div>
+            <div class="session-right">
+              <span class="ahi-badge moderate">AHI 18.4 Moderate</span>
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+          </div>
+          <div class="session-item">
+            <div class="session-left">
+              <div class="session-date">Aug 30, 2026</div>
+              <div class="session-duration">6h 58m</div>
+            </div>
+            <div class="session-right">
+              <span class="ahi-badge normal">AHI 4.1 Normal</span>
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+          </div>
+          <div class="session-item">
+            <div class="session-left">
+              <div class="session-date">Aug 29, 2026</div>
+              <div class="session-duration">8h 03m</div>
+            </div>
+            <div class="session-right">
+              <span class="ahi-badge severe">AHI 34.7 Severe</span>
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+          </div>
+          <div class="session-item">
+            <div class="session-left">
+              <div class="session-date">Aug 28, 2026</div>
+              <div class="session-duration">7h 30m</div>
+            </div>
+            <div class="session-right">
+              <span class="ahi-badge normal">AHI 2.6 Normal</span>
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+          </div>
+          <div class="session-item">
+            <div class="session-left">
+              <div class="session-date">Aug 27, 2026</div>
+              <div class="session-duration">7h 22m</div>
+            </div>
+            <div class="session-right">
+              <span class="ahi-badge normal">AHI 3.9 Normal</span>
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <nav class="primary-nav-bar">
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10"/></svg>
+          <span>Home</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 119.5 4a7 7 0 1010.5 10.5z"/></svg>
+          <span>Monitor</span>
+        </div>
+        <div class="nav-item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/></svg>
+          <span>Summary</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          <span>Settings</span>
+        </div>
+      </nav>
+    </div>
+    <div class="home-indicator"><span class="bar"></span></div>
+  </div>
+</body>
+</html>

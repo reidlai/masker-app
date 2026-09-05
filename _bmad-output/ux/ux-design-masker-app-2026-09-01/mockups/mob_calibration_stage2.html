@@ -1,0 +1,240 @@
+<!-- SHARED TEMPLATE — iPhone 17 Pro Max standard artboard (440x956 pt logical resolution).
+     Do not alter the chrome markup/CSS below (.device-frame, .status-bar, .dynamic-island, .home-indicator).
+     Every mockup embeds this verbatim so the set reads as one consistent iPhone. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thermal Calibration — Stage 2 — Sleep Apnea Detection App</title>
+<style>
+  /* Illustrates: EXPERIENCE.md Component Patterns #2 ThermalCalibrationWizardOrganism; State Patterns #3 State_CalibratingStage2; Key Flow step 4 (2-Stage Thermal Calibration); Voice and Tone "Calibration Instructions"; DESIGN.md Components #2 CalibrationStepHeader, #10 ShadButton primary variant. */
+  :root {
+    --bg-primary: #0F172A;
+    --surface: #1E293B;
+    --surface-border: #334155;
+    --accent-green: #10B981;
+    --warning-amber: #F59E0B;
+    --danger-red: #EF4444;
+    --purple-analytics: #6D28D9;
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --night-mode: #000000;
+    --pressed-surface: #273449;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); }
+  body {
+    background-color: #020617;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  /* IPHONE 17 PRO MAX DEVICE CHROME — 440x956pt logical resolution, shared across all mockups */
+  .device-frame {
+    width: 440px;
+    height: 956px;
+    background-color: var(--bg-primary);
+    border-radius: 55px;
+    border: 8px solid #0B1220;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    color: var(--text-primary);
+  }
+  .status-bar {
+    flex: 0 0 auto;
+    height: 59px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 28px 10px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    position: relative;
+    z-index: 2;
+  }
+  .dynamic-island {
+    position: absolute;
+    top: 11px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 37px;
+    border-radius: 19px;
+    background: #000;
+    z-index: 3;
+  }
+  .status-bar .clock { letter-spacing: 0.01em; }
+  .status-bar .icons { display: flex; align-items: center; gap: 6px; }
+  .status-bar .icons svg { display: block; }
+  .screen-content {
+    flex: 1 1 auto;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .home-indicator {
+    flex: 0 0 auto;
+    height: 34px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2;
+  }
+  .home-indicator .bar {
+    width: 148px;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(248,250,252,0.7);
+  }
+  /* Night Mode variant: pure-black screen, chrome stays low-contrast against #000 */
+  .device-frame.night-mode { background-color: var(--night-mode); }
+  .device-frame.night-mode .home-indicator .bar { background: rgba(148,163,184,0.35); }
+
+  /* SCREEN-SPECIFIC — MOB_CALIBRATION_STAGE2 */
+  .scroll-wrap { flex: 1 1 auto; overflow-y: auto; padding: 28px 28px 36px; }
+  .step-pill {
+    display: inline-block;
+    padding: 5px 14px;
+    background: rgba(16,185,129,0.15);
+    color: var(--accent-green);
+    border: 1px solid var(--accent-green);
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .step-title { font-size: 18px; font-weight: 600; margin-bottom: 10px; }
+  .step-body { font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-bottom: 20px; }
+  .progress-track {
+    width: 100%;
+    height: 6px;
+    background: var(--surface-border);
+    border-radius: 9999px;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+  .progress-fill {
+    width: 65%;
+    height: 100%;
+    background: var(--accent-green);
+    border-radius: 9999px;
+    animation: progressPulse 1.8s ease-in-out infinite;
+  }
+  @keyframes progressPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.75; } }
+
+  .waveform-card {
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 14px;
+  }
+  .waveform-card .waveform-svg { width: 100%; height: 80px; display: block; }
+  .elapsed-row { display: flex; justify-content: space-between; align-items: baseline; margin-top: 12px; }
+  .elapsed-num { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .elapsed-label { font-size: 12px; color: var(--text-secondary); }
+
+  .section-divider { margin: 32px 0 14px; padding-top: 24px; border-top: 1px solid var(--surface-border); }
+  .section-label { font-size: 12px; font-weight: 500; letter-spacing: 0.04em; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 12px; }
+
+  .toast-warning {
+    background: rgba(245,158,11,0.12);
+    border: 1px solid var(--warning-amber);
+    border-radius: 8px;
+    padding: 16px 18px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .toast-warning svg { flex: 0 0 auto; margin-top: 2px; }
+  .toast-warning p { font-size: 14px; color: var(--text-primary); line-height: 1.4; }
+  .toast-caption { font-size: 12px; color: var(--text-secondary); margin-top: 10px; }
+
+  .complete-card { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 12px 4px 4px; }
+  .complete-check {
+    width: 60px; height: 60px; border-radius: 50%;
+    background: rgba(16,185,129,0.15);
+    border: 1.5px solid var(--accent-green);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 18px;
+  }
+  .complete-title { font-size: 18px; font-weight: 600; margin-bottom: 22px; }
+  .btn-primary {
+    width: 100%;
+    min-height: 48px;
+    background: var(--accent-green);
+    color: var(--bg-primary);
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+  <div class="device-frame">
+    <div class="status-bar">
+      <div class="dynamic-island"></div>
+      <span class="clock">10:15</span>
+      <span class="icons">
+        <!-- signal (iOS-style dots ascending) -->
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="0.5"/><rect x="5" y="5" width="3" height="7" rx="0.5"/><rect x="10" y="2" width="3" height="10" rx="0.5"/><rect x="15" y="0" width="3" height="12" rx="0.5"/></svg>
+        <!-- wifi -->
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 10.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM4.2 6.3a5.4 5.4 0 017.6 0l-1.4 1.4a3.4 3.4 0 00-4.8 0L4.2 6.3zM1.4 3.5a9.4 9.4 0 0113.2 0L13.2 5A7.4 7.4 0 008 3a7.4 7.4 0 00-5.2 2L1.4 3.5z"/></svg>
+        <!-- battery (iOS-style rounded pill) -->
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="18" height="8" rx="2" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.5"/></svg>
+      </span>
+    </div>
+    <div class="screen-content">
+      <div class="scroll-wrap">
+        <!-- Primary / canonical state: active sampling in progress -->
+        <span class="step-pill">Step 2 of 2</span>
+        <div class="step-title">Active Breath Thermal Training</div>
+        <p class="step-body">Breathe normally through your nose. Keep the D-BAND snug against your upper lip while we sample your active breathing baseline.</p>
+        <div class="progress-track"><div class="progress-fill"></div></div>
+
+        <div class="waveform-card">
+          <svg class="waveform-svg" viewBox="0 0 300 72">
+            <path d="M 0 36 Q 10 18 20 36 T 40 36 T 60 36 T 80 36 T 100 36 T 120 36 T 140 36 T 160 36 T 180 36 T 200 36 T 220 36 T 240 36 T 260 36 T 280 36 T 300 36" stroke="#10B981" stroke-width="2.5" fill="none"/>
+          </svg>
+          <div class="elapsed-row">
+            <span class="elapsed-num">00:12</span>
+            <span class="elapsed-label">elapsed &middot; V<sub>pp</sub> sampling</span>
+          </div>
+        </div>
+
+        <div class="section-divider">
+          <div class="section-label">Alternate state &middot; wear verification guardrail</div>
+          <div class="toast-warning">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <p>Sensor not detected — Please attach D-BAND and retry</p>
+          </div>
+          <p class="toast-caption">Progression is blocked until wear contact is verified (&Delta;V &ge; 1.5&times; N<sub>idle</sub>).</p>
+        </div>
+
+        <div class="section-divider">
+          <div class="section-label">Alternate state &middot; calibration complete</div>
+          <div class="complete-card">
+            <div class="complete-check">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="complete-title">Calibration Complete — Ready for Sleep ✓</div>
+            <button class="btn-primary">Start Sleep Monitoring</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="home-indicator"><span class="bar"></span></div>
+  </div>
+</body>
+</html>

@@ -6,16 +6,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Passkey Biometric Login — Sleep Apnea Detection App</title>
+<title>Ambient Room Noise Sampling — Sleep Apnea Detection App</title>
 <style>
-  /* Illustrates: EXPERIENCE.md Key Flows step 1 (10:15 PM Bedtime Passkey Login);
-     Voice and Tone "Onboarding & Setup" bucket ("Secure your account with native
-     biometrics in seconds"); DESIGN.md Brand & Style (Dark Glassmorphism) and
-     Shapes & Radius. Content/copy unchanged from the prior mockup. Redrawn on the
-     iPhone 17 Pro Max 440x956 artboard: header+card now center as one group in the
-     taller/wider canvas (two unequal flex spacers) instead of a top-pinned header
-     with the card shoved to the bottom, so the extra room reads as breathing space
-     around the composition rather than a dead strip. */
+  /* Illustrates: EXPERIENCE.md IA flow map (2-Stage Thermal Calibration Wizard,
+     Stage 1: Ambient Room Noise Sampling, MOB_CALIBRATION_STAGE1); Component
+     Pattern #2 ThermalCalibrationWizardOrganism; State Pattern #2
+     State_CalibratingStage1 (sampling 10s idle room noise floor N_idle); Voice
+     and Tone "Calibration Instructions" quote; DESIGN.md Component #2
+     CalibrationStepHeader (step pill, title, instruction body, progress bar).
+     Redrawn on the iPhone 17 Pro Max 440x956 artboard: kept the existing
+     step-header-on-top / sample-card-centered-below composition (already a good
+     centering pattern) but widened card padding, the timer/waveform, and the
+     step-header gaps so the larger canvas reads as one balanced screen rather
+     than the same card floating in more empty margin. */
   :root {
     --bg-primary: #0F172A;
     --surface: #1E293B;
@@ -104,73 +107,82 @@
   .device-frame.night-mode { background-color: var(--night-mode); }
   .device-frame.night-mode .home-indicator .bar { background: rgba(148,163,184,0.35); }
 
-  /* ---- Screen-specific: Passkey Auth ---- */
-  .pk-wrap {
+  /* ---- Screen-specific: Calibration Stage 1 ---- */
+  .cal-wrap {
     flex: 1 1 auto;
     display: flex;
     flex-direction: column;
-    padding: 8px 32px 28px;
+    padding: 28px 28px 28px;
   }
-  .pk-spacer-top { flex: 1 1 auto; }
-  .pk-spacer-bottom { flex: 0.6 1 auto; }
-  .pk-header { text-align: center; }
-  .pk-logo {
-    width: 72px;
-    height: 72px;
-    background: linear-gradient(135deg, var(--accent-green), #059669);
-    border-radius: 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0 auto 20px;
-    box-shadow: 0 10px 25px -5px rgba(16,185,129,0.4);
-  }
-  .pk-logo svg { width: 38px; height: 38px; fill: var(--text-primary); }
-  .pk-header h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
-  .pk-header p { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
 
-  .pk-card {
+  /* CalibrationStepHeader molecule */
+  .csh-pill {
+    display: inline-block;
+    align-self: flex-start;
+    background: rgba(16,185,129,0.12);
+    color: var(--accent-green);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    border-radius: 9999px;
+    padding: 6px 14px;
+    margin-bottom: 16px;
+  }
+  .csh-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+  .csh-instruction { font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 22px; }
+  .csh-progress-track {
+    width: 100%;
+    height: 8px;
+    border-radius: 9999px;
+    background: var(--surface-border);
+    overflow: hidden;
+  }
+  .csh-progress-fill {
+    height: 100%;
+    width: 60%;
+    border-radius: 9999px;
+    background: var(--accent-green);
+  }
+
+  .cal-center {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .cal-sample-card {
     background: var(--surface);
     border: 1px solid var(--surface-border);
-    border-radius: 16px;
-    padding: 32px 24px;
-    text-align: center;
-    margin-top: 40px;
-    backdrop-filter: blur(12px);
-  }
-  .pk-pulse {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: rgba(16,185,129,0.1);
-    border: 2px solid var(--accent-green);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0 auto 20px;
-  }
-  .pk-card h2 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
-  .pk-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 24px; }
-
-  .btn-passkey {
-    width: 100%;
-    min-height: 48px;
-    background-color: var(--accent-green);
-    color: var(--bg-primary);
-    border: none;
     border-radius: 8px;
-    font-size: 16px;
-    font-weight: 700;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .pk-footer {
+    padding: 36px 24px;
     text-align: center;
+  }
+  .cal-timer {
+    font-size: 44px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+  }
+  .cal-timer-label {
     font-size: 12px;
     color: var(--text-secondary);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+  .cal-waveform {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 5px;
+    height: 44px;
+  }
+  .cal-waveform span {
+    width: 4px;
+    border-radius: 2px;
+    background: var(--warning-amber);
   }
 </style>
 </head>
@@ -178,7 +190,7 @@
   <div class="device-frame">
     <div class="status-bar">
       <div class="dynamic-island"></div>
-      <span class="clock">10:15</span>
+      <span class="clock">10:30</span>
       <span class="icons">
         <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="0.5"/><rect x="5" y="5" width="3" height="7" rx="0.5"/><rect x="10" y="2" width="3" height="10" rx="0.5"/><rect x="15" y="0" width="3" height="12" rx="0.5"/></svg>
         <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 10.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM4.2 6.3a5.4 5.4 0 017.6 0l-1.4 1.4a3.4 3.4 0 00-4.8 0L4.2 6.3zM1.4 3.5a9.4 9.4 0 0113.2 0L13.2 5A7.4 7.4 0 008 3a7.4 7.4 0 00-5.2 2L1.4 3.5z"/></svg>
@@ -186,33 +198,29 @@
       </span>
     </div>
     <div class="screen-content">
-      <div class="pk-wrap">
-        <div class="pk-spacer-top"></div>
-        <div class="pk-header">
-          <div class="pk-logo">
-            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
-          </div>
-          <h1>Sleep Apnea App</h1>
-          <p>D-BAND Integrated Respiratory Platform</p>
-        </div>
+      <div class="cal-wrap">
+        <span class="csh-pill">STEP 1 OF 2</span>
+        <div class="csh-title">Ambient Room Noise Sampling</div>
+        <p class="csh-instruction">Place sensor on bedside table, remain silent for 10 seconds.</p>
+        <div class="csh-progress-track"><div class="csh-progress-fill"></div></div>
 
-        <div class="pk-card">
-          <div class="pk-pulse">
-            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 11c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3z"/>
-              <path d="M12 14c-4 0-7 2-7 4v1h14v-1c0-2-3-4-7-4z"/>
-            </svg>
+        <div class="cal-center">
+          <div class="cal-sample-card">
+            <div class="cal-timer">00:04</div>
+            <div class="cal-timer-label">Sampling ambient noise&hellip;</div>
+            <div class="cal-waveform" aria-hidden="true">
+              <span style="height: 12px;"></span>
+              <span style="height: 22px;"></span>
+              <span style="height: 10px;"></span>
+              <span style="height: 27px;"></span>
+              <span style="height: 15px;"></span>
+              <span style="height: 24px;"></span>
+              <span style="height: 11px;"></span>
+              <span style="height: 19px;"></span>
+              <span style="height: 13px;"></span>
+            </div>
           </div>
-          <h2>Biometric Passkey Required</h2>
-          <p>Authenticate passwordlessly using native OS biometrics (Face ID / Touch ID).</p>
-          <button class="btn-passkey">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/></svg>
-            Sign in with Passkey
-          </button>
         </div>
-
-        <div class="pk-spacer-bottom"></div>
-        <div class="pk-footer">🔒 HIPAA §164.312 Protected · FIDO2 Hardware Encryption</div>
       </div>
     </div>
     <div class="home-indicator"><span class="bar"></span></div>

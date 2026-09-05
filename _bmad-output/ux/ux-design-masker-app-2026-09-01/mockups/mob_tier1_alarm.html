@@ -1,122 +1,225 @@
+<!-- SHARED TEMPLATE — iPhone 17 Pro Max standard artboard (440x956 pt logical resolution).
+     Do not alter the chrome markup/CSS below (.device-frame, .status-bar, .dynamic-island, .home-indicator).
+     Every mockup embeds this verbatim so the set reads as one consistent iPhone. -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tier-1 Apnea Siren Overlay — Sleep Apnea App</title>
-  <style>
-    :root {
-      --bg-primary: #0F172A;
-      --danger: #EF4444;
-      --danger-dark: #DC2626;
-      --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); }
-    body {
-      background-color: #020617;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      color: white;
-    }
-    .phone-frame {
-      width: 390px;
-      height: 844px;
-      background: linear-gradient(180deg, #7F1D1D 0%, #450A0A 100%);
-      border-radius: 48px;
-      border: 12px solid #1E293B;
-      box-shadow: 0 0 50px rgba(239, 68, 68, 0.6);
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      padding: 32px 24px;
-      text-align: center;
-      animation: flashAlert 1.2s infinite alternate;
-    }
-    @keyframes flashAlert {
-      0% { background: linear-gradient(180deg, #991B1B 0%, #450A0A 100%); }
-      100% { background: linear-gradient(180deg, #DC2626 0%, #7F1D1D 100%); }
-    }
-    .alarm-icon-box {
-      width: 100px;
-      height: 100px;
-      background: rgba(255,255,255,0.2);
-      border-radius: 50%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin: 40px auto 24px;
-      border: 3px solid white;
-      animation: pulseIcon 0.8s infinite alternate;
-    }
-    @keyframes pulseIcon {
-      0% { transform: scale(1); }
-      100% { transform: scale(1.15); }
-    }
-    h1.alert-title { font-size: 28px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
-    p.alert-desc { font-size: 15px; opacity: 0.9; line-height: 1.4; margin-bottom: 32px; }
-    
-    .timer-circle {
-      width: 140px;
-      height: 140px;
-      border-radius: 50%;
-      border: 6px solid rgba(255,255,255,0.3);
-      border-top-color: white;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      margin: 0 auto 40px;
-    }
-    .timer-seconds { font-size: 42px; font-weight: 800; font-variant-numeric: tabular-nums; }
-    .timer-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; }
-    
-    .btn-safe {
-      width: 100%;
-      height: 72px;
-      background-color: white;
-      color: #991B1B;
-      border: none;
-      border-radius: 20px;
-      font-size: 20px;
-      font-weight: 800;
-      cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      box-shadow: 0 15px 30px rgba(0,0,0,0.4);
-      transition: transform 0.1s;
-    }
-    .btn-safe:active { transform: scale(0.96); }
-    .tier2-warning { font-size: 12px; opacity: 0.8; margin-top: 24px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tier-1 Apnea Alarm — Sleep Apnea Detection App</title>
+<style>
+  /* Illustrates: EXPERIENCE.md Component Pattern #3 ApneaAlertBannerOrganism; State Patterns #5 State_ApneaBreach / #6 State_PatientSafe; Voice and Tone "Emergency Alerts"; Accessibility Floor "Multi-Sensory Feedback"; Interaction Primitive "Single-Tap Emergency Dismiss"; Key Flow steps 6-7; DESIGN.md Components #3 ApneaAlertBanner. */
+  :root {
+    --bg-primary: #0F172A;
+    --surface: #1E293B;
+    --surface-border: #334155;
+    --accent-green: #10B981;
+    --warning-amber: #F59E0B;
+    --danger-red: #EF4444;
+    --purple-analytics: #6D28D9;
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --night-mode: #000000;
+    --pressed-surface: #273449;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); }
+  body {
+    background-color: #020617;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  /* IPHONE 17 PRO MAX DEVICE CHROME — 440x956pt logical resolution, shared across all mockups */
+  .device-frame {
+    width: 440px;
+    height: 956px;
+    background-color: var(--bg-primary);
+    border-radius: 55px;
+    border: 8px solid #0B1220;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    color: var(--text-primary);
+  }
+  .status-bar {
+    flex: 0 0 auto;
+    height: 59px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 28px 10px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    position: relative;
+    z-index: 2;
+  }
+  .dynamic-island {
+    position: absolute;
+    top: 11px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 37px;
+    border-radius: 19px;
+    background: #000;
+    z-index: 3;
+  }
+  .status-bar .clock { letter-spacing: 0.01em; }
+  .status-bar .icons { display: flex; align-items: center; gap: 6px; }
+  .status-bar .icons svg { display: block; }
+  .screen-content {
+    flex: 1 1 auto;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .home-indicator {
+    flex: 0 0 auto;
+    height: 34px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2;
+  }
+  .home-indicator .bar {
+    width: 148px;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(248,250,252,0.7);
+  }
+  /* Night Mode variant: pure-black screen, chrome stays low-contrast against #000 */
+  .device-frame.night-mode { background-color: var(--night-mode); }
+  .device-frame.night-mode .home-indicator .bar { background: rgba(148,163,184,0.35); }
+
+  /* SCREEN-SPECIFIC — MOB_TIER1_ALARM */
+  .alarm-overlay {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 32px 28px;
+    color: #FFFFFF;
+    animation: flashAlert 1.1s infinite alternate;
+  }
+  @keyframes flashAlert {
+    0%   { background: linear-gradient(180deg, #991B1B 0%, #450A0A 100%); }
+    100% { background: linear-gradient(180deg, #EF4444 0%, #7F1D1D 100%); }
+  }
+  .alarm-icon-box {
+    width: 92px;
+    height: 92px;
+    background: rgba(255,255,255,0.18);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto 26px;
+    border: 3px solid #FFFFFF;
+    animation: pulseIcon 0.8s infinite alternate;
+  }
+  @keyframes pulseIcon {
+    0%   { transform: scale(1); }
+    100% { transform: scale(1.12); }
+  }
+  .alert-title {
+    font-size: 28px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1.25;
+    margin-bottom: 12px;
+  }
+  .alert-instruction {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    margin-bottom: 16px;
+  }
+  .alert-detail {
+    font-size: 13px;
+    opacity: 0.85;
+    line-height: 1.4;
+    margin-bottom: 36px;
+  }
+  .timer-circle {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    border: 6px solid rgba(255,255,255,0.3);
+    border-top-color: #FFFFFF;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto 40px;
+  }
+  .timer-seconds { font-size: 42px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .timer-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85; }
+  .btn-safe {
+    width: 100%;
+    min-height: 64px;
+    background-color: #FFFFFF;
+    color: #DC2626;
+    border: none;
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+  }
+  .btn-safe:active { transform: scale(0.97); }
+  .safety-caption { font-size: 12px; opacity: 0.85; margin-top: 20px; }
+</style>
 </head>
 <body>
-  <div class="phone-frame">
-    <div class="alarm-icon-box">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-        <line x1="12" y1="9" x2="12" y2="13"/>
-        <line x1="12" y1="17" x2="12.01" y2="17"/>
-      </svg>
+  <div class="device-frame">
+    <div class="status-bar">
+      <div class="dynamic-island"></div>
+      <span class="clock">10:15</span>
+      <span class="icons">
+        <!-- signal (iOS-style dots ascending) -->
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="0.5"/><rect x="5" y="5" width="3" height="7" rx="0.5"/><rect x="10" y="2" width="3" height="10" rx="0.5"/><rect x="15" y="0" width="3" height="12" rx="0.5"/></svg>
+        <!-- wifi -->
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 10.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM4.2 6.3a5.4 5.4 0 017.6 0l-1.4 1.4a3.4 3.4 0 00-4.8 0L4.2 6.3zM1.4 3.5a9.4 9.4 0 0113.2 0L13.2 5A7.4 7.4 0 008 3a7.4 7.4 0 00-5.2 2L1.4 3.5z"/></svg>
+        <!-- battery (iOS-style rounded pill) -->
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="18" height="8" rx="2" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.5"/></svg>
+      </span>
     </div>
+    <div class="screen-content">
+      <div class="alarm-overlay">
+        <div class="alarm-icon-box">
+          <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
 
-    <h1 class="alert-title">Breathing Pause!</h1>
-    <p class="alert-desc">Nocturnal Obstructive Apnea Breach Detected (&gt;10s airflow drop).</p>
+        <div class="alert-title">Breathing Pause Detected</div>
+        <div class="alert-instruction">Tap "I'm Safe" to dismiss</div>
+        <div class="alert-detail">Airflow dropped &ge;90% for &ge;10 seconds.</div>
 
-    <div class="timer-circle">
-      <span class="timer-seconds">28s</span>
-      <span class="timer-label">To Cloud Dispatch</span>
+        <div class="timer-circle">
+          <span class="timer-seconds">18</span>
+          <span class="timer-label">Seconds</span>
+        </div>
+
+        <button class="btn-safe">I'M SAFE - DISMISS ALARM</button>
+
+        <p class="safety-caption">Dismissing sends a safety confirmation.</p>
+      </div>
     </div>
-
-    <button class="btn-safe" onclick="alert('Alarm Silenced — Patient Confirmed Safe ✓')">
-      I'm Safe / I'm Awake
-    </button>
-
-    <p class="tier2-warning">
-      ⚠️ Tier-2 Caregiver SMS/Voice Call will be dispatched if unacknowledged after 30s.
-    </p>
+    <div class="home-indicator"><span class="bar"></span></div>
   </div>
 </body>
 </html>

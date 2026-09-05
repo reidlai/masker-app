@@ -6,9 +6,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Morning Sleep Summary — Sleep Apnea Detection App</title>
+<title>Medical Profile Setup — Sleep Apnea Detection App</title>
 <style>
-  /* Illustrates: EXPERIENCE.md State Pattern #7 State_MorningSummary; Key Flow step 8; DESIGN.md Components #1 MetricStatCard, Colors token purple_analytics; Voice and Tone "Sleep Monitoring" (calming, clinical). */
+  /* Illustrates: EXPERIENCE.md IA flow map (User Medical Profile Setup, MOB_USER_PROFILE,
+     between Passkey Auth and Bluetooth Priming); Settings screen "[NOTE FOR UX]" on Weight/
+     Height/Computed BMI + inline Caregiver contacts and the Units cross-dependency (default
+     metric); Secondary Flow "David corrects his weight" (Weight field -> live Computed BMI);
+     DESIGN.md ShadInput / ShadCard / ShadButton and Typography (h1/body/caption). Canonical
+     state rendered is onboarding Setup (Save & Continue advances the wizard). Redrawn on the
+     iPhone 17 Pro Max 440x956 artboard: the form now fits without scrolling on the taller
+     canvas, so the whole card group (header, both cards, button) is centered as one block
+     with wider card padding and section gaps instead of the old scroll container padded thin
+     with a bottom-pinned button. */
   :root {
     --bg-primary: #0F172A;
     --surface: #1E293B;
@@ -94,90 +103,102 @@
     border-radius: 999px;
     background: rgba(248,250,252,0.7);
   }
-  /* Night Mode variant: pure-black screen, chrome stays low-contrast against #000 */
   .device-frame.night-mode { background-color: var(--night-mode); }
   .device-frame.night-mode .home-indicator .bar { background: rgba(148,163,184,0.35); }
 
-  /* SCREEN-SPECIFIC — MOB_SLEEP_SUMMARY */
-  .summary-wrap { flex: 1 1 auto; overflow-y: auto; padding: 24px 28px 32px; }
-  .page-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: baseline; }
-  .page-title span.date { font-size: 12px; font-weight: 400; color: var(--text-secondary); }
-
-  .score-card {
-    background: linear-gradient(135deg, #1E1B4B 0%, #2E1065 100%);
-    border: 1px solid var(--purple-analytics);
-    border-radius: 12px;
-    padding: 24px;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 24px;
-  }
-  .score-ring {
-    width: 88px;
-    height: 88px;
-    border-radius: 50%;
-    border: 6px solid var(--accent-green);
+  /* ---- Screen-specific: User Profile Setup ---- */
+  .up-wrap {
+    flex: 1 1 auto;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: center;
-    flex: 0 0 auto;
+    padding: 20px 28px 32px;
+    overflow-y: auto;
   }
-  .score-num { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
-  .score-label { font-size: 9px; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.04em; }
-  .score-info h3 { font-size: 16px; margin-bottom: 6px; }
-  .score-info p { font-size: 13px; color: var(--text-secondary); }
-  .badge-normal {
-    display: inline-block;
-    padding: 4px 10px;
-    background: rgba(16,185,129,0.2);
-    color: var(--accent-green);
-    border: 1px solid var(--accent-green);
-    border-radius: 9999px;
-    font-size: 11px;
-    font-weight: 700;
-    margin-top: 8px;
-  }
+  .up-header { text-align: left; margin-bottom: 8px; }
+  .up-header h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+  .up-header p { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
 
-  .chart-card {
+  .up-section-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin: 24px 0 10px;
+  }
+  .up-section-label:first-of-type { margin-top: 24px; }
+
+  .up-card {
     background: var(--surface);
     border: 1px solid var(--surface-border);
     border-radius: 8px;
     padding: 20px;
-    margin-bottom: 20px;
   }
-  .chart-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; display: flex; justify-content: space-between; }
-  .waveform-svg { width: 100%; height: 120px; }
-
-  .metrics-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 24px;
+  .up-field { margin-bottom: 16px; }
+  .up-field:last-child { margin-bottom: 0; }
+  .up-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
   }
-  .metric-item {
-    background: var(--surface);
-    border: 1px solid var(--surface-border);
-    border-radius: 8px;
-    padding: 16px;
-  }
-  .metric-item label { font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 6px; }
-  .metric-item .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
-
-  .btn-export {
+  .up-input {
     width: 100%;
     min-height: 48px;
-    background: var(--purple-analytics);
+    background: var(--bg-primary);
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    padding: 0 16px;
+    font-size: 14px;
     color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .up-input .unit { color: var(--text-secondary); font-size: 12px; }
+
+  .up-bmi-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--pressed-surface);
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-top: 6px;
+  }
+  .up-bmi-row .up-bmi-label { font-size: 12px; color: var(--text-secondary); }
+  .up-bmi-row .up-bmi-value {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--accent-green);
+    font-variant-numeric: tabular-nums;
+  }
+  .up-bmi-row .up-bmi-tag {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent-green);
+    background: rgba(16,185,129,0.12);
+    border-radius: 9999px;
+    padding: 3px 10px;
+    margin-left: 8px;
+  }
+
+  .btn-primary {
+    width: 100%;
+    min-height: 48px;
+    background-color: var(--accent-green);
+    color: var(--bg-primary);
     border: none;
     border-radius: 8px;
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 16px;
+    font-weight: 700;
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 8px;
+    margin-top: 28px;
   }
 </style>
 </head>
@@ -185,60 +206,52 @@
   <div class="device-frame">
     <div class="status-bar">
       <div class="dynamic-island"></div>
-      <span class="clock">10:15</span>
+      <span class="clock">10:17</span>
       <span class="icons">
-        <!-- signal (iOS-style dots ascending) -->
         <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="0.5"/><rect x="5" y="5" width="3" height="7" rx="0.5"/><rect x="10" y="2" width="3" height="10" rx="0.5"/><rect x="15" y="0" width="3" height="12" rx="0.5"/></svg>
-        <!-- wifi -->
         <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 10.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM4.2 6.3a5.4 5.4 0 017.6 0l-1.4 1.4a3.4 3.4 0 00-4.8 0L4.2 6.3zM1.4 3.5a9.4 9.4 0 0113.2 0L13.2 5A7.4 7.4 0 008 3a7.4 7.4 0 00-5.2 2L1.4 3.5z"/></svg>
-        <!-- battery (iOS-style rounded pill) -->
         <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="18" height="8" rx="2" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.5"/></svg>
       </span>
     </div>
     <div class="screen-content">
-      <div class="summary-wrap">
-        <div class="page-title">
-          Morning Sleep Summary
-          <span class="date">Sep 1, 2026</span>
+      <div class="up-wrap">
+        <div class="up-header">
+          <h1>Medical Profile Setup</h1>
+          <p>A few details to personalize your overnight monitoring.</p>
         </div>
 
-        <div class="score-card">
-          <div class="score-ring">
-            <span class="score-num">3.2</span>
-            <span class="score-label">AHI</span>
+        <div class="up-section-label">Body metrics (metric)</div>
+        <div class="up-card">
+          <div class="up-field">
+            <label for="up-weight">Weight</label>
+            <div class="up-input" id="up-weight">75 <span class="unit">kg</span></div>
           </div>
-          <div class="score-info">
-            <h3>AHI 3.2 (Normal)</h3>
-            <p>7h 45m Monitoring</p>
-            <span class="badge-normal">NORMAL RESPIRATION</span>
+          <div class="up-field">
+            <label for="up-height">Height</label>
+            <div class="up-input" id="up-height">178 <span class="unit">cm</span></div>
           </div>
-        </div>
-
-        <div class="chart-card">
-          <div class="chart-title">
-            <span>Respiration Waveform</span>
-            <span style="color: var(--accent-green); font-size: 11px;">10Hz Stream</span>
-          </div>
-          <svg class="waveform-svg" viewBox="0 0 300 100">
-            <path d="M 0 50 Q 15 20 30 50 T 60 50 T 90 50 T 120 50 T 150 90 T 180 50 T 210 20 T 240 50 T 270 50 T 300 50" stroke="#10B981" stroke-width="2.5" fill="none"/>
-            <line x1="0" y1="50" x2="300" y2="50" stroke="#334155" stroke-dasharray="4 4"/>
-            <circle cx="150" cy="90" r="5" fill="#EF4444"/>
-            <text x="150" y="70" fill="#EF4444" font-size="9" text-anchor="middle">Apnea Stop (12s)</text>
-          </svg>
-        </div>
-
-        <div class="metrics-grid">
-          <div class="metric-item">
-            <label>Total Apnea Stops</label>
-            <span class="val">1 Event</span>
-          </div>
-          <div class="metric-item">
-            <label>Safety Taps</label>
-            <span class="val">1 Tap ("I'm Safe")</span>
+          <div class="up-bmi-row">
+            <span class="up-bmi-label">Computed BMI</span>
+            <span>
+              <span class="up-bmi-value">23.7</span>
+              <span class="up-bmi-tag">Normal</span>
+            </span>
           </div>
         </div>
 
-        <button class="btn-export">📄 Export Signed Report for Physician</button>
+        <div class="up-section-label">Caregiver contact</div>
+        <div class="up-card">
+          <div class="up-field">
+            <label for="up-cg-name">Caregiver name</label>
+            <div class="up-input" id="up-cg-name">Maria Chen</div>
+          </div>
+          <div class="up-field">
+            <label for="up-cg-phone">Caregiver phone</label>
+            <div class="up-input" id="up-cg-phone">(555) 019-2244</div>
+          </div>
+        </div>
+
+        <button class="btn-primary">Save &amp; Continue</button>
       </div>
     </div>
     <div class="home-indicator"><span class="bar"></span></div>

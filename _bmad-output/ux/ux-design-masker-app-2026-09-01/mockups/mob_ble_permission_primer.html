@@ -6,16 +6,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Passkey Biometric Login — Sleep Apnea Detection App</title>
+<title>Bluetooth Access Priming — Sleep Apnea Detection App</title>
 <style>
-  /* Illustrates: EXPERIENCE.md Key Flows step 1 (10:15 PM Bedtime Passkey Login);
-     Voice and Tone "Onboarding & Setup" bucket ("Secure your account with native
-     biometrics in seconds"); DESIGN.md Brand & Style (Dark Glassmorphism) and
-     Shapes & Radius. Content/copy unchanged from the prior mockup. Redrawn on the
-     iPhone 17 Pro Max 440x956 artboard: header+card now center as one group in the
-     taller/wider canvas (two unequal flex spacers) instead of a top-pinned header
-     with the card shoved to the bottom, so the extra room reads as breathing space
-     around the composition rather than a dead strip. */
+  /* Illustrates: EXPERIENCE.md "Onboarding: Bluetooth Background-Access Priming"
+     (MOB_BLE_PERMISSION_PRIMER, first-run only, between MOB_USER_PROFILE and
+     MOB_DEVICE_PAIRING); Component Pattern #7 BlePermissionPrimerOrganism;
+     State Pattern #10 State_BlePermissionPriming; Voice and Tone Onboarding &
+     Setup bucket quote; Accessibility Floor "Permission Priming Touch Target";
+     DESIGN.md Component #9 BlePermissionPrimerOrganism + Component #10 ShadButton
+     primary variant (accent_green fill / primary text). Single-path screen, no
+     skip or secondary action, matching MOB_PASSKEY_AUTH's visual weight. Redrawn
+     on the iPhone 17 Pro Max 440x956 artboard: icon/headline/body keep the
+     equal-flex-spacer centering pattern but scale up (larger icon circle, wider
+     max-width, bigger gaps) to use the extra canvas instead of leaving more bare
+     space above/below the same-sized content block. */
   :root {
     --bg-primary: #0F172A;
     --surface: #1E293B;
@@ -104,55 +108,42 @@
   .device-frame.night-mode { background-color: var(--night-mode); }
   .device-frame.night-mode .home-indicator .bar { background: rgba(148,163,184,0.35); }
 
-  /* ---- Screen-specific: Passkey Auth ---- */
-  .pk-wrap {
+  /* ---- Screen-specific: BLE Permission Primer ---- */
+  .bp-wrap {
     flex: 1 1 auto;
     display: flex;
     flex-direction: column;
-    padding: 8px 32px 28px;
-  }
-  .pk-spacer-top { flex: 1 1 auto; }
-  .pk-spacer-bottom { flex: 0.6 1 auto; }
-  .pk-header { text-align: center; }
-  .pk-logo {
-    width: 72px;
-    height: 72px;
-    background: linear-gradient(135deg, var(--accent-green), #059669);
-    border-radius: 20px;
-    display: flex;
-    justify-content: center;
     align-items: center;
-    margin: 0 auto 20px;
-    box-shadow: 0 10px 25px -5px rgba(16,185,129,0.4);
-  }
-  .pk-logo svg { width: 38px; height: 38px; fill: var(--text-primary); }
-  .pk-header h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
-  .pk-header p { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
-
-  .pk-card {
-    background: var(--surface);
-    border: 1px solid var(--surface-border);
-    border-radius: 16px;
-    padding: 32px 24px;
+    padding: 24px 32px 28px;
     text-align: center;
-    margin-top: 40px;
-    backdrop-filter: blur(12px);
   }
-  .pk-pulse {
-    width: 80px;
-    height: 80px;
+  .bp-spacer-top { flex: 1 1 auto; }
+  .bp-icon {
+    width: 112px;
+    height: 112px;
     border-radius: 50%;
     background: rgba(16,185,129,0.1);
     border: 2px solid var(--accent-green);
     display: flex;
     justify-content: center;
     align-items: center;
-    margin: 0 auto 20px;
+    margin-bottom: 32px;
   }
-  .pk-card h2 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
-  .pk-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 24px; }
-
-  .btn-passkey {
+  .bp-icon svg { display: block; }
+  .bp-headline {
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-bottom: 14px;
+  }
+  .bp-body {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    max-width: 320px;
+  }
+  .bp-spacer-bottom { flex: 1 1 auto; }
+  .bp-cta {
     width: 100%;
     min-height: 48px;
     background-color: var(--accent-green);
@@ -164,13 +155,6 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 10px;
-  }
-
-  .pk-footer {
-    text-align: center;
-    font-size: 12px;
-    color: var(--text-secondary);
   }
 </style>
 </head>
@@ -178,7 +162,7 @@
   <div class="device-frame">
     <div class="status-bar">
       <div class="dynamic-island"></div>
-      <span class="clock">10:15</span>
+      <span class="clock">10:20</span>
       <span class="icons">
         <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="0.5"/><rect x="5" y="5" width="3" height="7" rx="0.5"/><rect x="10" y="2" width="3" height="10" rx="0.5"/><rect x="15" y="0" width="3" height="12" rx="0.5"/></svg>
         <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 10.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM4.2 6.3a5.4 5.4 0 017.6 0l-1.4 1.4a3.4 3.4 0 00-4.8 0L4.2 6.3zM1.4 3.5a9.4 9.4 0 0113.2 0L13.2 5A7.4 7.4 0 008 3a7.4 7.4 0 00-5.2 2L1.4 3.5z"/></svg>
@@ -186,33 +170,17 @@
       </span>
     </div>
     <div class="screen-content">
-      <div class="pk-wrap">
-        <div class="pk-spacer-top"></div>
-        <div class="pk-header">
-          <div class="pk-logo">
-            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
-          </div>
-          <h1>Sleep Apnea App</h1>
-          <p>D-BAND Integrated Respiratory Platform</p>
+      <div class="bp-wrap">
+        <div class="bp-spacer-top"></div>
+        <div class="bp-icon" aria-hidden="true">
+          <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 7l10 10-5 5V2l5 5L7 17"/>
+          </svg>
         </div>
-
-        <div class="pk-card">
-          <div class="pk-pulse">
-            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 11c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3z"/>
-              <path d="M12 14c-4 0-7 2-7 4v1h14v-1c0-2-3-4-7-4z"/>
-            </svg>
-          </div>
-          <h2>Biometric Passkey Required</h2>
-          <p>Authenticate passwordlessly using native OS biometrics (Face ID / Touch ID).</p>
-          <button class="btn-passkey">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/></svg>
-            Sign in with Passkey
-          </button>
-        </div>
-
-        <div class="pk-spacer-bottom"></div>
-        <div class="pk-footer">🔒 HIPAA §164.312 Protected · FIDO2 Hardware Encryption</div>
+        <h2 class="bp-headline">Bluetooth Access Needed</h2>
+        <p class="bp-body">To find your D-BAND sensor and keep monitoring active overnight, allow Bluetooth access.</p>
+        <div class="bp-spacer-bottom"></div>
+        <button class="bp-cta">Allow Bluetooth Access</button>
       </div>
     </div>
     <div class="home-indicator"><span class="bar"></span></div>

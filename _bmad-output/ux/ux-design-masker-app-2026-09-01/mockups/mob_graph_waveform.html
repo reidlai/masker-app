@@ -1,0 +1,309 @@
+<!-- SHARED TEMPLATE — iPhone 17 Pro Max standard artboard (440x956 pt logical resolution).
+     Do not alter the chrome markup/CSS below (.device-frame, .status-bar, .dynamic-island, .home-indicator).
+     Every mockup embeds this verbatim so the set reads as one consistent iPhone. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Respiration Waveform — Sleep Apnea Detection App</title>
+<style>
+  /*
+    MOB_GRAPH_WAVEFORM illustrates:
+    - EXPERIENCE.md Interaction Primitives #1 (Pinch-to-Zoom & Pan on the 8-hour overnight
+      respiration timeline + 256-point FFT spectral peaks) — EXPLICIT spec.
+    - DESIGN.md Colors table rows for accent_green (normal breath) and purple_analytics
+      (FFT spectral peaks) — EXPLICIT spec.
+    - EXPERIENCE.md Primary Navigation (PrimaryNavBarOrganism, Summary tab active, since this
+      screen is reached from within the Summary tab's flow per the IA flow map) — EXPLICIT spec.
+    - The exact two-card stacked layout (waveform card above FFT card), the axis tick labels,
+      and the pinch/pan gesture-hint caption text are COMPOSED from established ShadCard /
+      typography patterns — EXPERIENCE.md names the interaction and the FFT concept but does
+      not itemize this screen's visual composition. Reviewer: spot-check this layout choice.
+    - Redrawn on the iPhone 17 Pro Max 440x956 artboard (was 390x844 Android chrome); the two
+      cards are vertically centered in the larger content column and enlarged (taller SVGs,
+      roomier card padding) so the extra canvas reads as intentional breathing room, not dead
+      space below the FFT card.
+  */
+  :root {
+    --bg-primary: #0F172A;
+    --surface: #1E293B;
+    --surface-border: #334155;
+    --accent-green: #10B981;
+    --warning-amber: #F59E0B;
+    --danger-red: #EF4444;
+    --purple-analytics: #6D28D9;
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --night-mode: #000000;
+    --pressed-surface: #273449;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); }
+  body {
+    background-color: #020617;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  /* IPHONE 17 PRO MAX DEVICE CHROME — 440x956pt logical resolution, shared across all mockups */
+  .device-frame {
+    width: 440px;
+    height: 956px;
+    background-color: var(--bg-primary);
+    border-radius: 55px;
+    border: 8px solid #0B1220;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    color: var(--text-primary);
+  }
+  .status-bar {
+    flex: 0 0 auto;
+    height: 59px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 28px 10px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    position: relative;
+    z-index: 2;
+  }
+  .dynamic-island {
+    position: absolute;
+    top: 11px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 37px;
+    border-radius: 19px;
+    background: #000;
+    z-index: 3;
+  }
+  .status-bar .clock { letter-spacing: 0.01em; }
+  .status-bar .icons { display: flex; align-items: center; gap: 6px; }
+  .status-bar .icons svg { display: block; }
+  .screen-content {
+    flex: 1 1 auto;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .home-indicator {
+    flex: 0 0 auto;
+    height: 34px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2;
+  }
+  .home-indicator .bar {
+    width: 148px;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(248,250,252,0.7);
+  }
+  /* Night Mode variant: pure-black screen, chrome stays low-contrast against #000 */
+  .device-frame.night-mode { background-color: var(--night-mode); }
+  .device-frame.night-mode .home-indicator .bar { background: rgba(148,163,184,0.35); }
+
+  /* ---- Screen-specific CSS (MOB_GRAPH_WAVEFORM) ---- */
+  .app-bar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 22px 20px 6px;
+  }
+  .app-bar .back { font-size: 26px; line-height: 1; color: var(--text-primary); width: 22px; }
+  .app-bar .title { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+  .subtitle {
+    padding: 0 20px 16px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+  .app-content {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 0 20px 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 20px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    padding: 20px;
+  }
+  .card-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .card-title-row h3 { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+  .pill-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    letter-spacing: 0.02em;
+  }
+  .pill-badge.green { background: rgba(16,185,129,0.15); color: var(--accent-green); border: 1px solid var(--accent-green); }
+  .pill-badge.purple { background: rgba(109,40,217,0.2); color: #C4B5FD; border: 1px solid var(--purple-analytics); }
+  .waveform-svg, .fft-svg { width: 100%; height: 132px; display: block; }
+  .axis-ticks {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+  .gesture-hint {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-align: center;
+  }
+  .event-legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .event-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--danger-red); flex: 0 0 auto; }
+
+  /* PrimaryNavBarOrganism (shared pattern across post-onboarding tab shells) */
+  .primary-nav-bar {
+    flex: 0 0 auto;
+    display: flex;
+    background: var(--surface);
+    border-top: 1px solid var(--surface-border);
+    padding: 12px 0 8px;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    color: var(--text-secondary);
+  }
+  .nav-item.active { color: var(--accent-green); }
+  .nav-item svg { width: 24px; height: 24px; }
+  .nav-item span { font-size: 12px; font-weight: 500; }
+</style>
+</head>
+<body>
+  <div class="device-frame">
+    <div class="status-bar">
+      <div class="dynamic-island"></div>
+      <span class="clock">07:05</span>
+      <span class="icons">
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="0.5"/><rect x="5" y="5" width="3" height="7" rx="0.5"/><rect x="10" y="2" width="3" height="10" rx="0.5"/><rect x="15" y="0" width="3" height="12" rx="0.5"/></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 10.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM4.2 6.3a5.4 5.4 0 017.6 0l-1.4 1.4a3.4 3.4 0 00-4.8 0L4.2 6.3zM1.4 3.5a9.4 9.4 0 0113.2 0L13.2 5A7.4 7.4 0 008 3a7.4 7.4 0 00-5.2 2L1.4 3.5z"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="18" height="8" rx="2" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.5"/></svg>
+      </span>
+    </div>
+    <div class="screen-content">
+      <div class="app-bar">
+        <span class="back">‹</span>
+        <span class="title">Respiration Waveform</span>
+      </div>
+      <div class="subtitle">Full Night · 10:31 PM – 07:00 AM</div>
+
+      <div class="app-content">
+        <div class="card">
+          <div class="card-title-row">
+            <h3>Airflow Waveform</h3>
+            <span class="pill-badge green">10Hz Stream</span>
+          </div>
+          <svg class="waveform-svg" viewBox="0 0 300 100" preserveAspectRatio="none">
+            <line x1="0" y1="50" x2="300" y2="50" stroke="#334155" stroke-dasharray="4 4"/>
+            <path d="M 0 50 Q 15 20 30 50 T 60 50 T 90 50 T 120 50 T 150 92 T 180 50 T 210 18 T 240 50 T 270 50 T 300 50" stroke="#10B981" stroke-width="2.5" fill="none"/>
+            <circle cx="150" cy="92" r="4.5" fill="#EF4444"/>
+          </svg>
+          <div class="axis-ticks">
+            <span>10:31 PM</span>
+            <span>02:15 AM</span>
+            <span>07:00 AM</span>
+          </div>
+          <div class="event-legend">
+            <span class="event-dot"></span>
+            <span>Apnea Stop (12s) at 02:15 AM</span>
+          </div>
+          <div class="gesture-hint">Pinch to zoom · Drag to pan</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title-row">
+            <h3>Spectral Analysis (FFT)</h3>
+            <span class="pill-badge purple">256-pt FFT</span>
+          </div>
+          <svg class="fft-svg" viewBox="0 0 300 100" preserveAspectRatio="none">
+            <g fill="#8B5CF6">
+              <rect x="4" y="70" width="10" height="30"/>
+              <rect x="20" y="55" width="10" height="45"/>
+              <rect x="36" y="35" width="10" height="65"/>
+              <rect x="52" y="14" width="10" height="86"/>
+              <rect x="68" y="30" width="10" height="70"/>
+              <rect x="84" y="50" width="10" height="50"/>
+              <rect x="100" y="66" width="10" height="34"/>
+              <rect x="116" y="76" width="10" height="24"/>
+              <rect x="132" y="82" width="10" height="18"/>
+              <rect x="148" y="86" width="10" height="14"/>
+              <rect x="164" y="78" width="10" height="22"/>
+              <rect x="180" y="68" width="10" height="32"/>
+              <rect x="196" y="72" width="10" height="28"/>
+              <rect x="212" y="80" width="10" height="20"/>
+              <rect x="228" y="86" width="10" height="14"/>
+              <rect x="244" y="90" width="10" height="10"/>
+              <rect x="260" y="92" width="10" height="8"/>
+              <rect x="276" y="94" width="10" height="6"/>
+            </g>
+            <circle cx="57" cy="14" r="3" fill="#C4B5FD"/>
+          </svg>
+          <div class="axis-ticks">
+            <span>0 Hz</span>
+            <span>Peak: 0.27 Hz (16 bpm)</span>
+            <span>2 Hz</span>
+          </div>
+        </div>
+      </div>
+
+      <nav class="primary-nav-bar">
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10"/></svg>
+          <span>Home</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 119.5 4a7 7 0 1010.5 10.5z"/></svg>
+          <span>Monitor</span>
+        </div>
+        <div class="nav-item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/></svg>
+          <span>Summary</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          <span>Settings</span>
+        </div>
+      </nav>
+    </div>
+    <div class="home-indicator"><span class="bar"></span></div>
+  </div>
+</body>
+</html>

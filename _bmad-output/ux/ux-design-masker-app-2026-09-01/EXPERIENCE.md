@@ -1,9 +1,9 @@
 ---
 name: Sleep Apnea Detection App (D-BAND Integrated Platform)
 status: final
-version: 1.2.0
+version: 1.2.1
 created: 2026-09-01
-updated: 2026-09-04
+updated: 2026-09-05
 author: Sally (UX Designer) & Winston (System Architect)
 ---
 
@@ -49,6 +49,8 @@ author: Sally (UX Designer) & Winston (System Architect)
    ├── Calendar History (MOB_HISTORY_FILTER)    v
    └── Doctor Report Export (MOB_EXPORT_DOCTOR) [ Alarm Silenced / Return to Monitor ]
 ```
+
+**Clickable prototype:** every screen above (except `MOB_HOME`, still unspecified) exists as a wired Penpot board — click-through in flow order, same sequence as this map. File: [`Sleep Apnea App — Mockup Flow`](http://localhost:9001/#/workspace?team-id=05a22000-b411-8052-8008-9712fb8b998e&file-id=aeeec736-5c79-81d3-8008-9719456b8880&page-id=aeeec736-5c79-81d3-8008-9719456b8881) in Reid's self-hosted Penpot instance (`docker compose up -d` in `_bmad-output/ux/penpot/` if it's not already running). Static reference: `mockups/*.html` in this folder.
 
 ---
 

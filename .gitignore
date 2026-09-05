@@ -1,2 +1,3 @@
 _bmad-output/**/*.html
 !_bmad-output/**/mockups/*.html
+_bmad-output/ux/penpot/penpot-mcp-npx.log
