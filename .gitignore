@@ -1,1 +1,2 @@
 _bmad-output/**/*.html
+!_bmad-output/**/mockups/*.html

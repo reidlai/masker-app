@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Passkey Biometric Login — Sleep Apnea Detection App</title>
+  <style>
+    :root {
+      --bg-primary: #0F172A;
+      --surface: #1E293B;
+      --border: #334155;
+      --accent-green: #10B981;
+      --text-primary: #F8FAFC;
+      --text-secondary: #94A3B8;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); }
+    body {
+      background-color: #020617;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      color: var(--text-primary);
+    }
+    .phone-frame {
+      width: 390px;
+      height: 844px;
+      background-color: var(--bg-primary);
+      border-radius: 48px;
+      border: 12px solid #1E293B;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+    }
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 40px;
+    }
+    .header {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .brand-logo {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #10B981, #059669);
+      border-radius: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0 auto 16px;
+      box-shadow: 0 10px 25px -5px rgba(16,185,129,0.4);
+    }
+    .brand-logo svg { width: 36px; height: 36px; fill: white; }
+    h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+    p.subtitle { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+    
+    .passkey-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 32px 24px;
+      text-align: center;
+      margin-top: auto;
+      margin-bottom: 40px;
+      backdrop-filter: blur(12px);
+    }
+    .passkey-pulse {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(16,185,129,0.1);
+      border: 2px solid var(--accent-green);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0 auto 20px;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(16,185,129, 0.4); }
+      70% { box-shadow: 0 0 0 20px rgba(16,185,129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16,185,129, 0); }
+    }
+    .btn-passkey {
+      width: 100%;
+      height: 56px;
+      background-color: var(--accent-green);
+      color: white;
+      border: none;
+      border-radius: 16px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      transition: transform 0.2s, background-color 0.2s;
+      box-shadow: 0 10px 20px -5px rgba(16,185,129,0.3);
+    }
+    .btn-passkey:hover { background-color: #059669; transform: translateY(-2px); }
+    .footer-note {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <div class="status-bar">
+      <span>10:15 PM</span>
+      <span>D-BAND 100% ⚡</span>
+    </div>
+
+    <div class="header">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
+      </div>
+      <h1>Sleep Apnea App</h1>
+      <p class="subtitle">D-BAND Integrated Respiratory Platform</p>
+    </div>
+
+    <div class="passkey-card">
+      <div class="passkey-pulse">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 11c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3z"/>
+          <path d="M12 14c-4 0-7 2-7 4v1h14v-1c0-2-3-4-7-4z"/>
+        </svg>
+      </div>
+      <h2 style="font-size: 18px; margin-bottom: 8px;">Biometric Passkey Required</h2>
+      <p class="subtitle" style="margin-bottom: 24px; font-size: 13px;">Authenticate passwordlessly using native OS biometrics (Face ID / Touch ID).</p>
+      
+      <button class="btn-passkey" onclick="alert('Authenticating via WebAuthn Passkey...')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/></svg>
+        Sign in with Passkey
+      </button>
+    </div>
+
+    <div class="footer-note">
+      🔒 HIPAA §164.312 Protected · FIDO2 Hardware Encryption
+    </div>
+  </div>
+</body>
+</html>
