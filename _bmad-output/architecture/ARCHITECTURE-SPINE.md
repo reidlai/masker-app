@@ -1,9 +1,9 @@
 ---
 title: Enterprise Architecture Specification — BPMN.js XML & PlantUML Data Architecture
 status: draft
-version: 19.0.0
+version: 20.0.0
 created: 2026-08-31
-updated: 2026-09-04
+updated: 2026-09-06
 author: Winston (System Architect) & Mary (Business Analyst)
 ---
 
@@ -57,9 +57,9 @@ Rel(system, doctor, "Delivers Morning Sleep Summaries & EHR/Big Data Reports", "
 
 ---
 
-### 1.1.1 🏛️ Architectural Decisions & System Invariants (AD-01 to AD-12)
+### 1.1.1 🏛️ Architectural Decisions & System Invariants (AD-01 to AD-15)
 
-The following core invariants govern all mobile application, BLE sensor driver, data processing, security, and UI design layers:
+The following core invariants govern all mobile application, BLE sensor driver, data processing, subscription and billing, security, and UI design layers:
 
 - **AD-01 (Atomic Design System Hierarchy):** Strict separation across UI Atoms, Molecules, 14 Organisms, and Page Templates.
 - **AD-02 (BLoC + RxDart Unidirectional Data Flow):** Event streams managed via `flutter_bloc` and `rxdart`; UI-facing BLoCs decimate the 10Hz bio-signal to ≤5 FPS via `sampleTime`/`throttleTime` and use `switchMap` event transformers. The single upstream bio-signal source that feeds every BLoC is the boot-time unified queue defined in **AD-12** — BLoCs subscribe to it, never to a driver or GATT channel directly.
@@ -70,7 +70,7 @@ The following core invariants govern all mobile application, BLE sensor driver, 
 - **AD-07 (Two-Tier Emergency Response):** Sub-200ms latency escalating siren tones ($40\text{dB} \to 75+\text{dB}$) & haptics, 30s "I'm Safe" tap, 5s auto-silence, and Tier-2 caregiver dispatch.
 - **AD-08 (Developer Options & Contextual Simulator Bar):** Interactive simulation of calibration ($N_{\text{idle}}$ & $V_{pp}$) and sleep cycle alarms via `DeveloperOptionsPage` and `DeveloperSimulatorBarOrganism`.
 - **AD-09 (Cryptographic Encryption):** AES-128 BLE link encryption, HTTPS TLS 1.3 in transit, AES-256 SQLCipher local database encryption at rest.
-- **AD-10 (Clinical Respiration & GPU Charting):** 60 FPS Skia GPU line plots (`fl_chart`), 256-point FFT spectral graphs, AHI score rings, and signed FHIR JSON / PDF exports.
+- **AD-10 (Clinical Respiration & GPU Charting):** 60 FPS Skia GPU line plots (`fl_chart`), 256-point FFT spectral graphs, AHI score rings, and signed FHIR JSON / PDF exports. The Doctor Report export (`Task_ExportDoctorReport`) is a **plan-gated action** — see **AD-13** and the §4.7 right-of-access open item.
 - **AD-11 (SOLID Dependency Inversion & `IBLESensorDriver` Interface Polymorphism):**  
   * **Binds:** All BLE sensor telemetry drivers (`BLESensorDriver`, `BleTelemetryService`, `FlutterBlueSensorDriver`), stream evaluators (`ApneaEvaluator`, `BleBloc`), and live UI views (`MeasurementPage`).  
   * **Prevents:** Tightly coupling UI pages or monitoring evaluators to specific hardware or simulation drivers, enabling zero-code-change driver swapping and unit test mocking.  
@@ -78,7 +78,22 @@ The following core invariants govern all mobile application, BLE sensor driver, 
 - **AD-12 (App-Boot Unified Reactive Bio-Signal Ingestion Queue):**
   * **Binds:** App bootstrap (`main()` / composition root), the BLE background receiver service, every `IBLESensorDriver` implementation (`FlutterBlueSensorDriver`, `BleTelemetryService`, `BLESensorDriver`), and all downstream bio-signal consumers (`BleBloc`, `ApneaEvaluator`, `MeasurementPage`, the Stage-1 idle and Stage-2 active-breath calibration controllers, and `SleepMonitoringBloc`).
   * **Prevents:** Per-screen or per-phase BLE subscriptions that each open their own GATT channel; divergent queue primitives (a plain `StreamController` or `PublishSubject`) that drop the latest-value replay a late subscriber needs; calibration and nocturnal monitoring racing to own the connection lifecycle; a driver swap (AD-11) forcing consumers to re-subscribe.
-  * **Rule:** On application launch the BLE background receiver service MUST start and stay resident for the process lifetime — Android **Foreground Service** (`foregroundServiceType` `connectedDevice`\|`dataSync`, persistent notification) and iOS `UIBackgroundModes` = `bluetooth-central`. Bootstrap binds **exactly one** active `IBLESensorDriver` by Constructor DI (per AD-11). Every inbound sample — a physical GATT notification **or** a `BleTelemetryService` simulator tick — MUST be pushed with RxDart `.add()` into a **single process-wide `BehaviorSubject<double>`** exposed as the driver's `thermalStream` / `signalStream` (`ValueStream<double>`). All consumers (Stage-1 5–10 s idle calibration, Stage-2 10–30 s active-breath calibration, and 8+ h nocturnal monitoring) MUST consume that one stream; none may open its own BLE subscription or instantiate a second queue. Queue identity and the `ValueStream` reference are stable across a driver swap. The receiver **service and queue** start at boot; the physical BLE radio link (`scanAndConnect`) MAY be established lazily — when a bound D-BAND is in range or the first consumer requires it — and is then held alive by the Foreground Service for the session, preserving the AD-06 `<8%` / 8 h battery budget. `EndSession` calls `stopTelemetryLogging()` only; the receiver service and queue survive for the next session.
+  * **Rule:** On application launch the BLE background receiver service MUST start and stay resident for the process lifetime — Android **Foreground Service** (`foregroundServiceType` `connectedDevice`\|`dataSync`, persistent notification) and iOS `UIBackgroundModes` = `bluetooth-central`. Bootstrap binds **exactly one** active `IBLESensorDriver` by Constructor DI (per AD-11). Every inbound sample — a physical GATT notification **or** a `BleTelemetryService` simulator tick — MUST be pushed with RxDart `.add()` into a **single process-wide `BehaviorSubject<double>`** exposed as the driver's `thermalStream` / `signalStream` (`ValueStream<double>`). All consumers (Stage-1 5–10 s idle calibration, Stage-2 10–30 s active-breath calibration, and 8+ h nocturnal monitoring) MUST consume that one stream; none may open its own BLE subscription or instantiate a second queue. Queue identity and the `ValueStream` reference are stable across a driver swap. The receiver **service and queue** start at boot; the physical BLE radio link (`scanAndConnect`) MAY be established lazily — when a bound D-BAND is in range or the first consumer requires it — and is then held alive by the Foreground Service for the session, preserving the AD-06 `<8%` / 8 h battery budget. `EndSession` calls `stopTelemetryLogging()` only; the receiver service and queue survive for the next session. **Home's D-BAND device-status card is a read-only consumer of this receiver-service state (per AD-15) — it never opens its own scan or subscription.**
+
+- **AD-13 (Subscription State & Server-Verified Entitlement):**
+  * **Binds:** the backend **Billing service**, the Flutter `BillingBloc` / `SubscriptionRepository` / `EntitlementService`, every plan-gated feature call (today: Doctor Report Export — `Task_ExportDoctorReport`), and the Stripe **webhook receiver**.
+  * **Prevents:** the client trusting a local plan flag to unlock a gated feature; multiple components each deciding "is this user Premium?" from a different source; a gated clinical action hard-blocking a patient while the entitlement server is briefly unreachable; entitlement logic derived on-device from raw Stripe objects.
+  * **Rule:** the backend **Billing service is the sole source of truth** for subscription state, mutated **only** by **HMAC-signature-verified** Stripe webhook events (`customer.subscription.*`, `invoice.*`). Stripe **executes payment only**; subscription lifecycle — create, plan change, cancel, invoice history — is owned by our backend. The client fetches a **signed entitlement claim** from the Billing service and MAY cache it; a plan-gated action re-checks entitlement server-side and, on transport failure, falls back to the cached claim within a **bounded grace window** — *fail-open for connectivity, never for a known-expired plan*. `[OPEN — legal]` gating `Task_ExportDoctorReport` (a patient's own PHI) behind Premium requires HIPAA §164.524 right-of-access sign-off before build; see §4.7.
+
+- **AD-14 (Cardholder-Data Scope Containment — PCI-DSS SAQ-A):**
+  * **Binds:** `MOB_PAYMENT_METHOD` / `StripePaymentSheetGateway`, the Billing service, and **every datastore and log on the platform**.
+  * **Prevents:** any client or backend component receiving, storing, transiting, or logging a PAN, CVC, full expiry, or track data; a hand-rolled in-app card-entry form.
+  * **Rule:** card capture occurs **only** inside Stripe's hosted **PaymentSheet** (mobile) / **Stripe Elements** (web). The platform persists and renders **only** the display triplet — `brand`, `last4`, `exp_month`/`exp_year` — plus the opaque `stripe_payment_method_id`. No platform component enters the cardholder-data environment, keeping the platform **PCI-DSS SAQ-A** eligible. Card-on-file add / replace go through PaymentSheet; "remove card" detaches the token via the Billing service.
+
+- **AD-15 (Local `SessionSummary` Read Model for the Dashboard):**
+  * **Binds:** `HomeDashboardBloc`, `MOB_HOME` (7-night AHI trend card, monitoring streak, D-BAND device-status card), the `HomeSummaryCardOrganism` and the `MOB_SLEEP_SUMMARY` score card, and session finalization (`Task_EndSession` / `State_MorningSummary`).
+  * **Prevents:** the dashboard recomputing trends from raw `TelemetryStream` blobs (AD-10) at read time; Home opening its own BLE subscription for device status (violates AD-12); the "alarm fired last night" signal being inferred divergently on Home versus Summary.
+  * **Rule:** on session finalization a **`SessionSummary`** record is written — `{date, ahi_score, quality_score, total_duration, apnea_alarm_count, safety_tap_count, alarm_fired}` — to the cloud **Isolated Data Zone** (1:1 with `SleepSession`, **Level 1 PHI**) as source of truth, with the device holding a **local rolling cache of the last N** (`N ≥ 7`) for the offline dashboard. Home's device-status card reads connection / battery / last-sync / permission **from the AD-12 receiver-service state only**. `alarm_fired` (≥ 1 `State_ApneaBreach` reached in the session) is the **single persisted field** both summary cards read to switch to the amber "N apnea alert(s)" treatment — written at finalization, never re-derived at read time.
 
 ---
 
@@ -140,11 +155,12 @@ Rel(doctor, clinic_portal, "Reviews Patient AHI Trends & Clinical Research Data"
    $$\text{Hypopnea Breach} \iff \text{Airflow Drop} \ge 30\% \text{ for } \ge 10\text{ seconds}$$
 4. **Dual Persistence Tier (Bio-Signal Time-Series Store + Application Database & Big Data Store):**
    * **Bio-Signal Time-Series Store:** Columnar storage designed for high-frequency bio-signal time-series blobs (compressed via snappy/zstd, encrypted with AES-256 at rest).
-   * **Application Database & Big Data Store:** Primary database storing user profiles, health baselines, device bindings, real-time alert queues pushing sub-1.5s updates to connected WebSocket clients, and de-identified big data research records.
+   * **Application Database & Big Data Store:** Primary database storing user profiles, health baselines, device bindings, real-time alert queues pushing sub-1.5s updates to connected WebSocket clients, `SessionSummary` per-night rollups, and de-identified big data research records.
+5. **Billing Subsystem (`Billing` service + isolated Billing datastore — `AD-13` / `AD-14`):** a backend `Billing` microservice in the Application Core zone, its own relational store (Financial PII, **no PHI, no cardholder data**), and a `StripeWebhookReceiver` at the edge. Owns subscription lifecycle and issues signed entitlement claims to the client; Stripe executes payment only. Deliberately **not** part of the PHI Isolated Data Zone.
 
 #### 💡 Guidance for Downstream Engineering (Architecture & Epics)
 > [!IMPORTANT]
-> **Implementation Target:** Engineers building feature stories must maintain the separation between high-frequency bio-signal persistence (`Bio-Signal Time-Series Store`) and relational/document application state (`Application Database`). Never post 100ms telemetry samples directly into the primary application database.
+> **Implementation Target:** Engineers building feature stories must maintain the separation between high-frequency bio-signal persistence (`Bio-Signal Time-Series Store`) and relational/document application state (`Application Database`). Never post 100ms telemetry samples directly into the primary application database. Likewise, keep the **Billing datastore isolated from the PHI zone** — it references `user_id` only and never holds PHI or cardholder data.
 
 ---
 
@@ -380,9 +396,10 @@ PatientUser "1" -- "*" PhiAuditLog : generates >
 
 The Conceptual Data Model structures database entities around the 6 process phases of the BPMN workflow, establishing strict HIPAA privacy levels:
 
-* **Level 1 (PHI - Protected Health Information):** Requires AES-256 encryption at rest and TLS 1.3 in transit. Includes `PatientUser`, `HealthBaseline`, `SleepSession`, `TelemetryStream` (compressed raw bio-signal blobs), `ApneaEvent`, `EmergencyAlertQueue`, `CareDispatchRecord`, and `DeviceRecoveryRecord` (tracking lost device reports, session revocations, and remote wipe events). Access is gated by strict Role-Based Access Control (RBAC).
-* **Level 2 (PII - Personally Identifiable Information):** Technical metadata and device identifiers (`DeviceBinding`, `ClinicDoctorAssignment`).
+* **Level 1 (PHI - Protected Health Information):** Requires AES-256 encryption at rest and TLS 1.3 in transit. Includes `PatientUser`, `HealthBaseline`, `SleepSession`, `SessionSummary` (per-night finalized rollup — AHI, duration, `apnea_alarm_count`, `safety_tap_count`, `alarm_fired`, quality; source of truth for the Home dashboard read model per **AD-15**), `TelemetryStream` (compressed raw bio-signal blobs), `ApneaEvent`, `EmergencyAlertQueue`, `CareDispatchRecord`, and `DeviceRecoveryRecord` (tracking lost device reports, session revocations, and remote wipe events). Access is gated by strict Role-Based Access Control (RBAC).
+* **Level 2 (PII - Personally Identifiable Information):** Technical metadata and device identifiers (`DeviceBinding`, `ClinicDoctorAssignment`); non-sensitive client settings (`UserPreferences` — locale, region, units).
 * **Level 2 (Audit):** `PhiAuditLog` — an immutable, write-once audit log capturing every access event, read operation, unbinding request, remote wipe signal, and dispatch action across the platform.
+* **Level 3 (Financial PII — isolated Billing store):** `Subscription`, `PaymentMethodRef`, `Invoice`, `Entitlement`. Held in a **separate Billing datastore** in the Application Core zone — **not** the HIPAA Isolated Data Zone — referencing `user_id` only and containing **no PHI**. `PaymentMethodRef` stores only the display triplet (`brand`, `last4`, `exp_month`/`exp_year`) plus the opaque `stripe_payment_method_id`; **no cardholder data ever enters the platform** (PCI-DSS SAQ-A, **AD-14**). The Billing service is the sole source of truth for subscription state (**AD-13**). Standard AES-256 at rest + TLS 1.3 in transit; the PHI zone's per-field envelope encryption and write-once audit do not apply.
 
 
 ---
@@ -397,7 +414,8 @@ The Conceptual Data Model structures database entities around the 6 process phas
 | **Phase 4: Emergency Center & Caregiver** | GPS coordinates, address, emergency contact phone, dispatcher action log, SMS/Voice call dispatch timestamp, EMS status. | `CareDispatchRecord`, `ClinicDoctorAssignment` | `dispatch_id`, `alert_id`, `dispatcher_id`, `caregiver_phone`, `gps_location`, `ems_dispatched`, `doctor_npi_number`. | **Level 1 (PHI)** — Role-Based Access Control (RBAC). |
 | **Phase 5: Morning Analytics & Doctor** | Session end time, total sleep duration, final AHI score, total apnea stops, quality score (0–100), doctor share payload. | `SleepSession`, `ClinicDoctorAssignment` | `end_time`, `total_duration_hours`, `ahi_score`, `quality_score`, `doctor_npi_number`. | **Level 1 (PHI)** — HL7 FHIR Export Stream. |
 | **Phase 6: Device & Mobile Lost Recovery** | Hardware loss report, lost MAC address, WebAuthn revocation token, remote wipe execution signal, replacement hardware serial pairing. | `DeviceBinding`, `DeviceRecoveryRecord`, `PhiAuditLog` | `recovery_id`, `user_id`, `incident_type`, `remote_wipe_status`, `unbound_reason`, `reported_at`, `status`. | **Level 1 (PHI)** — Cryptographic Wipe Audit & RBAC. |
-| **Phase 7: Mobile Dashboard Review & Analytics** | Morning summary metrics, AHI score, 60 FPS Skia GPU waveform data, 256-point FFT spectral peaks, date-range history filter, signed FHIR clinical export payload. | `SleepSession`, `TelemetryStream`, `PhiAuditLog` | `session_id`, `ahi_score`, `quality_score`, `total_apnea_events`, `compressed_bio_signals`, `action_type = "EXPORT_DOCTOR_REPORT"`. | **Level 1 (PHI)** — Encrypted SQLCipher DB & Signed FHIR Export. |
+| **Phase 7: Mobile Dashboard Review & Analytics** | Home dashboard read (last-N `SessionSummary` cache, streak, device-status from the AD-12 receiver state), morning summary metrics, AHI score, 60 FPS Skia GPU waveform data, 256-point FFT spectral peaks, date-range history filter, **server-side entitlement check (AD-13) preceding** the signed FHIR clinical export payload. | `SessionSummary`, `SleepSession`, `TelemetryStream`, `Entitlement`, `PhiAuditLog` | `session_id`, `ahi_score`, `quality_score`, `apnea_alarm_count`, `safety_tap_count`, `alarm_fired`, `compressed_bio_signals`, `action_type = "EXPORT_DOCTOR_REPORT"`. | **Level 1 (PHI)** — Encrypted SQLCipher DB & Signed FHIR Export. |
+| **Phase 8: Subscription & Billing** | Plan selection, Stripe PaymentSheet tokenization result, HMAC-verified subscription/invoice webhook events, signed entitlement claim, card-on-file display triplet. | `Subscription`, `PaymentMethodRef`, `Invoice`, `Entitlement` | `user_id`, `stripe_customer_id`, `stripe_subscription_id`, `plan`, `status`, `current_period_end`, `pm_brand`, `pm_last4`, `stripe_payment_method_id`. | **Level 3 (Financial PII)** — isolated Billing store; **no cardholder data** (PCI-DSS SAQ-A, AD-14). |
 | **All Phases** | User ID, action performed, accessed table/entity, IP address, timestamp. | `PhiAuditLog` | `audit_id`, `user_id`, `action_type`, `accessed_entity`, `ip_address`, `timestamp`. | **Level 2 (Audit)** — Immutable Write-Once Log. |
 
 ---
@@ -588,7 +606,13 @@ Rel(doctor, clinic_portal, "ClinicDoctorAssignment diagnostic notes & AHI review
 | **`EMS CAD Gateway`** | `Backend Platform Services` | `EMS CAD Gateway` | `CareDispatchRecord` | Integration gateway initiating 911 Computer-Aided Dispatch (CAD) emergency responder orders. |
 | **`Clinic Portal Backend`** | `Clinic & Physician Portal` | `Clinic & Physician Portal` | `SleepSession`, `ClinicDoctorAssignment` | Web backend syncing morning sleep scores, AHI trends, and physician diagnostic notes. |
 | **`Application Database (DB)`** | `Application Database` | `Application Database` | All Primary Application Entities | Relational/Document database persisting user state, health baselines, device bindings, and alert queues. |
-| **`Bio-Signal Time-Series Store`** | `Bio-Signal Time-Series Store` | `Bio-Signal Time-Series Store` | `TelemetryStream` | Columnar database storing compressed high-frequency bio-signal streams. |ime-Series Store` | `Bio-Signal Time-Series Store` | `TelemetryStream` | Columnar database storing compressed high-frequency bio-signal streams. |
+| **`Bio-Signal Time-Series Store`** | `Bio-Signal Time-Series Store` | `Bio-Signal Time-Series Store` | `TelemetryStream` | Columnar database storing compressed high-frequency bio-signal streams. |
+| **`Home Dashboard BLoC`** | `Mobile Application` | `HomeDashboardBloc` | `SessionSummary` (local last-N cache), receiver-service state | Assembles the `MOB_HOME` read model — 7-night AHI trend, monitoring streak, D-BAND device-status — from the local `SessionSummary` cache (AD-15) and the AD-12 receiver-service state; opens **no** BLE subscription of its own. |
+| **`Billing BLoC / SubscriptionRepository`** | `Mobile Application` | `BillingBloc`, `SubscriptionRepository` | `Subscription`, `PaymentMethodRef`, `Invoice` | Renders `MOB_BILLING` / `MOB_PAYMENT_METHOD`; reads plan + card-on-file display triplet + invoice list from the Billing service; never derives entitlement from raw Stripe data. |
+| **`Entitlement Service (client)`** | `Mobile Application` | `EntitlementService` | `Entitlement` (signed claim) | Holds the signed entitlement claim, applies the plan-gate before a gated action (`Task_ExportDoctorReport`), re-checks server-side, falls back to the cached claim within the bounded grace window (AD-13). |
+| **`Stripe PaymentSheet Gateway`** | `Mobile Application` | `StripePaymentSheetGateway` | tokenized card → `stripe_payment_method_id` | Presents Stripe's hosted PaymentSheet for card capture; returns only an opaque payment-method token — no PAN/CVC crosses into the app (AD-14). |
+| **`Billing Service`** | `Backend Platform Services` | `BillingService` | `Subscription`, `PaymentMethodRef`, `Invoice`, `Entitlement` | **Sole source of truth** for subscription state and entitlement issuance; owns plan create/change/cancel and invoice history; isolated Billing datastore in the App Core zone, holds no PHI (AD-13). |
+| **`Stripe Webhook Receiver`** | `Backend Platform Services` | `StripeWebhookReceiver` | `customer.subscription.*`, `invoice.*` events | HMAC-SHA256-verified ingress endpoint behind the WAF/CDN edge; the **only** writer of subscription state into the Billing datastore (AD-13); every event mirrored to a webhook audit log. |
 
 ---
 
@@ -717,16 +741,100 @@ entity "PhiAuditLog" as audit_log {
     timestamp : TIMESTAMP
 }
 
+entity "SessionSummary" as session_summary {
+    * summary_id : VARCHAR(36) <<PK>>
+    --
+    * session_id : VARCHAR(36) <<FK>> [1:1 SleepSession]
+    * user_id : VARCHAR(36) <<FK>>
+    session_date : DATE
+    ahi_score : DECIMAL(4,2)
+    quality_score : INT
+    total_duration_minutes : INT
+    apnea_alarm_count : INT
+    safety_tap_count : INT
+    alarm_fired : BOOLEAN
+    finalized_at : TIMESTAMP
+}
+
+entity "UserPreferences" as user_prefs {
+    * user_id : VARCHAR(36) <<PK,FK>>
+    --
+    locale : VARCHAR(16)
+    region : VARCHAR(8)
+    units : VARCHAR(10)
+    updated_at : TIMESTAMP
+}
+
+' ---- Financial PII: isolated Billing datastore (App Core zone, NOT the PHI zone) — AD-13 / AD-14 ----
+entity "Subscription" as subscription {
+    * subscription_id : VARCHAR(36) <<PK>>
+    --
+    * user_id : VARCHAR(36) <<FK>>
+    stripe_customer_id : VARCHAR(64)
+    stripe_subscription_id : VARCHAR(64)
+    plan : VARCHAR(16)
+    status : VARCHAR(24)
+    current_period_end : TIMESTAMP
+    cancel_at_period_end : BOOLEAN
+    updated_at : TIMESTAMP
+}
+
+entity "PaymentMethodRef" as payment_method {
+    * pm_ref_id : VARCHAR(36) <<PK>>
+    --
+    * subscription_id : VARCHAR(36) <<FK>>
+    stripe_payment_method_id : VARCHAR(64)
+    brand : VARCHAR(16)
+    last4 : CHAR(4)
+    exp_month : INT
+    exp_year : INT
+}
+
+entity "Invoice" as invoice {
+    * invoice_id : VARCHAR(36) <<PK>>
+    --
+    * subscription_id : VARCHAR(36) <<FK>>
+    stripe_invoice_id : VARCHAR(64)
+    amount_cents : INT
+    currency : CHAR(3)
+    status : VARCHAR(24)
+    issued_at : TIMESTAMP
+}
+
+entity "Entitlement" as entitlement {
+    * entitlement_id : VARCHAR(36) <<PK>>
+    --
+    * user_id : VARCHAR(36) <<FK>>
+    plan : VARCHAR(16)
+    features : VARCHAR(512)
+    claim_signature : VARCHAR(512)
+    issued_at : TIMESTAMP
+    grace_until : TIMESTAMP
+}
+
 patient_user ||--|| health_baseline : "1 : 1 (possesses)"
 patient_user ||--|{ device_binding : "1 : N (owns)"
 patient_user ||--|{ sleep_session : "1 : N (records)"
 sleep_session ||--|{ telemetry_stream : "1 : N (streams)"
+sleep_session ||--|| session_summary : "1 : 1 (finalizes)"
 sleep_session ||--|{ apnea_event : "1 : N (flags)"
 sleep_session ||--|{ alert_queue : "1 : N (triggers)"
 alert_queue ||--o| dispatch_record : "1 : 0..1 (escalates)"
 patient_user ||--|{ doctor_assignment : "1 : N (assigned_to)"
 patient_user ||--|{ recovery_record : "1 : N (logs_incident)"
 patient_user ||--|{ audit_log : "1 : N (generates)"
+patient_user ||--|| user_prefs : "1 : 1 (configures)"
+patient_user ||--|| subscription : "1 : 1 (holds)"
+patient_user ||--o| entitlement : "1 : 0..1 (granted)"
+subscription ||--o| payment_method : "1 : 0..1 (card_on_file)"
+subscription ||--|{ invoice : "1 : N (billed)"
+
+note bottom of subscription
+  Subscription / PaymentMethodRef / Invoice / Entitlement live in a
+  separate Billing datastore in the Application Core zone — NOT the
+  HIPAA Isolated Data Zone. No cardholder data (PCI-DSS SAQ-A, AD-14);
+  subscription state is fed only by HMAC-verified Stripe webhooks (AD-13).
+end note
 
 @enduml
 ```
@@ -1490,6 +1598,10 @@ UI -> User: 12. Display Filtered Historical Sleep Sessions & AHI Trend Graphs
 
 == Phase 4: Export Signed Clinical Report for Physician (Task_ExportDoctorReport) ==
 User -> UI: 13. Tap "Generate Signed Report & Share with Doctor" (MOB_EXPORT_DOCTOR_REPORT)
+UI --> BillingSvc: 13a. Verify entitlement { user_id, feature: "EXPORT_DOCTOR_REPORT" } [AD-13]
+activate BillingSvc
+BillingSvc --> UI: 13b. Entitlement OK  |  else -> route to MOB_BILLING (cached-claim fallback within grace window on transport failure)
+deactivate BillingSvc
 UI --> ProfileSvc: 14. Request Signed FHIR Report [IF-17, IF-18]\n{ patient_id, session_id, doctor_npi }
 activate ProfileSvc
 ProfileSvc --> AuditSvc: 15. Emit Doctor Report Export Audit Event [IF-19]
@@ -1507,6 +1619,9 @@ deactivate UI
 
 The **Mobile Dashboard Review Journey** (`Swimlane 7`) empowers patients and physicians with deep historical sleep analytics and clinical reporting:
 
+0. **Phase 0: Home Dashboard (`MOB_HOME`, post-onboarding default landing):**  
+   On every normal app open the patient lands on `MOB_HOME`. `HomeDashboardBloc` assembles a read-only dashboard from the **local last-N `SessionSummary` cache** (`AD-15`) — greeting + monitoring streak, last-night card, 7-night AHI trend — and the **AD-12 receiver-service state** for the D-BAND device-status card (connection / battery / last sync / permission). Home opens **no** BLE subscription and issues **no** network read on the critical path. Where a session logged `alarm_fired`, the last-night card and the `MOB_SLEEP_SUMMARY` score card both switch to the amber "N apnea alert(s)" treatment, reading the single persisted `apnea_alarm_count` field.
+
 1. **Phase 1: Review Morning Sleep Summary (`Task_ReviewMorningSummary`):**  
    Upon waking up or opening the app, the patient views `MOB_SLEEP_SUMMARY`. The client queries the local encrypted database or cloud session API (`IF-16`) to retrieve overnight sleep metrics, displaying total sleep hours, computed AHI score, and quality score.
 
@@ -1517,7 +1632,9 @@ The **Mobile Dashboard Review Journey** (`Swimlane 7`) empowers patients and phy
    On `MOB_HISTORY_FILTER`, the patient selects custom date ranges and severity filters. The client executes an encrypted SQL query against the local SQLCipher database to instantly update historical trend graphs without network latency.
 
 4. **Phase 4: Export Signed Clinical Report (`Task_ExportDoctorReport`):**  
-   The patient taps *"Generate Signed Report & Share with Doctor"* on `MOB_EXPORT_DOCTOR_REPORT`. The app triggers an API request (`IF-17`, `IF-18`) to the **Profile Service**, which formats an HL7 FHIR JSON payload and digitally signed PDF report, emits a HIPAA audit entry (`IF-19`), and launches the native OS share sheet.
+   The patient taps *"Generate Signed Report & Share with Doctor"* on `MOB_EXPORT_DOCTOR_REPORT`. `EntitlementService` first performs a **server-side entitlement check** against the Billing service (`AD-13`); on a `Premium` result the app triggers the signed-report API request (`IF-17`, `IF-18`) to the **Profile Service**, which formats an HL7 FHIR JSON payload and digitally signed PDF report, emits a HIPAA audit entry (`IF-19`), and launches the native OS share sheet. A `Free` result routes to `MOB_BILLING`; a transport failure falls back to the cached entitlement claim within its grace window. `[OPEN — legal]` whether this gate is lawful under HIPAA §164.524 — see §4.7.
+
+> **Deferred — Sequence Diagram 8 (Subscription & Payment Management):** the `MOB_BILLING` / `MOB_PAYMENT_METHOD` flow — plan view, Upgrade via Stripe PaymentSheet, card add/replace/remove, cancel-at-period-end, `StripeWebhookReceiver` reconciling `customer.subscription.*` / `invoice.*` into the Billing datastore — is a new end-to-end sequence to be authored when the billing epic is broken out. AD-13/AD-14 fix its invariants in the interim.
 
 ---
 
@@ -1674,28 +1791,32 @@ The platform's functional requirements (FR-1 through FR-5), data schema invarian
 
 ### 4.1 System Trust Boundary Decomposition & Attack Surface
 
-The system architecture spans **4 distinct Trust Boundaries (TB)** across edge hardware, mobile operating systems, cloud microservices, and external partner gateways:
+The system architecture spans **6 distinct Trust Boundaries (TB)** across edge hardware, mobile operating systems, cloud microservices, external partner gateways, and the Stripe payments boundary:
 
-The five zones stack from the physical edge down to external partners. **Each gap between two boxes is a trust boundary (`TB-n`)** — the labelled table below gives the transport, control, and primary threats for that crossing.
+The zones stack from the physical edge down to external partners and the payments provider. **Each gap between two boxes is a trust boundary (`TB-n`)** — the labelled table below gives the transport, control, and primary threats for that crossing.
 
 ```mermaid
 flowchart TB
     Z1["🔌 Edge Hardware<br/>D-BAND BLE Sensor"]
     Z2["📱 Patient Mobile / Web Clients<br/>Mobile App · Web Portals · untrusted device OS"]
-    Z3["🌐 Cloud Public Ingress<br/>API Gateway · Load Balancer"]
-    Z4["🔒 Internal Microservice Mesh<br/>Auth · Profile · Streaming · Audit · Data Stores"]
+    Z3["🌐 Cloud Public Ingress<br/>API Gateway · Load Balancer · Stripe Webhook Receiver"]
+    Z4["🔒 Internal Microservice Mesh<br/>Auth · Profile · Streaming · Audit · Billing · Data Stores"]
     Z5["📤 External Partner Gateways<br/>Twilio Telephony · EMS 911 CAD"]
+    Z6["💳 Stripe Payments Boundary<br/>hosted PaymentSheet · Billing API · signed webhooks"]
 
     Z1 <== "TB-1" ==> Z2
     Z2 <== "TB-2" ==> Z3
     Z3 <== "TB-3" ==> Z4
     Z4 <== "TB-4" ==> Z5
+    Z2 <== "TB-5" ==> Z6
+    Z6 <== "TB-6" ==> Z3
 
     style Z1 fill:#EFF6FF,stroke:#1D4ED8,stroke-width:2px,color:#0F172A
     style Z2 fill:#F0FDF4,stroke:#166534,stroke-width:2px,color:#0F172A
     style Z3 fill:#FFFBEB,stroke:#B45309,stroke-width:2px,color:#0F172A
     style Z4 fill:#FDF4FF,stroke:#7E22CE,stroke-width:2px,color:#0F172A
     style Z5 fill:#FEF2F2,stroke:#991B1B,stroke-width:2px,color:#0F172A
+    style Z6 fill:#ECFEFF,stroke:#0E7490,stroke-width:2px,color:#0F172A
 ```
 
 | Boundary | Crossing | Transport & control | Primary threats |
@@ -1704,6 +1825,8 @@ flowchart TB
 | **TB-2** — Client ingress | Mobile App / Web Portals ↔ Cloud API Gateway | HTTPS **TLS 1.3** + certificate pinning; WSS | MITM interception, passkey credential stuffing, JWT forgery, DDoS floods |
 | **TB-3** — Internal service mesh | API Gateway ↔ Microservices ↔ Data Stores | Service-mesh **mTLS** over gRPC/HTTP2; private DB endpoints; event streams (`PhiAuditLog`, `TelemetryStream`) | Lateral movement, internal privilege escalation, unauthorized DB mutation |
 | **TB-4** — External gateways | Platform backend ↔ Twilio (`IF-14`) / EMS 911 CAD (`IF-15`) | REST over **mTLS**; HMAC-signed webhooks; egress FQDN allowlist | Webhook spoofing, SMS interception, unauthenticated CAD command injection |
+| **TB-5** — Payments capture | Mobile App / Web ↔ Stripe hosted PaymentSheet / Elements | **TLS 1.3** direct to Stripe; only an opaque `stripe_payment_method_id` returns to the client — **no PAN/CVC crosses this boundary** (`AD-14`) | Card-form phishing on a spoofed sheet, token replay, client tampering to skip capture |
+| **TB-6** — Billing webhook ingress | Stripe ↔ `StripeWebhookReceiver` (behind WAF/CDN edge) | HTTPS **TLS 1.3**; **HMAC-SHA256 `Stripe-Signature` verification**; timestamp tolerance; idempotency keys; egress allowlist `api.stripe.com` | Forged "subscription active" webhook, event replay, entitlement escalation via fabricated `invoice.paid` |
 
 ---
 
@@ -1731,6 +1854,10 @@ Every inter-subsystem interaction flow (`IF-01` to `IF-22`), database entity, an
 | **TH-D3** | **Denial of Service** | WSS Alert Gateway (`IF-13`) | WebSocket connection failure or server crash blocking Tier-2 emergency alert broadcast. | Delayed command center escalation beyond 1.5s SLA. | Redundant WebSocket node pools + heartbeat ping/pong keep-alive + failover broadcast ring (**IF-13, NFR-2**). |
 | **TH-E1** | **Elevation of Privilege** | Backoffice Admin Portal (`IF-05`) | Support admin elevates privileges to view full patient medical charts or diagnostic trends. | Unauthorized PHI inspection by non-clinical personnel. | Role-Based Access Control (RBAC) restricting Backoffice Admins to passkey/device reset actions without PHI chart access (**NFR-4.1**). |
 | **TH-E2** | **Elevation of Privilege** | Emergency Dispatcher Portal (`IF-13`, `IF-15`) | Emergency Center dispatcher attempts to access historical sleep session data or AHI trends. | Scope creep / HIPAA violation by emergency response personnel. | Scoped ephemeral alert tokens granting access solely to 30s alert metadata, patient GPS, and emergency contact phone (**IF-13, IF-15**). |
+| **TH-S5** | **Spoofing** | Stripe Billing Webhook (`TB-6`, `StripeWebhookReceiver`) | Attacker POSTs a forged `customer.subscription.updated` / `invoice.paid` to the webhook endpoint to fabricate an active Premium subscription. | Free account gains Premium entitlement without payment; revenue loss; downstream feature-gate bypass. | **HMAC-SHA256 `Stripe-Signature` verification** against the endpoint signing secret + timestamp-tolerance check + replay-protection idempotency keys; the receiver is the **only** writer of subscription state (**AD-13**). |
+| **TH-T6** | **Tampering / Elevation** | Client entitlement check (`EntitlementService`, `Task_ExportDoctorReport`) | Patched/rooted client forges a `Premium` entitlement claim or skips the gate to unlock the Doctor Report export. | Paid clinical feature used without a subscription. | Server-side re-check at every gated action against the Billing service; the client claim is **signed** and short-TTL; a gated action never trusts a locally-set flag (**AD-13**). Note: a **free basic export** fallback (per the §4.7 open item) removes the incentive entirely. |
+| **TH-R3** | **Repudiation** | Subscription lifecycle (`BillingService`, Stripe events) | User disputes a charge or a cancellation; or an internal actor alters `Subscription.status`. | Billing dispute with no defensible trail; unaudited plan mutation. | Stripe's immutable event log + a local **webhook audit log** mirroring every processed event (id, type, signature-verified, applied-at); `Subscription` mutations only via the webhook path. |
+| **TH-I3** | **Information Disclosure** | Payment method display (`PaymentMethodRef`, `MOB_PAYMENT_METHOD`) | Logs, crash reports, or a compromised billing datastore expose cardholder data. | PCI-DSS breach exposure. | **No cardholder data exists to disclose** — the platform holds only `brand` + `last4` + expiry + opaque token (**AD-14**); PAN/CVC live solely with Stripe (PCI-DSS SAQ-A). |
 
 ---
 
@@ -1764,6 +1891,9 @@ Every threat risk ID is tied directly to its regulatory HIPAA standard, PRD requ
 | **TH-I1, TH-I2** | HIPAA §164.312(a)(2)(iv) Encryption at Rest & PRD NFR-4.1 | `Application DB` & `Timeseries DB` (`PatientUser`, `TelemetryStream`) | Field-level AES-256 encryption for Level 1 PHI + 5-minute inactivity session lock. |
 | **TH-D1, TH-D2, TH-D3** | HIPAA §164.312(c)(1) Data Availability & PRD NFR-1, NFR-2 | `Patient App UI` $\rightarrow$ `Data Streaming Service` (`IF-12`, `IF-13`) | Edge 1h RAM circular buffer + <3.0s auto-reconnect + sub-200ms local siren + failover WSS ring. |
 | **TH-E1, TH-E2** | HIPAA §164.312(a)(2)(i) Unique User ID & PRD FR-5.3 | `Backoffice Web Portal` & `Emergency Center Portal` (`IF-05`, `IF-13`) | Strict RBAC limiting Backoffice Admins to device reset and Emergency Dispatchers to 30s alert metadata & GPS. |
+| **TH-S5, TH-R3** | PCI-DSS Req. 12 (governance) & **AD-13** | `Stripe` $\rightarrow$ `StripeWebhookReceiver` (`TB-6`) | HMAC-SHA256 signature verification + replay/idempotency guard; webhook receiver is the sole writer of `Subscription` state; every event mirrored to a webhook audit log. |
+| **TH-T6** | **AD-13** server-verified entitlement | `EntitlementService` $\rightarrow$ `BillingService` (gated actions) | Signed, short-TTL entitlement claim; server-side re-check per gated action; bounded-grace cached fallback for connectivity only, never for a known-expired plan. |
+| **TH-I3** | HIPAA §164.312(a)(2)(iv) & **PCI-DSS SAQ-A / AD-14** | `StripePaymentSheetGateway` (`TB-5`), Billing datastore, all logs | Cardholder data never enters the platform; only `brand`/`last4`/expiry + opaque `stripe_payment_method_id` persisted; card capture 100% in Stripe's hosted sheet. |
 
 ---
 
@@ -1796,12 +1926,14 @@ graph LR
 * **TB-2 (Client Ingress):** All external mobile and web HTTP/WebSocket connections enforced over **HTTPS / TLS 1.3** with mandatory **TLS Certificate Pinning** on mobile clients to eliminate MITM proxy inspection.
 * **TB-3 (Service Mesh):** Internal microservice-to-microservice gRPC calls and event streams (`PhiAuditLog`, `TelemetryStream`) encrypted via **Mutually Authenticated TLS (mTLS x509 certificates)** over HTTP/2.
 * **TB-4 (External Partners):** Outbound integrations to Twilio Telephony (`IF-14`) and Local EMS CAD Gateways (`IF-15`) restricted to TLS 1.3 REST endpoints with HMAC signature verification.
+* **TB-5 (Payments Capture) / TB-6 (Billing Webhook):** Card capture flows directly to Stripe's hosted **PaymentSheet / Elements** over TLS 1.3 — no cardholder data transits any platform component (**AD-14**). Inbound `StripeWebhookReceiver` traffic is TLS 1.3 with **HMAC-SHA256 `Stripe-Signature`** verification, timestamp tolerance, and idempotency-key replay protection.
 
 #### 2. Data-at-Rest Field-Level Envelope Encryption Standard
-All Level 1 Protected Health Information (PHI) stored in relational database tables (`PatientUser`, `HealthBaseline`, `CareDispatchRecord`) and time-series data stores (`TelemetryStream`) is protected using an **Envelope Encryption Pattern**:
+All Level 1 Protected Health Information (PHI) stored in relational database tables (`PatientUser`, `HealthBaseline`, `SessionSummary`, `CareDispatchRecord`) and time-series data stores (`TelemetryStream`) is protected using an **Envelope Encryption Pattern**:
 * **KMS Master Key ($K_{\text{master}}$):** Stored in Cloud Key Management Service (Cloud KMS / Key Vault / HSM Service) with automatic 90-day key rotation and hardware security module (HSM) isolation.
 * **Data Encryption Keys ($K_{\text{data}}$):** Derived per user account via HKDF-SHA256. $K_{\text{data}}$ encrypts individual PHI database fields using **AES-256-GCM** with a unique 96-bit Initialization Vector (IV) per record.
 * **Encrypted Field Scope:** `encrypted_full_name`, `encrypted_phone`, `compressed_bio_signals`, `gps_location`, `caregiver_phone`.
+* **Financial PII (isolated Billing datastore):** `Subscription` / `PaymentMethodRef` / `Invoice` sit **outside** this per-field envelope scope — they carry no cardholder data and no PHI. Standard AES-256 at rest + TLS 1.3 in transit; `stripe_customer_id` / `stripe_subscription_id` / `stripe_payment_method_id` are **opaque reference identifiers**, access-controlled by RBAC but not treated as secrets (**AD-13**, **AD-14**).
 
 #### 3. Mobile Edge Secure Storage & Enclave Integration
 * **Key Wrapping:** Local SQLCipher database encryption keys and Hive key-value cache keys are wrapped using OS hardware keychains (**Android Keystore** with StrongBox Keymaster / **iOS Keychain** backed by Apple Secure Enclave Processor).
@@ -1849,6 +1981,12 @@ Access to platform features, APIs, and database entities is governed by strict *
 | **`ClinicDoctorAssignment`** | Read Assigned Doctor | No Access | Create / Update Assignment | No Access | Read / Sign Diagnosis |
 | **`DeviceRecoveryRecord`** | Trigger Unbind / Wipe | Trigger Wipe (Web) | Create / Process Lost Report | No Access | No Access |
 | **`PhiAuditLog`** | No Access | No Access | Read System Audit | Read Dispatch Audit | Read Chart Sign Audit |
+| **`SessionSummary` (Dashboard rollup)** | Read Self | No Access | No Access | No Access | Read Assigned Patients |
+| **`UserPreferences` (locale / units)** | Read / Update Self | No Access | No Access | No Access | No Access |
+| **`Subscription` / `Invoice`** | Read Self · Manage Self (plan change / cancel) | No Access | No Access | No Access | No Access |
+| **`PaymentMethodRef`** | Read Self (display triplet) · Manage Self (add / replace / remove via Stripe PaymentSheet) | No Access | No Access | No Access | No Access |
+
+> **`Role_Patient` capability added:** *manage own subscription and payment method*. This is a self-scoped action against the isolated Billing datastore (**AD-13**); it grants no visibility into any other patient's billing or any PHI. Entitlement (`is Premium?`) is an authorization decision resolved server-side by the Billing service, never by the client (**AD-13**).
 
 #### 3. Session Security & Timeout Controls
 * **Mobile Inactivity Auto-Lock:** Patient mobile app automatically locks local interface and requires Passkey re-authentication (`Task_PasskeyAuth`) after **5 minutes** of inactivity (PRD NFR-4.1).
@@ -1872,10 +2010,14 @@ The platform architecture is designed to satisfy both **US HIPAA Security & Priv
 | **§ 164.312(c)(2)** | **Cryptographic Remote Zeroization:** Protocol for emergency data destruction on lost nodes. | `Auth Service` & `Push Service` (`IF-21`) | Sub-1s remote wipe zeroizing local SQLCipher DBs, Hive caches, and Secure Enclave master keys (`FR-5.4, NFR-4.3`). |
 | **§ 164.312(d)** | **Person or Entity Authentication:** Verification of identity before granting access. | `Auth Service` & `Profile Service` (`IF-05`, `IF-10`) | FIDO2 WebAuthn public key signature verification + out-of-band identity proofing for backoffice recovery. |
 | **§ 164.312(e)(1)** | **Transmission Security:** Protection of PHI transmitted over electronic communications networks. | `BLE Sensor` & Cloud Endpoints (`IF-11`, `IF-12`) | AES-128 BLE GATT link encryption + HTTPS TLS 1.3 client pinning + gRPC mTLS internal service mesh. |
+| **§ 164.524** *(Privacy Rule)* | **Individual Right of Access:** an individual's right to inspect and obtain a copy of their PHI; access **may not be conditioned on payment** beyond a reasonable, cost-based copying fee. | `EntitlementService` gate on `Task_ExportDoctorReport` | **`[OPEN — legal, blocks build of the export gate]`** The UX places the Doctor Report export behind Premium. Paywalling the only route for a patient to send their own sleep data to their physician is likely a §164.524 violation. **Resolution path:** Privacy/Legal sign-off required before the gate ships; the standing fallback is a **free basic signed-FHIR/PDF export always available**, with Premium gating only enhancements (trend analytics, date-range/bulk export, richer formatting). Tracked in `AD-13`. |
 
 #### 2. FDA Medical Device Cybersecurity Guidelines
 * **Software Bill of Materials (SBOM):** Maintained via automated CI/CD dependency scanning, documenting all open-source packages (Flutter/Dart plugins, gRPC libraries, SQLCipher).
 * **Secure Boot & Firmware Attestation:** Sensor hardware executes cryptographic bootloader verification to prevent unauthorized firmware modification on the D-BAND hardware array.
+
+#### 3. Payment Card Industry (PCI-DSS)
+* **Scope containment — SAQ-A (`AD-14`):** the platform never stores, processes, or transmits cardholder data. All card capture occurs in Stripe's hosted **PaymentSheet / Elements**; the platform persists only the display triplet (`brand`, `last4`, expiry) and an opaque `stripe_payment_method_id`. No platform component is in the cardholder-data environment, so the merchant obligation is **SAQ-A** (self-assessment, hosted-payment-page model) rather than the full SAQ-D/RoC.
 
 ---
 
@@ -1918,17 +2060,19 @@ architecture-beta
 * **Zero Direct Database Exposure:** i-DMZ proxies have no direct network routes or database access credentials. i-DMZ nodes communicate with core microservices exclusively via internal Network Load Balancers (NLB) over private IP ranges.
 
 #### 3. Application Core Zone (`Private App Network Zone`)
-* **Managed Container Cluster:** Backend microservices (`Auth`, `Profile`, `Device`, `Streaming`, `Audit`) run inside private container cluster subnets with no public IP addresses.
+* **Managed Container Cluster:** Backend microservices (`Auth`, `Profile`, `Device`, `Streaming`, `Audit`, **`Billing`**) run inside private container cluster subnets with no public IP addresses.
 * **Internal Service Mesh mTLS:** All inter-service communications enforce **Mutually Authenticated TLS (mTLS)** via Istio/Linkerd service mesh with automatic SVID certificate rotation every 24 hours.
 * **Security Group Isolation:** Network Security Groups (NSGs) block all lateral communications except explicitly allowed service-to-service ports (e.g. `Ingestion -> Audit` on gRPC port 50051).
+* **Billing service + Billing datastore (`AD-13` / `AD-14`):** the `Billing` microservice and its dedicated relational **Billing datastore** live in this zone, **isolated from the Isolated Data Zone** — they hold Financial PII (`Subscription`, `PaymentMethodRef`, `Invoice`, `Entitlement`), reference `user_id` only, and store **no PHI and no cardholder data**. The `StripeWebhookReceiver` is a small handler exposed through the i-DMZ edge (WAF + rate-limit) whose sole job is HMAC-SHA256 signature verification before forwarding a verified event to the `Billing` service — it is the **only** writer of subscription state.
 
 #### 4. Isolated Data Zone (`Private Data Network Zone`)
-* **Database Network Isolation:** `Application DB` (Managed PostgreSQL Database) and `Timeseries DB` (TimescaleDB) reside in an air-gapped data zone with zero internet gateways.
+* **Database Network Isolation:** `Application DB` (Managed PostgreSQL Database), `SessionSummary` store (the per-night dashboard rollup, 1:1 with `SleepSession`), and `Timeseries DB` (TimescaleDB) reside in an air-gapped data zone with zero internet gateways.
 * **Private Service Endpoints:** Microservices connect to database instances exclusively via Private Service Endpoints / Private Network Peering over encrypted TLS endpoints (`port 5432`). Database access from i-DMZ or external networks is physically impossible.
+* **Billing datastore is NOT here:** it sits in the Application Core zone (§3 above), deliberately outside this PHI perimeter.
 
 #### 5. e-DMZ (Egress DMZ Zone & Outbound Firewall Proxy)
-* **Controlled NAT Gateway Egress:** All outbound traffic originating from application workers (e.g., Twilio telephony dispatch `IF-14`, EMS 911 CAD webhook `IF-15`, Apple APNs / Google FCM push remote wipe `IF-21`) routes strictly through the **e-DMZ (Egress DMZ)** via an **Egress Next-Gen Firewall Proxy (NGFW)**.
-* **Strict FQDN Whitelisting & Data Exfiltration Prevention:** The e-DMZ firewall enforces explicit Fully Qualified Domain Name (FQDN) whitelisting. Any outbound traffic targeting unauthorized IP addresses or unapproved domain names is immediately dropped and alerted to the Security Operations Center (SOC) to prevent malicious PHI data exfiltration.
+* **Controlled NAT Gateway Egress:** All outbound traffic originating from application workers (e.g., Twilio telephony dispatch `IF-14`, EMS 911 CAD webhook `IF-15`, Apple APNs / Google FCM push remote wipe `IF-21`, **Stripe Billing API `api.stripe.com` from the `Billing` service**) routes strictly through the **e-DMZ (Egress DMZ)** via an **Egress Next-Gen Firewall Proxy (NGFW)**.
+* **Strict FQDN Whitelisting & Data Exfiltration Prevention:** The e-DMZ firewall enforces explicit Fully Qualified Domain Name (FQDN) whitelisting — now including **`api.stripe.com`** for the `Billing` service. Any outbound traffic targeting unauthorized IP addresses or unapproved domain names is immediately dropped and alerted to the Security Operations Center (SOC) to prevent malicious PHI data exfiltration.
 
 ---
 
@@ -1997,12 +2141,14 @@ To achieve production excellence, maximum operational efficiency, and sub-second
 | **Zone 3: Streaming Bus** | Event Streaming Queue | **GCP Cloud Pub/Sub** | High-throughput, global message queue handling $10\text{k}+$ concurrent 10Hz telemetry streams with sub-50ms queue latency. |
 | **Zone 3: Stream Pipeline** | Stream Processing Engine | **GCP Dataflow (Apache Beam)** | Stateful stream processing pipeline for bio-signal windowing, Snappy/Zstd decompression, AASM apnea rules, and BigQuery loading. |
 | **Zone 4: Serverless Core** | Serverless Backend Triggers | **Firebase Cloud Functions v2 (Cloud Run Container Base)** | Eventarc-triggered serverless functions (Node.js 20 / Python 3.11) handling WebAuthn challenges, profile sync, and alerts. |
-| **Zone 4: Microservices** | Container Application Cluster | **GCP Cloud Run (Fully Managed)** | Auto-scaling containerized microservices (`Auth`, `Profile`, `Device`, `Audit`) scaling from 0 to 100+ instances with VPC Service Controls. |
-| **Zone 5: Relational DB** | Operational Database | **GCP Cloud SQL (PostgreSQL 16) / Cloud Spanner** | High-availability PostgreSQL database with automatic failover, read replicas, and AES-256 Cloud KMS integration. |
+| **Zone 4: Microservices** | Container Application Cluster | **GCP Cloud Run (Fully Managed)** | Auto-scaling containerized microservices (`Auth`, `Profile`, `Device`, `Audit`, `Billing`) scaling from 0 to 100+ instances with VPC Service Controls. |
+| **Zone 4: Billing Webhook** | Stripe event ingress (`AD-13`, `TB-6`) | **Firebase Cloud Functions v2 / Cloud Run** behind **Cloud Armor** | `StripeWebhookReceiver`: verifies `Stripe-Signature` (HMAC-SHA256) + timestamp tolerance + idempotency key, then forwards the verified `customer.subscription.*` / `invoice.*` event to the `Billing` service. Sole writer of subscription state. |
+| **Zone 5: Relational DB** | Operational Database | **GCP Cloud SQL (PostgreSQL 16) / Cloud Spanner** | High-availability PostgreSQL database with automatic failover, read replicas, and AES-256 Cloud KMS integration. `SessionSummary` (dashboard rollup) lives here alongside `SleepSession`. |
+| **Zone 5: Billing DB** | Isolated Billing datastore (`AD-13`, Financial PII) | **GCP Cloud SQL (PostgreSQL 16)** — separate instance | Holds `Subscription` / `PaymentMethodRef` / `Invoice` / `Entitlement`; **no PHI, no cardholder data** (PCI-DSS SAQ-A, `AD-14`); separate instance/VPC from the PHI Isolated Data Zone, its own IAM. |
 | **Zone 5: Timeseries Data** | Time-Series & Data Warehouse | **GCP BigQuery (Time-Series Partitioning)** | Columnar partitioned storage for 8-hour overnight bio-signal telemetry streams, FFT spectral logs, and AHI trend analytics. |
 | **Zone 5: Cryptography** | Master Key & Envelope Encryption | **GCP Cloud Key Management Service (Cloud KMS) + Cloud HSM** | Hardware Security Module (HSM) backed master key ($K_{\text{master}}$) with automatic 90-day rotation for AES-256-GCM envelope encryption. |
 | **Zone 6: Mobile Push** | Emergency & Remote Wipe Push | **Firebase Cloud Messaging (FCM) High-Priority** | Sub-1s priority push notification payload for emergency alert alarms (`Task_TapSafe`) and HIPAA remote wipes (`Task_TriggerRemoteWipe`). |
-| **Zone 6: Egress Proxy** | Outbound Telephony & CAD | **GCP Serverless VPC Access + NAT Gateway** | Static outbound IP pool with Cloud NAT for strict FQDN whitelisting to Twilio (`api.twilio.com`) and EMS CAD. |
+| **Zone 6: Egress Proxy** | Outbound Telephony, CAD & Payments | **GCP Serverless VPC Access + NAT Gateway** | Static outbound IP pool with Cloud NAT for strict FQDN whitelisting to Twilio (`api.twilio.com`), EMS CAD, and **`api.stripe.com`** (from the `Billing` service only). |
 | **Zone 7: Mobile Security** | App Attestation & Anti-Tampering | **Firebase App Check (Play Integrity & Apple App Attest)** | Enforces device attestation, blocking reverse-engineered, rooted, or unauthorized API access to cloud endpoints. |
 | **Zone 7: Observability** | Crash Reporting & Performance | **Firebase Crashlytics + Firebase Performance Monitoring** | Real-time Flutter crash symbolication, 60 FPS Skia GPU frame rendering traces, and BLE API latency monitoring. |
 
@@ -2170,11 +2316,15 @@ This Architecture Specification provides the complete build substrate for downst
 
 * **Visual & Technical Precision:** Standard BPMN 2.0 vector diagram (`.svg`) + full `.bpmn` artifact for workflow engines, paired with PlantUML C4 Context, C4 Container, Conceptual Data Models, 7 End-to-End Sequence Diagrams, Cloud-Agnostic Infrastructure Mermaid Diagrams, and Firebase/GCP Mapping Tables.
 * **100% Traceability:** Links business process flows directly to software containers, generic integration patterns (`IF-01` to `IF-22`), database entities, STRIDE security threats, IAM/RBAC matrices, HIPAA/FDA regulatory compliance rules, i-DMZ/e-DMZ perimeter network defenses, and Firebase/GCP streaming pipelines under HIPAA Level 1 PHI vs Level 2 PII rules.
-* **System Invariants:** 12 architectural decisions (`AD-01` … `AD-12`) govern the mobile, BLE-driver, data, security, and UI layers. `AD-11` fixes `IBLESensorDriver` polymorphism + DI; `AD-12` (new, PRD `FR-1.11`) fixes the app-boot background BLE receiver service and the single process-wide `BehaviorSubject<double>` unified bio-signal queue that calibration and 8+ h monitoring both consume.
+* **System Invariants:** 15 architectural decisions (`AD-01` … `AD-15`) govern the mobile, BLE-driver, data, **subscription/billing**, security, and UI layers. `AD-11` fixes `IBLESensorDriver` polymorphism + DI; `AD-12` (PRD `FR-1.11`) fixes the app-boot background BLE receiver service and the single process-wide `BehaviorSubject<double>` unified bio-signal queue. **`AD-13`** fixes subscription state as backend-owned and entitlement as server-verified (Stripe executes payment only, webhook-fed, HMAC-verified; client caches a signed claim with a bounded connectivity grace window). **`AD-14`** contains cardholder data entirely within Stripe's hosted PaymentSheet, keeping the platform at **PCI-DSS SAQ-A**. **`AD-15`** fixes a local last-N `SessionSummary` read model as the single source for the `MOB_HOME` dashboard and the persisted `alarm_fired` field both summary cards read.
 * **Open call for confirmation (`AD-12`):** the receiver *service + queue* start at boot while the *physical radio link* (`scanAndConnect`) is established lazily. If `FR-1.11` intends a truly always-on radio link from launch, `AD-12`'s Rule and Sequence Diagram 4 Phase 0 need tightening — and the `AD-06` `<8%` / 8 h battery budget must be re-validated.
+* **Open item — legal (`AD-13`, §4.7):** gating the Doctor Report export (`Task_ExportDoctorReport`) behind Premium likely conflicts with **HIPAA §164.524** right-of-access (a patient's access to their own PHI cannot be conditioned on payment). Privacy/Legal sign-off is required before the export gate ships; the standing fallback is a free basic signed-FHIR/PDF export with Premium gating only enhancements. `bmad-create-epics-and-stories` / `bmad-build` **must not** ship the gate until this resolves.
+* **Source-input divergence to reconcile:** the **PRD has no subscription/billing requirements** — it needs new `FR-*` entries for Free/Premium, the entitlement gate, and Stripe billing before the billing epic is built. The **UX** (`MOB_EXPORT_DOCTOR`) needs a free-vs-premium export variant once the legal question resolves.
 * **Next Steps in BMad Workflow:**
-  1. **`bmad-create-epics-and-stories`**: Decompose this architecture into feature epics (Mobile Edge Engine, Cloud Ingestion Worker, WSS Dispatch Portal, Data Pipeline). Refresh the requirements inventory with `FR-1.11` → `AD-12`.
-  2. **`bmad-build`**: Implement clean, compliant working code artifacts following the invariants established in this specification.
+  1. **`bmad-prd`** (update): add subscription/billing requirements so the epic breakdown has a requirements anchor.
+  2. **`bmad-create-epics-and-stories`**: Decompose into feature epics — now including a **Subscription & Billing** epic (Billing service, Stripe webhook receiver, PaymentSheet gateway, entitlement gate) and a **Home Dashboard** epic (`SessionSummary` read model, `HomeDashboardBloc`). Refresh the requirements inventory with `FR-1.11` → `AD-12` and the new billing `FR-*` → `AD-13`/`AD-14`, and `MOB_HOME` → `AD-15`.
+  3. **`bmad-build`**: Implement clean, compliant working code artifacts following the invariants established in this specification. Hold the export gate pending §4.7 legal sign-off.
+* **Diagram regen note:** the C4 L3 PlantUML body (3.3) and the ER PlantUML (3.4) gained new nodes via their tables/entity blocks; the rendered `ARCHITECTURE-SPINE.html` is stale versus this `.md` and should be regenerated on next publish.
 
 
 
