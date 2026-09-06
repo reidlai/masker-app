@@ -1,24 +1,30 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 
-/// Section label within the Settings list (e.g. "Advanced").
-///
-/// Rendered by the caller only when the section below it has at least one row.
 class SettingsSectionHeader extends StatelessWidget {
-  final String label;
+  final String title;
+  final bool isFirst;
 
-  const SettingsSectionHeader({super.key, required this.label});
+  const SettingsSectionHeader({
+    super.key,
+    required this.title,
+    this.isFirst = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 24, left: 4, bottom: 8),
+      padding: EdgeInsets.only(
+        top: isFirst ? 4.0 : 24.0,
+        bottom: 8.0,
+        left: 4.0,
+      ),
       child: Text(
-        label,
+        title.toUpperCase(),
         style: const TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w500,
-          letterSpacing: 0.4,
+          letterSpacing: 0.04,
           color: AppColors.textSecondary,
         ),
       ),

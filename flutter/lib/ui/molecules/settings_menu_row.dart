@@ -1,66 +1,89 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 
-/// A single row in the Settings list.
-///
-/// Navigable variant (`onTap` provided): tappable with a pressed highlight,
-/// full-contrast label, and a trailing chevron.
-/// Inert variant (`onTap` omitted): not tappable, muted label, no chevron.
 class SettingsMenuRow extends StatelessWidget {
   final IconData leadingIcon;
   final String label;
+  final String? valueText;
+  final bool hasStatusDot;
+  final bool showChevron;
   final VoidCallback? onTap;
 
   const SettingsMenuRow({
     super.key,
     required this.leadingIcon,
     required this.label,
+    this.valueText,
+    this.hasStatusDot = false,
+    this.showChevron = true,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bool navigable = onTap != null;
-    final Color contentColor =
-        navigable ? AppColors.textPrimary : AppColors.textSecondary;
+    final bool isNavigable = showChevron && onTap != null;
 
-    final Widget row = Container(
-      constraints: const BoxConstraints(minHeight: 48),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    final content = Container(
+      constraints: const BoxConstraints(minHeight: 56),
+      padding: const EdgeInsets.symmetric(horizontal: 18),
       child: Row(
         children: [
-          Icon(leadingIcon, size: 20, color: contentColor),
-          const SizedBox(width: 12),
+          Icon(
+            leadingIcon,
+            size: 22,
+            color: AppColors.textPrimary,
+          ),
+          const SizedBox(width: 14),
           Expanded(
             child: Text(
               label,
               style: TextStyle(
                 fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: contentColor,
+                color: isNavigable || valueText != null ? AppColors.textPrimary : AppColors.textSecondary,
+                fontWeight: FontWeight.w400,
               ),
             ),
           ),
-          if (navigable)
+          if (hasStatusDot) ...[
+            Container(
+              width: 6,
+              height: 6,
+              decoration: const BoxDecoration(
+                color: AppColors.warningAmber,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          if (valueText != null) ...[
+            Text(
+              valueText!,
+              style: AppTheme.tabularTextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          if (showChevron)
             const Icon(
               Icons.chevron_right,
-              size: 20,
+              size: 18,
               color: AppColors.textSecondary,
             ),
         ],
       ),
     );
 
-    if (!navigable) return row;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
+    if (isNavigable) {
+      return InkWell(
         onTap: onTap,
         highlightColor: AppColors.pressedSurface,
         splashColor: AppColors.pressedSurface,
-        child: row,
-      ),
-    );
+        child: content,
+      );
+    }
+
+    return content;
   }
 }

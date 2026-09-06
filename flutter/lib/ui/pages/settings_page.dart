@@ -2,15 +2,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../molecules/settings_menu_row.dart';
-import '../organisms/settings_group_card_organism.dart';
+import '../molecules/settings_section_header.dart';
+import 'billing_page.dart';
 import 'developer_options_page.dart';
+import 'language_region_page.dart';
+import 'payment_method_page.dart';
 import 'profile_page.dart';
 
-/// App-level settings. Rendered inline as bottom-nav tab 4.
-///
-/// [debuggingEnabled] / [developerEnabled] override the build-flag gates for
-/// the Advanced rows; when null they fall back to [kDebugMode] and the
-/// `DEV_MODE` compile-time environment flag respectively.
 class SettingsPage extends StatelessWidget {
   final bool? debuggingEnabled;
   final bool? developerEnabled;
@@ -30,23 +28,19 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text("Settings"),
+        automaticallyImplyLeading: false,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                "Settings",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 20),
-              // Profile Section Card Organism
-              SettingsGroupCardOrganism(
+              // 1 — Account Section
+              const SettingsSectionHeader(title: "Account", isFirst: true),
+              _buildMenuCard(
                 children: [
                   SettingsMenuRow(
                     leadingIcon: Icons.person_outline,
@@ -61,22 +55,72 @@ class SettingsPage extends StatelessWidget {
                   ),
                 ],
               ),
-              if (_showAdvanced)
-                // Advanced Settings Group Card Organism
-                SettingsGroupCardOrganism(
-                  sectionHeader: "Advanced",
+
+              // 2 — Preferences Section
+              const SettingsSectionHeader(title: "Preferences"),
+              _buildMenuCard(
+                children: [
+                  SettingsMenuRow(
+                    leadingIcon: Icons.language,
+                    label: "Language & Region",
+                    valueText: "English",
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const LanguageRegionPage(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+
+              // 3 — Subscription Section
+              const SettingsSectionHeader(title: "Subscription"),
+              _buildMenuCard(
+                children: [
+                  SettingsMenuRow(
+                    leadingIcon: Icons.receipt_long_outlined,
+                    label: "Billing & subscription",
+                    valueText: "Premium",
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const BillingPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1, color: AppColors.cardBorder),
+                  SettingsMenuRow(
+                    leadingIcon: Icons.credit_card_outlined,
+                    label: "Payment method",
+                    valueText: "Visa ·· 4242",
+                    hasStatusDot: true,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const PaymentMethodPage(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+
+              // 4 — Advanced Section (Conditional)
+              if (_showAdvanced) ...[
+                const SettingsSectionHeader(title: "Advanced"),
+                _buildMenuCard(
                   children: [
                     if (_debug)
                       const SettingsMenuRow(
                         leadingIcon: Icons.bug_report_outlined,
                         label: "Debugging",
+                        showChevron: false,
                       ),
                     if (_debug && _dev)
-                      const Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: AppColors.cardBorder,
-                      ),
+                      const Divider(height: 1, color: AppColors.cardBorder),
                     if (_dev)
                       SettingsMenuRow(
                         leadingIcon: Icons.code,
@@ -91,10 +135,22 @@ class SettingsPage extends StatelessWidget {
                       ),
                   ],
                 ),
+              ],
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildMenuCard({required List<Widget> children}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.cardBorder, width: 1),
+      ),
+      child: Column(children: children),
     );
   }
 }

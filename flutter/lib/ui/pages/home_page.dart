@@ -1,23 +1,26 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
-import '../molecules/metric_card.dart';
-import '../organisms/health_insights_organism.dart';
-import '../organisms/user_header_organism.dart';
-import '../organisms/weekly_calendar_organism.dart';
+import '../molecules/device_status_card.dart';
+import '../molecules/home_summary_card.dart';
+import '../molecules/weekly_trend_card.dart';
+import 'history_filter_page.dart';
 
 class HomePage extends StatelessWidget {
-  final VoidCallback? onOpenSettings;
-  final String firstName;
-  final String? lastName;
-  final String? avatarUrl;
+  final VoidCallback? onOpenSummary;
+  final VoidCallback? onOpenHistory;
 
   const HomePage({
     super.key,
-    this.onOpenSettings,
-    this.firstName = "David",
-    this.lastName = "Miller",
-    this.avatarUrl,
+    this.onOpenSummary,
+    this.onOpenHistory,
   });
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,63 +28,66 @@ class HomePage extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // User Greeting Header Organism
-              UserHeaderOrganism(
-                firstName: firstName,
-                lastName: lastName,
-                avatarUrl: avatarUrl,
-                subtitle: "Sep. 28, 2026",
-                onTap: onOpenSettings,
-                onNotificationTap: () {},
+              // 1 — Greeting + Monitoring Streak
+              Text(
+                _getGreeting(),
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                  letterSpacing: -0.01,
+                ),
               ),
-              const SizedBox(height: 24),
-              
-              // Top Metrics Cards Row
-              const Row(
-                children: [
-                  Expanded(
-                    child: MetricCard(
-                      label: "Respiration",
-                      value: "16",
-                      unit: "bpm",
-                      icon: Icons.air,
-                      accentColor: AppColors.accentGreen,
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: MetricCard(
-                      label: "SpO2",
-                      value: "98",
-                      unit: "%",
-                      icon: Icons.water_drop,
-                      accentColor: AppColors.primaryTeal,
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: MetricCard(
-                      label: "HR",
-                      value: "72",
-                      unit: "bpm",
-                      icon: Icons.favorite,
-                      accentColor: AppColors.accentPink,
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 2),
+              const Text(
+                "12 nights monitored",
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
-              // Calendar Horizontal Section Organism
-              const WeeklyCalendarOrganism(),
-              const SizedBox(height: 24),
+              // 2 — Last-Night Summary Hero Card
+              HomeSummaryCard(
+                dateText: "Sep 5, 2026",
+                apneaIndex: 3.2,
+                durationText: "7h 45m",
+                eventCount: 2,
+                onTap: onOpenSummary,
+              ),
+              const SizedBox(height: 12),
 
-              // Health Articles Section Organism
-              const HealthInsightsOrganism(),
+              // 3 — D-BAND Device Status Card
+              DeviceStatusCard(
+                state: DeviceConnectionState.connected,
+                batteryLevel: 84,
+                lastSyncText: "Last sync 7:02 AM",
+                onTap: () {},
+              ),
+              const SizedBox(height: 12),
+
+              // 4 — 7-Night Apnea Index Trend Card
+              WeeklyTrendCard(
+                weeklyScores: const [2.8, 3.1, 4.0, null, 3.5, 3.8, 3.2],
+                averageScore: 3.4,
+                priorWeekScore: 4.1,
+                onTap: () {
+                  if (onOpenHistory != null) {
+                    onOpenHistory!();
+                  } else {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const HistoryFilterPage(),
+                      ),
+                    );
+                  }
+                },
+              ),
             ],
           ),
         ),
