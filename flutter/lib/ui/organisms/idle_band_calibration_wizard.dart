@@ -161,7 +161,9 @@ class _IdleBandCalibrationWizardState extends State<IdleBandCalibrationWizard> {
     final msg = connectionLost
         ? "D-BAND connection lost — check the fit and try again."
         : "Sensor not detecting breathing — check the fit.";
-    ScaffoldMessenger.of(context).showSnackBar(
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
       SnackBar(content: Text(msg), backgroundColor: AppColors.dangerRed),
     );
   }
