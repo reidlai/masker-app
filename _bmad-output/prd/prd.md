@@ -1,9 +1,10 @@
 ---
 title: Product Requirements Document — Sleep Apnea Detection App
 status: draft
-version: 2.2.0
+frozen_for: MVP1 mobile build
+version: 2.4.0
 created: 2026-08-31
-updated: 2026-09-04
+updated: 2026-09-06
 author: Mary (Business Analyst) & Winston (System Architect)
 ---
 
@@ -20,8 +21,8 @@ The **Sleep Apnea Detection App** is a specialized consumer health mobile applic
 Unlike traditional Continuous Positive Airway Pressure (CPAP) machines or turbine spirometers that require uncomfortable masks, headgear, mouthpieces, and noisy machinery, D-BAND is a **ductless, lightweight, portable, battery-operated, and quiet** sensor array worn comfortably at home. The application transforms raw 10Hz inhale/exhale thermal deviation streams ($\Delta T$) into accurate lung volumetric data ($V_{\text{volumetric}}$ in L/s) and overnight apnea insights, eliminating the need for expensive hospital polysomnography visits ($200–$300/visit).
 
 Access is secured via passwordless **Passkey (FIDO2/WebAuthn)** biometrics and strictly compliant with **HIPAA Security & Privacy Rules** for Protected Health Information (PHI). When severe or prolonged breathing stops are detected during sleep, the application initiates an active **Two-Tier Emergency Response**:
-1. **Tier-1 Primary App & Device Wake-Up Alert:** Escalating smartphone audio alarms & haptics (and future device micro-electrical stimulation) to wake the patient and restore breathing.
-2. **Tier-2 Cloud Emergency Dispatch & Safety Acknowledgement:** Real-time signal transmission to the cloud backend. If the patient acknowledges the alert via the app ("I'm Safe"), the cloud logs a safety event; if unacknowledged after 30 seconds, emergency notifications are dispatched to caregivers and 911 EMS CAD gateways.
+1. **Tier-1 Primary App & Device Wake-Up Alert:** Escalating smartphone audio alarms & haptics (and future device micro-electrical stimulation) to wake the patient and restore breathing. *(MVP1.)*
+2. **Tier-2 Cloud Safety Signal (MVP1) & Outbound Dispatch (MVP2):** Real-time signal transmission to the cloud backend. In **MVP1** the cloud **logs** the event — a "Patient Awake & Safe" signal on an "I'm Safe" tap, or an unacknowledged-timeout signal after 30 seconds — with **no outbound contact**. **Tier-2 outbound dispatch** (priority SMS/voice to designated caregivers, and region-aware EMS CAD gateways routed by the patient's country/location) is a **Premium capability deferred to MVP2** — see FR-3.5.
 
 ### 1.2 Strategic Business Goals
 * **At-Home Ductless Accessibility:** Provide a comfortable, maskless ($388 USD target price) alternative to clinical CPAP machines and hospital sleep studies.
@@ -29,6 +30,7 @@ Access is secured via passwordless **Passkey (FIDO2/WebAuthn)** biometrics and s
 * **Frictionless HIPAA Security:** Passwordless **Passkey** onboarding and hardware-encrypted local/cloud PHI storage.
 * **Proactive Patient Safety:** Move from passive morning data logging to active overnight intervention during critical apnea episodes.
 * **Big Data & Clinical Integration:** Aggregated cloud big data analytics for AI model training (PolyU/CUHK clinical research) and extensible EHR/EMR physician chart sharing.
+* **Sustainable Subscription Revenue:** A free tier delivers the full safety-critical local monitoring path to every user; a paid **Premium** subscription (monthly and discounted annual) funds the cloud analytics, long-term history/archive, doctor-sharing, and monitored emergency-dispatch tier, and sustains platform operations. Revenue growth is measured without regressing the share of nights monitored (see §5).
 
 ### 1.3 MVP1 Project Scope Statement (UJ-1 Focus)
 
@@ -36,22 +38,24 @@ Access is secured via passwordless **Passkey (FIDO2/WebAuthn)** biometrics and s
 > **MVP1 Release Scope Boundary:** MVP1 focuses **exclusively on User Journey 1 (UJ-1)**—delivering a production-grade, HIPAA-compliant at-home nocturnal monitoring system for David (Persona A). Advanced multi-mode applications and secondary external integrations are explicitly deferred to MVP2+.
 
 #### 🎯 Primary MVP1 Objective
-To deliver a production-ready mobile application (iOS & Android) and supporting backend cloud infrastructure that enables high-risk sleep apnea patients to perform passwordless biometric onboarding, wirelessly pair their **D-BAND thermal sensor**, complete 2-stage thermal calibration, undergo 8+ hours of continuous nocturnal sleep apnea monitoring, receive instant Tier-1 local sirens (<200ms) with a 30s "I'm Safe" safety tap, trigger Tier-2 cloud caregiver SMS/voice emergency escalation upon unacknowledged alerts (>30s), and view morning AHI sleep summaries.
+To deliver a production-ready mobile application (iOS & Android) and supporting backend cloud infrastructure that enables high-risk sleep apnea patients to perform passwordless biometric onboarding, wirelessly pair their **D-BAND thermal sensor**, complete 2-stage thermal calibration, undergo 8+ hours of continuous nocturnal sleep apnea monitoring, receive instant Tier-1 local sirens (<200ms) with a 30s "I'm Safe" safety tap, record the Tier-2 cloud safety signal (log only — acknowledged or unacknowledged-timeout), and view morning AHI sleep summaries and a daily Home dashboard. **Tier-2 outbound dispatch (caregiver telephony and region-aware EMS) is deferred to MVP2.**
 
 #### ✅ In-Scope Capabilities for MVP1 (UJ-1 Only):
 1. **Biometric Onboarding & Passkey Auth:** FIDO2 passwordless authentication (Face ID / Touch ID / BiometricPrompt) and HIPAA health profile setup (Age, Weight, Height, computed BMI, Emergency Caregiver Phone).
 2. **D-BAND Hardware Pairing & Cloud Binding:** Wireless BLE (BLE 4.0, 4.1, 4.2, and 5.0+) auto-discovery, pairing (`0x180D` service / `0x2A37` characteristic @ 10Hz), AES-128 link encryption, and Cloud Device Binding API (`POST /api/v1/devices/bind`) with offline queuing.
 3. **Two-Stage Thermal Calibration Wizard:** Stage 1 ambient room thermal sampling ($N_{\text{idle}}$) + Stage 2 active thermal breath training ($\Delta T$) to calculate dynamic volumetric baselines and zero-airflow apnea thresholds ($0.10 \times V_{pp}$). Includes wear verification guardrails ($\Delta V < 1.5 \times N_{\text{idle}}$).
 4. **Nocturnal Sleep Apnea Monitoring (Mode A):** Continuous 10Hz background telemetry logging, low-power 0-FPS Night Mode (`#000000` black screen, <8% battery drain over 8h), and real-time AASM Obstructive Apnea evaluation ($\ge 90\%$ drop for $\ge 10\text{s}$).
-5. **Two-Tier Emergency Response System:**
+5. **Emergency Response — Tier-1 Local + Tier-2 Cloud Safety Signal (log only):**
    - **Tier-1 Local Mobile Siren (<200ms):** Escalating 40 dB $\rightarrow$ 75+ dB audio alarm and full-screen haptic vibration pulses.
-   - **Tier-1 Patient "I'm Safe" Tap:** Large touch target with 30s countdown. Silences alarm, notifies cloud, or auto-silences upon 5s continuous breathing restoration.
-   - **Tier-2 Caregiver Telephony Escalation:** Automated cloud dispatch of priority SMS and voice calls (Twilio telephony) to designated caregiver if alarm is unacknowledged after 30s.
-6. **Morning Analytics & Session History:** Morning sleep summary dashboard (Total duration, AHI score, intervention count, quality score), interactive respiration wave graph, AES-256 local SQLCipher database encryption, and 5-minute inactivity session timeout under HIPAA 45 CFR §164.312.
+   - **Tier-1 Patient "I'm Safe" Tap:** Large touch target with 30s countdown. Silences alarm, or auto-silences upon 5s continuous breathing restoration.
+   - **Tier-2 Cloud Safety Signal (log only):** The cloud records the acknowledged "Patient Awake & Safe" event, or the unacknowledged-timeout event after 30s. **No outbound contact in MVP1.** Cloud transmission of this signal is a Premium capability (FR-3.3).
+   - *Out of MVP1 scope:* **Tier-2 outbound dispatch** — caregiver SMS/voice and region-aware EMS CAD — deferred to MVP2 (FR-3.5).
+6. **Morning Analytics & Session History:** Morning sleep summary dashboard (Total duration, AHI score, intervention count, quality score), Home dashboard (last night, 7-night trend, streak, device status), interactive respiration wave graph, rolling 7-day on-device history, AES-256 local SQLCipher database encryption, and 5-minute inactivity session timeout under HIPAA 45 CFR §164.312.
+7. **Free / Premium Subscription & Billing:** Two-tier entitlement model with the full safety-critical local path always free; Stripe-hosted card capture (PCI-DSS SAQ-A); backend-owned subscription lifecycle; server-verified entitlement with a bounded offline grace window; monthly and discounted-annual pricing; no free trial. See FR-6.
 
 #### ❌ Out-of-Scope for MVP1 (Deferred to Future Releases / MVP2+):
 - **Secondary Application Modes (Modes B, C, D):** Athletic Respiration Training (Mode B), Individual Respiratory Health Check (Mode C), and Meditation Rhythms (Mode D) are deferred to MVP2.
-- **Direct 911 Municipal CAD Gateway Dispatch:** Automated integration with 911 emergency services (`Task_DispatchEMS`) is deferred to MVP2 (MVP1 relies on Tier-2 Caregiver SMS/Voice calls).
+- **All Tier-2 Outbound Emergency Dispatch:** Both caregiver telephony escalation (priority SMS/voice, `Task_DispatchCaregiver`) *and* region-aware EMS CAD gateway integration (`Task_DispatchEMS`, routed by patient country/location — not US-911-only) are deferred to MVP2. MVP1's Tier-2 is a **cloud log only** (FR-3.3); no one is contacted on an unacknowledged event in MVP1. Emergency caregiver contact details are still captured at onboarding for the MVP2 feature.
 - **Direct HL7 FHIR EMR/EHR Hospital Sync:** Direct API synchronization with hospital electronic medical record systems is deferred to MVP2 (MVP1 provides in-app graphs and PDF export).
 - **Cloud Neural Network Deep Learning AI Engine:** Complex cloud-side neural re-classification of raw bio-signals is deferred to MVP2 (MVP1 executes real-time AASM signal processing on edge Dart Isolates).
 - **Hardware EMS/TENS Micro-Electrical Stimulation:** Micro-electrical pulses on D-BAND hardware are deferred to future hardware revisions (`HW-ENHANCEMENT-1`).
@@ -85,9 +89,9 @@ To deliver a production-ready mobile application (iOS & Android) and supporting 
    During deep sleep, David suffers an obstructive airway blockage. The D-BAND sensor detects a 90% drop in thermal breath amplitude lasting longer than 10 seconds.
    - **Sub-200ms Intervention:** The mobile app immediately triggers an escalating Tier-1 local alarm (40 dB $\rightarrow$ 75+ dB audio tones and full-screen haptic vibration pulses) to wake David and restore natural respiration.
 
-5. **02:15 AM — Patient Safety Acknowledgement & Cloud Escalation:**  
-   - **Option A (Patient Taps "I'm Safe"):** Awakened by the alarm, David taps the large *"I'M SAFE / I'M AWAKE"* button within 30 seconds. The app immediately silences the siren and transmits a safety status signal to the cloud, logging the event without escalating to caregivers.
-   - **Option B (Unacknowledged >30s):** If David remains unawakened and does not tap the screen within 30 seconds, the cloud backend automatically triggers Tier-2 Emergency Escalation—dispatching priority SMS/voice calls to his caregiver and pushing patient GPS coordinates to the 24/7 Command Center dispatcher.
+5. **02:15 AM — Patient Safety Acknowledgement & Cloud Safety Signal:**  
+   - **Option A (Patient Taps "I'm Safe"):** Awakened by the alarm, David taps the large *"I'M SAFE / I'M AWAKE"* button within 30 seconds. The app immediately silences the siren; on a Premium plan it also transmits a "Patient Awake & Safe" signal to the cloud (FR-3.3). On a Free plan the acknowledgement is written to the local event trace only.
+   - **Option B (Unacknowledged >30s):** If David remains unawakened and does not tap the screen within 30 seconds, the Tier-1 local siren continues its escalation and the unacknowledged event is recorded — in the local trace, and (Premium) as a cloud safety-signal log entry. **In MVP1 no caregiver or emergency service is contacted.** Tier-2 outbound dispatch — caregiver telephony and region-aware EMS — is the MVP2 extension of this step (FR-3.5).
 
 6. **07:00 AM — Morning Sleep Summary & Clinical Review:**  
    Waking up in the morning, David taps *"End Sleep Session"*. The app closes the BLE stream, synchronizes nocturnal session data with the cloud, and renders his **Morning Sleep Summary Dashboard**—displaying total sleep duration, overnight AHI score, intervention count, and interactive respiration waveform graphs.
@@ -122,37 +126,80 @@ To deliver a production-ready mobile application (iOS & Android) and supporting 
 * **FR-2.2 (Real-Time Apnea Evaluator):** The application shall evaluate real-time net volumetric airflow against the calibrated threshold every 100 milliseconds.
 * **FR-2.3 (Apnea Event Flagging):** An obstructive apnea event shall be flagged whenever net airflow remains below threshold continuously for $\ge 10$ seconds.
 * **FR-2.4 (Session Data Integrity):** Telemetry packets shall be timestamped locally and buffered in hardware-encrypted storage during temporary signal interruptions.
-* **FR-2.5 (Cloud AI Respiration Waveform Analytics):** The cloud platform shall ingest compressed telemetry streams and execute AI waveform classification algorithms to refine apnea event detection and flag anomalous breathing patterns (PolyU/CUHK clinical AI model integration).
+* **FR-2.5 (Cloud AI Respiration Waveform Analytics) — `PREMIUM`:** The cloud platform shall ingest compressed telemetry streams and execute AI waveform classification algorithms to refine apnea event detection and flag anomalous breathing patterns (PolyU/CUHK clinical AI model integration). This capability is gated to the Premium tier (see FR-6); Free-tier sessions are evaluated by the on-device AASM evaluator (FR-2.2/FR-2.3) only and are not streamed to the cloud AI pipeline.
 
 ---
 
-### 3.3 FR-3: Primary App Alarm, Patient Safety Acknowledgement & Cloud Dispatch
+### 3.3 FR-3: Primary App Alarm, Patient Safety Acknowledgement & Cloud Safety Signal
 
 * **FR-3.1 (Primary Mobile App Alarm):** Upon flagging a critical apnea event (>10s breathing stop), the smartphone application shall trigger high-priority escalating audio tones (40 dB → 75+ dB) and full-screen haptic vibration pulses.
 * **FR-3.2 (Patient "I'm Safe" Acknowledgement Action):** The application shall render a prominent, large touch target button (**"I'm Safe / I'm Awake"**) on the screen during an alarm event.
-* **FR-3.3 (Patient Safety Signal to Cloud):** If the patient taps "I'm Safe" within 30 seconds of alarm initiation, the application shall silence the alarm and transmit a **"Patient Awake & Safe"** status signal.
-* **FR-3.4 (Automatic Alarm Silence on Breathing Restoration):** If normal respiratory airflow is restored ($V_{\text{net}} > \text{Threshold}_{\text{normal}}$) continuously for 5 seconds without manual tap, the app shall auto-silence the alarm.
-* **FR-3.5 (Tier-2 Cloud Emergency Dispatch on Timeout):** If the alarm remains unacknowledged after 30 seconds, the application shall transmit a high-priority **Emergency Dispatch Payload** to alert designated caregivers and EMS 911 CAD gateways.
+* **FR-3.3 (Patient Safety Signal to Cloud — log only) — `MVP1` · `PREMIUM` · `[OPEN — legal/regulatory/clinical sign-off]`:** On an "I'm Safe" tap within 30 seconds, or on an unacknowledged 30-second timeout, the application shall transmit the corresponding status signal ("Patient Awake & Safe" or "Unacknowledged apnea event") to the cloud, where it is **logged with no outbound action**. Cloud transmission is gated to the Premium tier (see FR-6). On the Free tier the alarm is silenced (or continues, on timeout) and the event is written to a **local-only** trace with no cloud transmission. **Open item:** paywalling cloud transmission of a safety-critical acknowledgement carries liability, SaMD intended-use, and IEC 60601-1-8 (NFR-6.2) exposure and must clear legal/regulatory/clinical sign-off before billing build. Recorded fallback if sign-off is negative: cloud safety-signal logging becomes free; only downstream dispatch (FR-3.5) remains Premium.
+* **FR-3.4 (Automatic Alarm Silence on Breathing Restoration):** If normal respiratory airflow is restored ($V_{\text{net}} > \text{Threshold}_{\text{normal}}$) continuously for 5 seconds without manual tap, the app shall auto-silence the alarm. *(Free and Premium.)*
+* **FR-3.5 (Tier-2 Outbound Emergency Dispatch on Timeout) — `MVP2` · `PREMIUM` · `[OPEN — legal/regulatory/clinical sign-off]`:** *Deferred to MVP2.* When built, if the alarm remains unacknowledged after 30 seconds the platform shall dispatch a high-priority **Emergency Dispatch Payload**: priority SMS/voice to designated caregiver contacts, and — routed by the patient's country/location, not US-911-only — the appropriate regional EMS Computer-Aided-Dispatch gateway. Gated to the Premium tier (see FR-6). **MVP1 behaviour:** no outbound contact of any kind on an unacknowledged event; the Tier-1 local alarm (FR-3.1) continues escalating and FR-3.3 records the event. **Open item:** the Premium gate on this capability must clear legal/regulatory/clinical sign-off. Recorded fallback if sign-off is negative: caregiver-contact escalation becomes free; only regional EMS CAD dispatch remains Premium.
 
 ---
 
-### 3.4 FR-4: Morning Analytics, History & Big Data Platform Insights
+### 3.4 FR-4: Home Dashboard, Morning Analytics, History & Big Data Platform Insights
 
-* **FR-4.1 (Morning Sleep Summary):** Displays Total Sleep Duration, Overnight AHI Score (events/hour), Intervention Count, and Quality Score (0–100).
-* **FR-4.2 (Interactive Respiration Timeline):** Renders interactive overnight wave graphs with color-coded markers for flagged apnea episodes and safety acknowledgements.
-* **FR-4.3 (Calendar & History Filter):** Date-filtered historical sleep sessions.
-* **FR-4.4 (Educational Library):** Integrated articles and instructional videos.
-* **FR-4.5 (Big Data Platform & Clinical Research Export):** The cloud platform shall provide a secure, de-identified big data export interface for clinical research studies (CUHK / Prince of Wales Hospital pilot research).
+* **FR-4.1 (Morning Sleep Summary):** Displays Total Sleep Duration, Overnight AHI Score (events/hour), Intervention Count, and Quality Score (0–100). **Alarm-fired awareness:** whenever the persisted `alarm_fired` signal is true for the night, both the Morning Sleep Summary and the Home dashboard hero card (FR-4.6) shall surface an alert treatment for that night rather than a calm "Normal" state. The Summary and Home cards read the same single persisted per-session signal so the two surfaces cannot disagree. *(Free and Premium.)*
+* **FR-4.2 (Interactive Respiration Timeline) — `PREMIUM`:** Renders interactive overnight wave graphs with pinch-to-zoom, pan, a 256-point FFT view, and color-coded markers for flagged apnea episodes and safety acknowledgements. Gated to the Premium tier (see FR-6). Free-tier users see the static summary metrics (FR-4.1) and a non-interactive waveform thumbnail for the current night.
+* **FR-4.3 (Calendar & History Filter):** Date-filtered historical sleep sessions. **Free tier:** a rolling **7-day** window, stored on-device only, with no cloud backup and no archive — sessions older than 7 days are discarded. **Premium tier:** unlimited night-by-night history with cloud backup and archive; the local last-N window remains the offline read model (see architecture AD-15).
+* **FR-4.4 (Educational Library):** Integrated articles and instructional videos. *(Free and Premium.)*
+* **FR-4.5 (Big Data Platform & Clinical Research Export):** The cloud platform shall provide a secure, de-identified big data export interface for clinical research studies (CUHK / Prince of Wales Hospital pilot research). *(Platform-side; not a user-tier feature. Only Premium sessions, which stream to the cloud, contribute to this corpus.)*
+* **FR-4.6 (Home Dashboard):** The application shall present a read-only Home dashboard as the post-onboarding landing surface, composed of: a greeting with the user's current monitoring streak; a **last-night hero card** (summary metrics plus the FR-4.1 alarm-fired treatment, tapping through to the Morning Sleep Summary); a **D-BAND device-status card**; and a **7-night AHI trend** card. The dashboard is a pure consumer of already-computed state — it reads the local last-N `SessionSummary` cache (architecture AD-15) and the app-boot BLE receiver-service status (architecture AD-12) and shall not open its own BLE subscription or trigger a cloud fetch on load. *(Free and Premium; the 7-night trend on Free is drawn from the 7-day local window.)*
 
 ---
 
-### 3.5 FR-5: Passkey Authentication, Health Profile & Doctor Sharing Framework
+### 3.5 FR-5: Passkey Authentication, Health Profile, Settings, Locale & Doctor Sharing Framework
 
 * **FR-5.1 (Passkey FIDO2/WebAuthn Authentication):** The application shall support passwordless authentication via **Passkeys**, utilizing native OS biometrics (Face ID, Touch ID, Android BiometricPrompt) and hardware secure enclave tokens.
-* **FR-5.2 (Health Profile Management):** The application shall collect and manage the user's health baseline profile: Weight, Height, Age, Gender, computed BMI, and Sleep Risk Factors.
-* **FR-5.3 (Extensible Doctor Sharing Framework):** Provides a dedicated **"Share Profile with Doctor"** UI module and extensible JSON data export engine formatted for future EHR/EMR physician integrations.
+* **FR-5.2 (Health Profile Management):** The application shall collect and manage the user's health baseline profile: Weight, Height, Age, Gender, computed BMI, and Sleep Risk Factors. Weight and Height shall be captured, stored, and displayed in the measurement units selected in FR-5.7 (kg/lb, cm/ft-in), with a single canonical unit persisted server-side and converted for display.
+* **FR-5.3 (Extensible Doctor Sharing Framework) — `PREMIUM` · `[OPEN — legal sign-off, HIPAA § 164.524]`:** Provides a dedicated **"Share Profile with Doctor"** UI module and extensible JSON data export engine formatted for future EHR/EMR physician integrations. Gated to the Premium tier (see FR-6). **Open item:** HIPAA § 164.524 gives an individual the right to access their own PHI without a cost barrier beyond a reasonable copying fee; gating the doctor-report export behind Premium must clear legal sign-off before build. Recorded fallback if sign-off is negative: a basic self-service PHI export is free; only the formatted multi-visit clinical report / EHR-integration path remains Premium.
 * **FR-5.4 (Mobile Device Lost & Remote Session Revocation):** The platform shall provide a WebAuthn-backed self-service Web Portal allowing users or designated emergency contacts to report a lost or stolen mobile phone. The cloud platform shall immediately invalidate all active JWT tokens, revoke session refresh tokens, and issue an automated cryptographic remote wipe signal.
 * **FR-5.6 (Developer Options Page & BLE Signal Simulator):** When Developer Mode is enabled (via `DEV_MODE=true` compile-time flag), the application shall render a "Developer" menu item in Settings under the Advanced section. Tapping "Developer" shall navigate to the Developer Options Page, providing interactive BLE signal simulation controls to simulate 2-stage calibration lifecycles (ambient idle noise $N_{\text{idle}}$ and active breathing baseline $V_{pp}$) and nocturnal sleep cycles (normal 16 bpm respiration streams, $\ge 10\text{s}$ apnea breathing stop alerts, and 5s patient breathing recovery signals).
+* **FR-5.7 (Locale & Units):** The application shall provide a **Language & Region** screen letting the user select the app display language and measurement units for weight (kg / lb) and height (cm / ft-in). The selection persists per user, applies immediately across all surfaces, and governs how FR-5.2 profile values and any weight/height-derived display (e.g. BMI inputs) are rendered. A canonical unit and an IETF language tag are stored server-side; conversion and formatting happen at display time. *(Free and Premium.)*
+* **FR-5.8 (Settings Surface):** The application shall provide a single grouped **Settings** screen as the navigation home for account and app configuration, organized into **Account** (Health Profile, Passkey / device security, Mobile Device Lost), **Preferences** (Language & Region, notifications, Developer Options when enabled), and **Subscription** (current plan, Billing, Payment Method — see FR-6). Settings is a pushed detail surface reached from the Home dashboard; it is not a primary navigation tab. *(Free and Premium; the Subscription group shows tier-appropriate state.)*
+
+---
+
+### 3.6 FR-6: Subscription, Billing & Entitlement
+
+* **FR-6.1 (Two-Tier Entitlement Model):** The platform shall offer exactly two tiers — **Free** and **Premium** — with a single paid subscription product. Every account is Free by default; Premium is an opt-in paid upgrade. There is **no free trial**: the Free tier is itself the always-available entry experience.
+* **FR-6.2 (Safety-Critical Local Path Is Always Free):** The following shall remain fully functional on the Free tier and shall never be gated, degraded, or time-limited by subscription state: overnight monitoring and the 100 ms on-device apnea evaluator (FR-2.1–2.4), the local Tier-1 escalating alarm and its auto-silence (FR-3.1, FR-3.4), the "I'm Safe" acknowledgement with local event trace (FR-3.2 local path), 2-stage calibration and the wear guardrail (FR-1.4–1.8), the Morning Sleep Summary of the just-finished night (FR-4.1), the rolling 7-day on-device history (FR-4.3 Free scope), the Home dashboard (FR-4.6), and passkey auth / health profile / device pairing and loss (FR-5.1, FR-5.2, FR-5.4, FR-1.10).
+* **FR-6.3 (Tier Boundary):** Feature availability by tier:
+
+  | Capability | Free | Premium |
+  | :--- | :---: | :---: |
+  | Overnight monitoring + 100 ms apnea evaluator + integrity (FR-2.1–2.4) | ✅ | ✅ |
+  | Local Tier-1 alarm, escalation, auto-silence (FR-3.1, FR-3.4) | ✅ | ✅ |
+  | "I'm Safe" + local event trace (FR-3.2) | ✅ | ✅ |
+  | 2-stage thermal calibration + wear guardrail (FR-1.4–1.8) | ✅ | ✅ |
+  | Morning Sleep Summary of the just-finished night (FR-4.1) | ✅ | ✅ |
+  | Home dashboard — last night, 7-night trend, streak, device status (FR-4.6) | ✅ | ✅ |
+  | Rolling 7-day history, on-device only, no backup / no archive (FR-4.3) | ✅ | ✅ |
+  | Passkey auth, health profile, device pairing / loss (FR-5.1/5.2/5.4, FR-1.10) | ✅ | ✅ |
+  | Language & Region / units (FR-5.7) | ✅ | ✅ |
+  | Cloud safety-signal logging — no outbound action (FR-3.3) `[OPEN]` | — | ✅ (MVP1) |
+  | Tier-2 outbound dispatch — caregiver telephony + region-aware EMS CAD (FR-3.5) `[OPEN]` | — | ✅ (MVP2) |
+  | History beyond 7 days + cloud backup / archive (FR-4.3) | — | ✅ |
+  | Doctor Report export / doctor sharing (FR-5.3) `[OPEN — § 164.524]` | — | ✅ |
+  | Cloud AI respiration waveform analytics (FR-2.5) | — | ✅ |
+  | Interactive respiration timeline + 256-pt FFT (FR-4.2) | — | ✅ |
+
+* **FR-6.4 (Payment Processor & Card Data Scope):** All payment-card capture shall occur exclusively inside the Stripe-hosted PaymentSheet / Elements surface. No platform component (mobile app, backend, logs, analytics) shall receive, process, or store a primary account number or CVC. The platform shall persist only a display triplet (card brand, last 4, expiry) and an opaque Stripe payment-method reference. This keeps the platform in **PCI-DSS SAQ-A** scope. *(Aligns with architecture AD-14.)*
+* **FR-6.5 (Backend-Owned Subscription Lifecycle):** The backend Billing service shall be the sole source of truth for subscription state. Subscription state shall be mutated only in response to HMAC-SHA256-verified Stripe webhook events; the client shall never assert entitlement to the backend. Stripe executes payment only. *(Aligns with architecture AD-13.)*
+* **FR-6.6 (Server-Verified Entitlement with Bounded Offline Grace):** The client shall gate Premium capabilities on a signed entitlement claim issued by the backend. The client may honor a cached claim through a bounded connectivity grace window when the backend is unreachable; it shall fail **open** only for transport failure and shall fail **closed** for a claim that is known-expired. Loss of connectivity shall never disable any FR-6.2 safety-critical capability.
+* **FR-6.7 (Pricing Structure):** Premium shall be offered as a **monthly** plan and a **discounted annual** plan. `[ASSUMPTION]` No price points are set; the PRD carries no currency amounts. Final pricing is a business decision to be recorded before billing build.
+* **FR-6.8 (Pre-Paid Term & Cancel-at-Period-End Lapse):** Premium is billed on a pre-paid basis. On cancellation or failed renewal, the account shall retain Premium entitlement until the end of the paid period, then transition to Free. There shall be no mid-period downgrade and no separate post-expiry grace beyond FR-6.6. On transition to Free, cloud-archived history beyond the 7-day window shall be retained but not user-visible until re-subscription `[ASSUMPTION — retention/deletion policy pending legal]`.
+* **FR-6.9 (Subscription Management UI):** The application shall provide, under Settings → Subscription (FR-5.8): a **Billing** screen showing current plan, renewal date, and plan-change / cancel actions; and a **Payment Method** screen showing the card-on-file display triplet with an update action that launches the Stripe-hosted surface (FR-6.4). Invoice history is deferred (see §6).
+* **FR-6.10 (Downgrade Transparency):** Before a user completes a downgrade or cancellation, the application shall disclose in plain language which capabilities they will lose and when (in MVP1: cloud safety-signal logging, history beyond 7 days, doctor export, cloud AI analytics, interactive timeline; and Tier-2 outbound dispatch once that ships in MVP2), and shall confirm that all FR-6.2 safety-critical local capabilities remain unaffected.
+
+> **Open items carried by FR-6 (phase-blockers for billing build, not for UX/architecture):**
+> 1. FR-3.3 / FR-3.5 Premium gating — legal / regulatory (SaMD, IEC 60601-1-8) / clinical sign-off.
+> 2. FR-5.3 Premium gating — legal sign-off against HIPAA § 164.524 right-of-access.
+> 3. FR-6.7 price points — business decision.
+> 4. FR-6.8 post-downgrade archived-PHI retention/deletion policy — legal.
 
 ---
 
@@ -164,7 +211,7 @@ To deliver a production-ready mobile application (iOS & Android) and supporting 
 
 ### 4.2 NFR-2: Performance & Alert Latency
 * **Local Alert Trigger:** Primary mobile alarm triggers within **< 200 milliseconds**.
-* **Cloud Signal Latency:** Safety acknowledgement and Tier-2 emergency payloads transmit within **< 1.5 seconds**.
+* **Cloud Signal Latency:** The Tier-2 cloud safety-signal payload (FR-3.3) transmits within **< 1.5 seconds** on an available connection. (When Tier-2 outbound dispatch ships in MVP2, the same budget applies to the dispatch payload.)
 
 ### 4.3 NFR-3: Maximum Battery Efficiency & Ultra-Low Power Architecture
 * **Maximum Overnight Battery Consumption:** Continuous 8-to-10 hour background sleep logging consumes **< 8.0% total phone battery**.
@@ -213,11 +260,33 @@ To deliver a production-ready mobile application (iOS & Android) and supporting 
 | **Emergency Intervention Success** | 99.9% reliable trigger on true apnea stops | Automated signal simulation tests |
 | **Overnight Battery Efficiency** | **< 8.0% drain over 8 hours** | Battery profiling benchmarks |
 
+### 5.1 Subscription & Revenue KPIs
+
+| Metric | Target | Verification Method |
+| :--- | :--- | :--- |
+| **Free → Premium Conversion** | `[ASSUMPTION]` baseline set post-launch | Billing telemetry (entitlement grants / active Free accounts) |
+| **Premium Retention (12-month)** | `[ASSUMPTION]` baseline set post-launch | Stripe subscription lifecycle events |
+| **Annual-plan Mix** | Trend up (annual improves retention & cash flow) | Billing telemetry by plan type |
+| **Entitlement Check Availability** | > 99.9% successful server verification; offline grace invoked < 1% of sessions | Client + backend entitlement telemetry |
+| **Card Capture Scope Compliance** | 100% of card capture in Stripe-hosted surface; zero PAN/CVC in platform logs | PCI SAQ-A self-assessment + log scanning |
+
+### 5.2 Counter-Metrics (must **not** regress at the paywall)
+
+| Counter-Metric | Guardrail | Verification Method |
+| :--- | :--- | :--- |
+| **Nights monitored per active user** | No statistically significant drop after a user encounters a paywall vs. before | Cohort analysis around first paywall impression |
+| **Uninstall rate at Free/Premium boundary** | No uninstall spike within 48h of a paywall impression | Store + in-app lifecycle telemetry |
+| **Free-tier safety function** | 100% — local Tier-1 alarm, evaluator, "I'm Safe" local trace, auto-silence fire on true apnea stops regardless of subscription state | Automated signal simulation on Free-tier build |
+| **Free-tier session completion** | Free overnight sessions complete and produce a Morning Summary at the same rate as Premium | Session-completion telemetry by tier |
+
 ---
 
 ## 6. Future Expansion & Hardware Enhancement Roadmap
 
 * **⚡ HW-ENHANCEMENT-1 (Device Micro-Electrical Stimulation - EMS/TENS):** Future hardware revisions of the D-BAND device may integrate mild micro-electrical stimulation (safe EMS micro-pulses) delivered directly via the device hardware to gently stimulate airway muscles and wake the patient.
+* **Tier-2 Outbound Emergency Dispatch (MVP2, Premium):** Build-out of FR-3.5 — priority SMS/voice caregiver escalation and region-aware EMS CAD gateway integration (routed by patient country/location) on an unacknowledged >30s event. MVP1 ships only the cloud safety-signal log (FR-3.3); caregiver contacts are already captured at onboarding.
 * **Full EHR/EMR Doctor Integration:** Direct HL7 FHIR API synchronization for seamless health profile and sleep report delivery to primary care physicians.
 * **Smart Home IoT Action Triggers:** Automated cloud integration to turn on bedroom lights or raise bed incline during severe apnea alerts.
+* **In-App Invoice History (`MOB_INVOICES`):** A billing-history / downloadable-invoice screen under Settings → Subscription is deferred; MVP1 relies on Stripe's own emailed receipts (FR-6.9).
+* **Family / Multi-Seat Plans & Regional Pricing:** Deferred; MVP1 is single-account, single-currency (FR-6.7).
 
