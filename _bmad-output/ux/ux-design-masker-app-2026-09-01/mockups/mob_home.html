@@ -19,7 +19,7 @@
       1. Greeting ("Good morning") + monitoring-streak line ("12 nights monitored").
       2. Last-night summary hero card -> MOB_SLEEP_SUMMARY.
       3. D-BAND device-status card (nominal: green dot, connected, battery %, last sync).
-      4. 7-night AHI trend card (7-bar mini chart + descriptive delta) -> MOB_HISTORY_FILTER.
+      4. 7-night Apnea Index trend card (7-bar mini chart + descriptive delta) -> MOB_HISTORY_FILTER.
     - PrimaryNavBarOrganism with the Home tab active in accent_green.
     - iPhone 17 Pro Max 440x956 artboard; canonical content fits without scrolling.
   */
@@ -146,7 +146,7 @@
   .sc-hero-row { display: flex; align-items: center; gap: 10px; }
   .sc-hero-row .sc-ahi { font-size: 30px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; line-height: 1; }
   .sc-hero-row .sc-ahi-unit { font-size: 12px; font-weight: 600; color: var(--text-secondary); align-self: flex-end; padding-bottom: 3px; }
-  /* Alert pill: shown when >=1 Tier-1 apnea alarm fired last night, replacing the AHI-severity pill */
+  /* Alert pill: shown when >=1 Tier-1 apnea alarm fired last night, replacing the AI-severity pill */
   .sc-hero-row .sc-pill { margin-left: auto; display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; border-radius: 9999px; padding: 4px 11px; color: var(--warning-amber); background: rgba(245,158,11,0.14); }
   .sc-hero-row .sc-pill svg { width: 12px; height: 12px; }
   .sc-clinical { font-size: 12px; color: var(--text-secondary); }
@@ -203,7 +203,7 @@
 
       <div class="app-content">
         <!-- 2 — Last-night summary hero -->
-        <div class="card summary-card" role="button" aria-label="Last night: 1 apnea alert. You tapped I'm Safe once. AHI 3.2, normal range. 7 hours 45 minutes. Opens full summary.">
+        <div class="card summary-card" role="button" aria-label="Last night: 1 apnea alert. You tapped I'm Safe once. AI 3.2, normal range. 7 hours 45 minutes. Opens full summary.">
           <div class="sc-body">
             <div class="sc-label-row">
               <span class="sc-label">Last night</span>
@@ -211,13 +211,13 @@
             </div>
             <div class="sc-hero-row">
               <span class="sc-ahi">3.2</span>
-              <span class="sc-ahi-unit">AHI</span>
+              <span class="sc-ahi-unit">AI</span>
               <span class="sc-pill">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
                 1 apnea alert
               </span>
             </div>
-            <div class="sc-clinical">AHI 3.2 &middot; normal range · you tapped "I'm Safe" once</div>
+            <div class="sc-clinical">AI 3.2 &middot; normal range · you tapped "I'm Safe" once</div>
             <div class="sc-stats-row">
               <span><span class="k">Duration</span> <span class="v">7h 45m</span></span>
               <span class="sc-dot">&middot;</span>
@@ -236,10 +236,10 @@
           </div>
         </div>
 
-        <!-- 4 — 7-night AHI trend -->
-        <div class="card trend-card" role="button" aria-label="AHI last 7 nights: 3.4 average, down from 4.1 last week. Opens history.">
+        <!-- 4 — 7-night Apnea Index trend -->
+        <div class="card trend-card" role="button" aria-label="AI last 7 nights: 3.4 average, down from 4.1 last week. Opens history.">
           <div class="trend-head">
-            <span class="th-title">AHI &mdash; last 7 nights</span>
+            <span class="th-title">Apnea Index &mdash; last 7 nights</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
           </div>
           <div class="trend-bars">

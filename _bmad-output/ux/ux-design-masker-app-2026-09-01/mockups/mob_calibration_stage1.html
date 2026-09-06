@@ -6,19 +6,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ambient Room Noise Sampling — Sleep Apnea Detection App</title>
+<title>IDLE Band Calibration — Sleep Apnea Detection App</title>
 <style>
-  /* Illustrates: EXPERIENCE.md IA flow map (2-Stage Thermal Calibration Wizard,
-     Stage 1: Ambient Room Noise Sampling, MOB_CALIBRATION_STAGE1); Component
-     Pattern #2 ThermalCalibrationWizardOrganism; State Pattern #2
-     State_CalibratingStage1 (sampling 10s idle room noise floor N_idle); Voice
+  /* Illustrates: EXPERIENCE.md IA flow map (IDLE Band Calibration Wizard,
+     MOB_CALIBRATION); Component Pattern #2 IdleBandCalibrationWizardOrganism;
+     State Pattern #2 State_CalibratingIdleBand (D-BAND worn, user still, ~10s
+     sampling the running min/max of the raw bio-signal -> the IDLE Band); Voice
      and Tone "Calibration Instructions" quote; DESIGN.md Component #2
      CalibrationStepHeader (step pill, title, instruction body, progress bar).
-     Redrawn on the iPhone 17 Pro Max 440x956 artboard: kept the existing
-     step-header-on-top / sample-card-centered-below composition (already a good
-     centering pattern) but widened card padding, the timer/waveform, and the
-     step-header gaps so the larger canvas reads as one balanced screen rather
-     than the same card floating in more empty margin. */
+     This screen shows STEP 1 of 2 (idle sample). STEP 2 is the wear check
+     (breathe normally; the app confirms >=2 valid band-excursion cycles before
+     "Start Sleep Monitoring" unlocks) — noted in the footer. */
   :root {
     --bg-primary: #0F172A;
     --surface: #1E293B;
@@ -184,6 +182,22 @@
     border-radius: 2px;
     background: var(--warning-amber);
   }
+  .cal-band {
+    margin-top: 22px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-secondary);
+  }
+  .cal-band b { color: var(--text-primary); font-weight: 600; }
+  .cal-foot {
+    margin-top: 20px;
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    text-align: center;
+  }
 </style>
 </head>
 <body>
@@ -199,15 +213,15 @@
     </div>
     <div class="screen-content">
       <div class="cal-wrap">
-        <span class="csh-pill">STEP 1 OF 2</span>
-        <div class="csh-title">Ambient Room Noise Sampling</div>
-        <p class="csh-instruction">Place sensor on bedside table, remain silent for 10 seconds.</p>
+        <span class="csh-pill">STEP 1 OF 2 · IDLE SAMPLE</span>
+        <div class="csh-title">Learning your IDLE Band</div>
+        <p class="csh-instruction">Put on your D-BAND, sit still, and breathe gently for 10 seconds.</p>
         <div class="csh-progress-track"><div class="csh-progress-fill"></div></div>
 
         <div class="cal-center">
           <div class="cal-sample-card">
             <div class="cal-timer">00:04</div>
-            <div class="cal-timer-label">Sampling ambient noise&hellip;</div>
+            <div class="cal-timer-label">Sampling resting signal&hellip;</div>
             <div class="cal-waveform" aria-hidden="true">
               <span style="height: 12px;"></span>
               <span style="height: 22px;"></span>
@@ -219,8 +233,14 @@
               <span style="height: 19px;"></span>
               <span style="height: 13px;"></span>
             </div>
+            <div class="cal-band">
+              <span>IDLE Band lower&nbsp;<b>35</b></span>
+              <span>upper&nbsp;<b>240</b></span>
+            </div>
           </div>
         </div>
+
+        <p class="cal-foot">Next: take a few normal breaths so we can check the fit — the signal has to cross both band lines before you can start.</p>
       </div>
     </div>
     <div class="home-indicator"><span class="bar"></span></div>

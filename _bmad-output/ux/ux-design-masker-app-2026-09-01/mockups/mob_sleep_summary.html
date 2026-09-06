@@ -142,7 +142,8 @@
   .score-label { font-size: 9px; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.04em; }
   .score-info h3 { font-size: 16px; margin-bottom: 6px; }
   .score-info p { font-size: 13px; color: var(--text-secondary); }
-  /* Alert badge: shown when >=1 Tier-1 apnea alarm fired, replacing the AHI-severity badge */
+  .apnea-only-caveat { margin: 10px 2px 0; font-size: 11px; line-height: 1.45; color: var(--text-secondary); }
+  /* Alert badge: shown when >=1 Tier-1 apnea alarm fired, replacing the AI-severity badge */
   .badge-alert {
     display: inline-flex;
     align-items: center;
@@ -253,10 +254,10 @@
         <div class="score-card">
           <div class="score-ring">
             <span class="score-num">3.2</span>
-            <span class="score-label">AHI</span>
+            <span class="score-label">AI</span>
           </div>
           <div class="score-info">
-            <h3>AHI 3.2 &middot; normal range</h3>
+            <h3>AI 3.2 &middot; normal range</h3>
             <p>7h 45m monitoring · 1 &ldquo;I&rsquo;m Safe&rdquo; tap</p>
             <span class="badge-alert">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
@@ -264,6 +265,8 @@
             </span>
           </div>
         </div>
+
+        <p class="apnea-only-caveat">This is an apnea-only screen. A full sleep study also counts shallow-breathing (hypopnea) events and may score higher.</p>
 
         <div class="chart-card">
           <div class="chart-title">
@@ -273,12 +276,15 @@
             </span>
           </div>
           <svg class="waveform-svg" viewBox="0 0 300 100">
-            <path d="M 0 50 Q 15 20 30 50 T 60 50 T 90 50 T 120 50 T 150 90 T 180 50 T 210 20 T 240 50 T 270 50 T 300 50" stroke="#10B981" stroke-width="2.5" fill="none"/>
-            <line x1="0" y1="50" x2="300" y2="50" stroke="#334155" stroke-dasharray="4 4"/>
-            <circle cx="150" cy="90" r="5" fill="#EF4444"/>
-            <text x="150" y="70" fill="#EF4444" font-size="9" text-anchor="middle">Apnea Stop (12s)</text>
+            <path d="M 0 50 Q 15 18 30 50 T 60 50 T 90 50 T 120 50 T 150 50 T 180 50 T 210 18 T 240 50 T 270 50 T 300 50" stroke="#10B981" stroke-width="2.5" fill="none"/>
+            <line x1="0" y1="30" x2="300" y2="30" stroke="#334155" stroke-dasharray="4 4"/>
+            <line x1="0" y1="70" x2="300" y2="70" stroke="#334155" stroke-dasharray="4 4"/>
+            <text x="4" y="26" fill="#94A3B8" font-size="8">upper bound</text>
+            <text x="4" y="82" fill="#94A3B8" font-size="8">lower bound</text>
+            <rect x="120" y="30" width="60" height="40" fill="#EF4444" fill-opacity="0.12"/>
+            <text x="150" y="90" fill="#EF4444" font-size="9" text-anchor="middle">Apnea — signal held inside the IDLE Band (12s)</text>
           </svg>
-          <div class="chart-foot">10 Hz stream · pinch &amp; pan the full timeline on the details screen</div>
+          <div class="chart-foot">Raw 10 Hz signal with the IDLE Band bounds · pinch &amp; pan the full timeline on the details screen</div>
         </div>
 
         <div class="metrics-grid">
