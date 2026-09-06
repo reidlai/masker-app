@@ -5,19 +5,17 @@ import '../atoms/app_button.dart';
 
 class BleSimulatorOrganism extends StatefulWidget {
   final ValueChanged<bool>? onSimulatorToggled;
-  final VoidCallback? onSimulateIdleNoise;
-  final VoidCallback? onSimulateActiveBreath;
+  final VoidCallback? onSimulateIdleBandSample;
   final VoidCallback? onSimulateNormalBreathing;
-  final VoidCallback? onSimulateApneaAlert;
+  final VoidCallback? onSimulateInBandNoExcursion;
   final VoidCallback? onSimulateRecovery;
 
   const BleSimulatorOrganism({
     super.key,
     this.onSimulatorToggled,
-    this.onSimulateIdleNoise,
-    this.onSimulateActiveBreath,
+    this.onSimulateIdleBandSample,
     this.onSimulateNormalBreathing,
-    this.onSimulateApneaAlert,
+    this.onSimulateInBandNoExcursion,
     this.onSimulateRecovery,
   });
 
@@ -30,14 +28,12 @@ class _BleSimulatorOrganismState extends State<BleSimulatorOrganism> {
 
   String _getScenarioName(SimulatorScenario scenario) {
     switch (scenario) {
-      case SimulatorScenario.idleNoise:
-        return "Simulating Idle Room Noise Floor (Stage 1)";
-      case SimulatorScenario.activeBreath:
-        return "Simulating Active Breathing Baseline (Stage 2)";
+      case SimulatorScenario.idleBandSample:
+        return "Sampling IDLE Band (worn idle ~10s)";
       case SimulatorScenario.normalRespiration:
         return "Streaming Normal Respiration Waveform (16 bpm)";
-      case SimulatorScenario.apneaAlert:
-        return "Apnea Breach Alert Active (>10s Zero-Airflow Drop)";
+      case SimulatorScenario.inBandNoExcursion:
+        return "In-Band, No Excursion (>10s stop-breathing stretch)";
       case SimulatorScenario.recovery:
         return "Patient Breathing Recovery Active (5s Auto-Silence)";
       case SimulatorScenario.none:
@@ -102,8 +98,8 @@ class _BleSimulatorOrganismState extends State<BleSimulatorOrganism> {
                     "Active Status: $statusText",
                     style: TextStyle(
                       fontSize: 12,
-                      fontWeight: activeScenario == SimulatorScenario.apneaAlert ? FontWeight.bold : FontWeight.normal,
-                      color: activeScenario == SimulatorScenario.apneaAlert ? Colors.redAccent : AppColors.textSecondary,
+                      fontWeight: activeScenario == SimulatorScenario.inBandNoExcursion ? FontWeight.bold : FontWeight.normal,
+                      color: activeScenario == SimulatorScenario.inBandNoExcursion ? Colors.redAccent : AppColors.textSecondary,
                     ),
                   ),
                   const Divider(height: 24, color: AppColors.cardBorder),
@@ -118,29 +114,12 @@ class _BleSimulatorOrganismState extends State<BleSimulatorOrganism> {
                     children: [
                       Expanded(
                         child: AppButton(
-                          label: "Simulate Idle Noise (N_idle)",
-                          variant: activeScenario == SimulatorScenario.idleNoise ? AppButtonVariant.primary : AppButtonVariant.secondary,
+                          label: "Simulate IDLE Band Sample",
+                          variant: activeScenario == SimulatorScenario.idleBandSample ? AppButtonVariant.primary : AppButtonVariant.secondary,
                           onPressed: isEnabled
                               ? () {
-                                  _telemetryService.startSimulationScenario(SimulatorScenario.idleNoise);
-                                  widget.onSimulateIdleNoise?.call();
-                                }
-                              : null,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: AppButton(
-                          label: "Simulate Active Baseline (V_pp)",
-                          variant: activeScenario == SimulatorScenario.activeBreath ? AppButtonVariant.primary : AppButtonVariant.secondary,
-                          onPressed: isEnabled
-                              ? () {
-                                  _telemetryService.startSimulationScenario(SimulatorScenario.activeBreath);
-                                  widget.onSimulateActiveBreath?.call();
+                                  _telemetryService.startSimulationScenario(SimulatorScenario.idleBandSample);
+                                  widget.onSimulateIdleBandSample?.call();
                                 }
                               : null,
                         ),
@@ -176,12 +155,12 @@ class _BleSimulatorOrganismState extends State<BleSimulatorOrganism> {
                     children: [
                       Expanded(
                         child: AppButton(
-                          label: "Simulate Apnea Stop Alert (>10s)",
+                          label: "Simulate In-Band (no excursion) >10s",
                           variant: AppButtonVariant.danger,
                           onPressed: isEnabled
                               ? () {
-                                  _telemetryService.startSimulationScenario(SimulatorScenario.apneaAlert);
-                                  widget.onSimulateApneaAlert?.call();
+                                  _telemetryService.startSimulationScenario(SimulatorScenario.inBandNoExcursion);
+                                  widget.onSimulateInBandNoExcursion?.call();
                                 }
                               : null,
                         ),

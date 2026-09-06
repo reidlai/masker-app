@@ -1,33 +1,35 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:rxdart/rxdart.dart';
+import '../monitoring/idle_band.dart';
 import 'i_ble_sensor_driver.dart';
 
+/// Developer / QA telemetry scenarios. Signal shapes are internally
+/// consistent with a band learned from [idleBandSample] (~0.25–0.35):
+/// [normalRespiration] and [recovery] strictly overshoot that band on both
+/// sides; [inBandNoExcursion] never leaves it.
 enum SimulatorScenario {
   none,
-  idleNoise,
-  activeBreath,
+  idleBandSample,
   normalRespiration,
-  apneaAlert,
+  inBandNoExcursion,
   recovery,
 }
 
 /// Developer & QA Telemetry Simulator implementing [IBLESensorDriver].
-/// Generates synthetic 10Hz bio-signal streams and customizable test scenarios.
+/// Generates a synthetic continuous 10 Hz bio-signal stream (AD-12).
 class BleSimulatorDriver implements IBLESensorDriver {
   static final BleSimulatorDriver _instance = BleSimulatorDriver._internal();
   factory BleSimulatorDriver() => _instance;
   BleSimulatorDriver._internal();
 
-  BehaviorSubject<double> _signalSubject = BehaviorSubject<double>.seeded(5.0);
+  BehaviorSubject<double> _signalSubject = BehaviorSubject<double>.seeded(0.3);
   BehaviorSubject<bool> _isSimulatorSubject = BehaviorSubject<bool>.seeded(true);
   BehaviorSubject<SimulatorScenario> _scenarioSubject =
       BehaviorSubject<SimulatorScenario>.seeded(SimulatorScenario.none);
 
-  ValueStream<double> get signalStream => _signalSubject.stream;
-
   @override
-  double get signalThreshold => 0.5;
+  ValueStream<double> get signalStream => _signalSubject.stream;
 
   ValueStream<bool> get isSimulatorStream => _isSimulatorSubject.stream;
   ValueStream<SimulatorScenario> get scenarioStream => _scenarioSubject.stream;
@@ -39,8 +41,9 @@ class BleSimulatorDriver implements IBLESensorDriver {
   Timer? _simulationTimer;
   double _step = 0.0;
 
-  BehaviorSubject<SensorMonitoringPhase> _phaseSubject =
-      BehaviorSubject<SensorMonitoringPhase>.seeded(SensorMonitoringPhase.disconnected);
+  final BehaviorSubject<SensorMonitoringPhase> _phaseSubject =
+      BehaviorSubject<SensorMonitoringPhase>.seeded(
+          SensorMonitoringPhase.disconnected);
 
   @override
   SensorMonitoringPhase get currentPhase => _phaseSubject.value;
@@ -52,49 +55,39 @@ class BleSimulatorDriver implements IBLESensorDriver {
   Future<bool> scanAndConnect() async {
     _isSimulatorSubject.add(true);
     _phaseSubject.add(SensorMonitoringPhase.idle);
+    // AD-12: start the continuous emitter now; it runs until disconnect().
+    startSimulationScenario(SimulatorScenario.idleBandSample);
     return true;
   }
 
-  // --- Stage 1: Idle Room Noise Calibration Lifecycle ---
   @override
-  Future<void> startIdleCalibration() async {
-    _phaseSubject.add(SensorMonitoringPhase.calibratingIdle);
-    startSimulationScenario(SimulatorScenario.idleNoise);
-  }
+  Future<IdleBand> sampleIdleBand({Duration window = kIdleSampleWindow}) async {
+    _phaseSubject.add(SensorMonitoringPhase.calibratingIdleBand);
+    startSimulationScenario(SimulatorScenario.idleBandSample);
 
-  @override
-  Future<double> stopIdleCalibration() async {
-    await Future.delayed(const Duration(milliseconds: 800));
+    final acc = IdleBandAccumulator();
+    // Skip the BehaviorSubject's replayed current value so a stale sample from
+    // a prior scenario cannot widen the learned band.
+    final sub = _signalSubject.stream.skip(1).listen(acc.add);
+    await Future.delayed(window);
+    unawaited(sub.cancel());
+
+    final band = acc.band;
+    if (band == null) {
+      _phaseSubject.add(SensorMonitoringPhase.idle);
+      throw StateError(
+        'sampleIdleBand: no samples arrived on signalStream within $window',
+      );
+    }
+
+    // Re-shape the still-running emitter to a band-spanning breathing wave so
+    // the wear check observes strict excursions against the just-returned band
+    // (idleBandSample's own range *is* the band and would yield zero cycles).
+    startSimulationScenario(SimulatorScenario.normalRespiration);
     _phaseSubject.add(SensorMonitoringPhase.idle);
-    return 0.4;
+    return band;
   }
 
-  @override
-  Future<double> calibrateStage1NoiseFloor() async {
-    await startIdleCalibration();
-    return await stopIdleCalibration();
-  }
-
-  @override
-  Future<double> calibrateStage1NoiseCeiling() async {
-    return await calibrateStage1NoiseFloor();
-  }
-
-  // --- Stage 2: Training Calibration Lifecycle ---
-  @override
-  Future<void> startTrainingCalibration() async {
-    _phaseSubject.add(SensorMonitoringPhase.calibratingTraining);
-    startSimulationScenario(SimulatorScenario.activeBreath);
-  }
-
-  @override
-  Future<double> stopTrainingCalibration() async {
-    await Future.delayed(const Duration(milliseconds: 800));
-    _phaseSubject.add(SensorMonitoringPhase.idle);
-    return 0.5;
-  }
-
-  // --- Stage 3: Nocturnal Sleeping Monitoring Lifecycle ---
   @override
   void startMonitoringSession() {
     _phaseSubject.add(SensorMonitoringPhase.monitoring);
@@ -103,7 +96,9 @@ class BleSimulatorDriver implements IBLESensorDriver {
 
   @override
   void stopMonitoringSession() {
-    stopSimulation();
+    // AD-12: the emitter runs until disconnect(); revert to a resting scenario
+    // instead of stopping it (mirrors BLESensorDriver.stopMonitoringSession).
+    startSimulationScenario(SimulatorScenario.idleBandSample);
     _phaseSubject.add(SensorMonitoringPhase.idle);
   }
 
@@ -148,26 +143,29 @@ class BleSimulatorDriver implements IBLESensorDriver {
 
     _simulationTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
       _step += 0.1;
-      double signal = 5.0;
+      double signal;
 
       switch (scenario) {
-        case SimulatorScenario.idleNoise:
-          signal = 0.3 + (0.1 * sin(_step * 3));
-          break;
-        case SimulatorScenario.activeBreath:
-          signal = 2.5 * (1 + sin(_step * 2)) + 0.4;
+        case SimulatorScenario.idleBandSample:
+          // Resting band-forming signal ~0.25–0.35 (0.30 ± 0.05).
+          signal = 0.30 + 0.05 * sin(_step * 3);
           break;
         case SimulatorScenario.normalRespiration:
-          signal = 2.5 * (1 + sin(_step * 1.6)) + 0.4;
+          // 0.275 ± 0.2 → ~0.075–0.475: strictly crosses both bounds of a
+          // band learned from idleBandSample (~0.25–0.35).
+          signal = 0.275 + 0.2 * sin(_step * 1.6);
           break;
-        case SimulatorScenario.apneaAlert:
-          signal = 0.05;
+        case SimulatorScenario.inBandNoExcursion:
+          // Flat, always inside the band — a stop-breathing stretch.
+          signal = 0.30;
           break;
         case SimulatorScenario.recovery:
-          signal = 3.0 * (1 + sin(_step * 2)) + 1.0;
+          // 0.275 ± 0.22 → ~0.055–0.495: resumed breathing that also strictly
+          // crosses both band bounds (never parks above).
+          signal = 0.275 + 0.22 * sin(_step * 2);
           break;
         case SimulatorScenario.none:
-          signal = 5.0;
+          signal = 0.30;
           break;
       }
 
@@ -188,9 +186,9 @@ class BleSimulatorDriver implements IBLESensorDriver {
   void resetForTest() {
     stopSimulation();
     if (_signalSubject.isClosed) {
-      _signalSubject = BehaviorSubject<double>.seeded(5.0);
+      _signalSubject = BehaviorSubject<double>.seeded(0.3);
     } else {
-      _signalSubject.add(5.0);
+      _signalSubject.add(0.3);
     }
     if (_isSimulatorSubject.isClosed) {
       _isSimulatorSubject = BehaviorSubject<bool>.seeded(true);
@@ -198,7 +196,8 @@ class BleSimulatorDriver implements IBLESensorDriver {
       _isSimulatorSubject.add(true);
     }
     if (_scenarioSubject.isClosed) {
-      _scenarioSubject = BehaviorSubject<SimulatorScenario>.seeded(SimulatorScenario.none);
+      _scenarioSubject =
+          BehaviorSubject<SimulatorScenario>.seeded(SimulatorScenario.none);
     } else {
       _scenarioSubject.add(SimulatorScenario.none);
     }

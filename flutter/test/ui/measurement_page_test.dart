@@ -1,12 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:masker_app/core/ble/ble_sensor_driver.dart';
 import 'package:masker_app/core/ble/i_ble_sensor_driver.dart';
+import 'package:masker_app/core/monitoring/idle_band.dart';
 import 'package:masker_app/core/permissions/ble_permission_service.dart';
 import 'package:masker_app/ui/pages/measurement_page.dart';
 
-/// Minimal [IBLESensorDriver] fake that resolves instantly, so tests never
-/// depend on real BLE hardware or the simulator's timers.
+/// Minimal [IBLESensorDriver] fake that resolves instantly, so the
+/// permission-gate tests never depend on real BLE hardware or timers. It is
+/// NOT used to drive the calibration wizard — the end-to-end wizard case
+/// below runs against a real [BLESensorDriver].
 class _FakeSensorDriver implements IBLESensorDriver {
   final StreamController<double> _signalController = StreamController<double>.broadcast();
   final StreamController<SensorMonitoringPhase> _phaseController =
@@ -16,9 +20,6 @@ class _FakeSensorDriver implements IBLESensorDriver {
 
   @override
   Stream<double> get signalStream => _signalController.stream;
-
-  @override
-  double get signalThreshold => 0.5;
 
   @override
   SensorMonitoringPhase get currentPhase => SensorMonitoringPhase.idle;
@@ -33,22 +34,8 @@ class _FakeSensorDriver implements IBLESensorDriver {
   }
 
   @override
-  Future<void> startIdleCalibration() async {}
-
-  @override
-  Future<double> stopIdleCalibration() async => 0.4;
-
-  @override
-  Future<double> calibrateStage1NoiseFloor() async => 0.4;
-
-  @override
-  Future<double> calibrateStage1NoiseCeiling() async => 0.4;
-
-  @override
-  Future<void> startTrainingCalibration() async {}
-
-  @override
-  Future<double> stopTrainingCalibration() async => 0.5;
+  Future<IdleBand> sampleIdleBand({Duration window = kIdleSampleWindow}) async =>
+      const IdleBand(lower: 0.25, upper: 0.35);
 
   @override
   void startMonitoringSession() {}
@@ -60,10 +47,6 @@ class _FakeSensorDriver implements IBLESensorDriver {
   void disconnect() {}
 }
 
-/// Fake [BlePermissionService] whose `checkPermission()` result can be
-/// swapped mid-test, so a widget test can simulate "user granted it in
-/// Settings and returned to the app" without touching real permission
-/// channels.
 class _FakeBlePermissionService extends BlePermissionService {
   BlePermissionStatus statusToReturn;
   int checkCallCount = 0;
@@ -77,8 +60,6 @@ class _FakeBlePermissionService extends BlePermissionService {
   }
 }
 
-/// Fake that throws on the first call and succeeds on the next, so a
-/// "Retry" tap can be verified to actually recover.
 class _ThrowsOnceBlePermissionService extends BlePermissionService {
   bool _thrown = false;
 
@@ -106,13 +87,12 @@ void main() {
         permissionService: fakePermissionService,
       ),
     ));
-    await tester.pump(); // let the async permission check resolve
+    await tester.pump();
     await tester.pump();
 
     expect(find.text("Bluetooth Permission Needed"), findsOneWidget);
     expect(find.text("Open Settings"), findsOneWidget);
     expect(find.textContaining("Bluetooth Scan"), findsOneWidget);
-    // Scan never runs while blocked.
     expect(fakeDriver.connectCalled, isFalse);
   });
 
@@ -154,6 +134,7 @@ void main() {
     await tester.pump();
 
     expect(find.text("Bluetooth Permission Needed"), findsNothing);
+    expect(find.text("IDLE Band Calibration"), findsOneWidget);
     expect(fakeDriver.connectCalled, isTrue);
   });
 
@@ -176,7 +157,6 @@ void main() {
     expect(find.text("Bluetooth Permission Needed"), findsOneWidget);
     expect(fakeDriver.connectCalled, isFalse);
 
-    // Simulate: user leaves for Settings, grants permission, returns.
     fakePermissionService.statusToReturn = const BlePermissionStatus(BlePermissionResult.granted, []);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
@@ -207,5 +187,59 @@ void main() {
 
     expect(find.text("Couldn't check Bluetooth permission"), findsNothing);
     expect(fakeDriver.connectCalled, isTrue);
+  });
+
+  testWidgets(
+      'end-to-end: real BLESensorDriver drives the wizard through the idle '
+      'sample and >=2 wear-check cycles, then Start Sleep Monitoring fires', (tester) async {
+    final driver = BLESensorDriver();
+    addTearDown(driver.disconnect);
+
+    await tester.pumpWidget(MaterialApp(
+      home: MeasurementPage(
+        developerEnabled: false,
+        sensorDriver: driver,
+        permissionService: _FakeBlePermissionService(
+          const BlePermissionStatus(BlePermissionResult.granted, []),
+        ),
+      ),
+    ));
+
+    // Permission check resolves, then scanAndConnect (~1.2 s of delays).
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+
+    expect(find.text("IDLE Band Calibration"), findsOneWidget);
+    expect(find.text("STEP 1 OF 2"), findsOneWidget);
+
+    // Step 1 — idle sample (10 s window).
+    await tester.tap(find.text("Start"));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 11));
+    await tester.pump();
+
+    // Step 2 — wear check. The driver's own post-sampleIdleBand emission
+    // (band-spanning breathing wave) supplies the excursions; no manual
+    // scenario/chip switching.
+    expect(find.text("STEP 2 OF 2"), findsOneWidget);
+    await tester.pump(const Duration(seconds: 12));
+    await tester.pump();
+
+    expect(find.text("Calibration Complete — Ready for Sleep ✓"), findsOneWidget);
+
+    // Start Sleep Monitoring is now enabled.
+    final startButton = find.widgetWithText(ElevatedButton, "Start Nocturnal Sleep Monitoring");
+    expect(startButton, findsOneWidget);
+    expect(tester.widget<ElevatedButton>(startButton).onPressed, isNotNull);
+
+    await tester.tap(startButton);
+    await tester.pump();
+
+    expect(find.text("Night Mode Active (0-FPS)"), findsOneWidget);
+    expect(driver.currentPhase, equals(SensorMonitoringPhase.monitoring));
+
+    // Drain the still-live monitoring emitter so no timer leaks past the test.
+    await tester.pump(const Duration(milliseconds: 300));
   });
 }

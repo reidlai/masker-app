@@ -9,15 +9,15 @@ void main() {
   });
 
   testWidgets('BleSimulatorOrganism renders controls and triggers callbacks', (WidgetTester tester) async {
-    bool apneaTriggered = false;
+    bool inBandTriggered = false;
 
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
           body: SingleChildScrollView(
             child: BleSimulatorOrganism(
-              onSimulateApneaAlert: () {
-                apneaTriggered = true;
+              onSimulateInBandNoExcursion: () {
+                inBandTriggered = true;
               },
             ),
           ),
@@ -29,11 +29,11 @@ void main() {
     expect(find.text("1. Calibration Lifecycle Simulation"), findsOneWidget);
     expect(find.text("2. Nocturnal Sleep Cycle Simulation"), findsOneWidget);
 
-    final apneaBtn = find.text("Simulate Apnea Stop Alert (>10s)");
-    expect(apneaBtn, findsOneWidget);
+    final inBandBtn = find.text("Simulate In-Band (no excursion) >10s");
+    expect(inBandBtn, findsOneWidget);
 
-    await tester.tap(apneaBtn);
-    expect(apneaTriggered, isTrue);
+    await tester.tap(inBandBtn);
+    expect(inBandTriggered, isTrue);
 
     BleSimulatorDriver().resetForTest();
   });
