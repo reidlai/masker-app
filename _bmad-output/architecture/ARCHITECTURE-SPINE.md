@@ -1,7 +1,7 @@
 ---
 title: Enterprise Architecture Specification — BPMN.js XML & PlantUML Data Architecture
 status: draft
-version: 20.0.0
+version: 21.0.0
 created: 2026-08-31
 updated: 2026-09-06
 author: Winston (System Architect) & Mary (Business Analyst)
@@ -32,11 +32,11 @@ title C4 Level 1: System Context Diagram — Sleep Apnea Detection & Respiratory
 Person(patient, "Patient / At-Home & Athletic User", "Wears lightweight D-BAND ductless thermal sensor at home during sleep or exercise; authenticates via Passkey.")
 Person(caregiver, "Caregiver / Family Member", "Receives Tier-2 emergency SMS/Voice calls when patient apnea alarm is unacknowledged.")
 Person(dispatcher, "Emergency Center Dispatcher", "Monitors 24/7 real-time emergency dashboard for unacknowledged 30s apnea alerts.")
-Person(doctor, "Attending Physician / Clinical Researcher", "Reviews morning AHI scores, respiration wave graphs, and AI big data clinical research analytics.")
+Person(doctor, "Attending Physician / Clinical Researcher", "Reviews morning Apnea Index scores, respiration wave graphs, and AI big data clinical research analytics.")
 
-System(system, "Sleep Apnea Detection Platform", "Monitors nocturnal breathing airflow, executes 2-stage thermal calibration, converts ΔT to lung volume, triggers Tier-1 local alarms, and dispatches Tier-2 cloud emergency alerts.")
+System(system, "Sleep Apnea Detection Platform", "Monitors the nocturnal breathing signal, learns a per-session IDLE Band, detects apnea as the absence of band excursions for ≥ 10 s, triggers Tier-1 local alarms, and logs the Tier-2 cloud safety signal (outbound dispatch is MVP2).")
 
-Rel(patient, system, "Interfaces via BLE 5.0 & Mobile App (Passkey, 4-Mode UX, Thermal Calibration, 'I'm Safe' Tap)", "BLE / HTTPS")
+Rel(patient, system, "Interfaces via BLE 5.0 & Mobile App (Passkey, 4-Mode UX, IDLE Band Calibration, 'I'm Safe' Tap)", "BLE / HTTPS")
 Rel(system, caregiver, "Sends Tier-2 Emergency SMS & Voice Alerts", "HTTPS / Telephony")
 Rel(system, dispatcher, "Broadcasts Sub-1.5s High-Priority Apnea Alarms", "WSS / WebSockets")
 Rel(system, doctor, "Delivers Morning Sleep Summaries & EHR/Big Data Reports", "HTTPS / HL7 FHIR")
@@ -46,10 +46,10 @@ Rel(system, doctor, "Delivers Morning Sleep Summaries & EHR/Big Data Reports", "
 
 #### 📖 Architectural Context & Operational Boundary
 
-* **Patient / At-Home & Athletic User:** Connects the **D-BAND (Ductless-Breath ANalysis Device)** lightweight conducting polymer thermal sensor array via Bluetooth Low Energy (BLE 5.0+). Unlike traditional CPAP machines requiring uncomfortable masks, tubes, or turbines, D-BAND is a **ductless, maskless, portable, battery-operated, and quiet** sensor worn at home ($388 USD target price). Through the Flutter mobile app, the user authenticates passwordlessly via FIDO2 Passkeys, selects from 4 operational modes (Sleep Monitoring, Athletic Training, Health Check, Meditation), completes a 2-stage thermal calibration (idle room noise floor + active breathing thermal baseline), and sleeps while the app evaluates 100ms telemetry. If an airflow cessation breach occurs, the patient receives a sub-200ms Tier-1 local mobile alarm.
+* **Patient / At-Home & Athletic User:** Connects the **D-BAND (Ductless-Breath ANalysis Device)** lightweight conducting polymer thermal sensor array via Bluetooth Low Energy (BLE 5.0+). Unlike traditional CPAP machines requiring uncomfortable masks, tubes, or turbines, D-BAND is a **ductless, maskless, portable, battery-operated, and quiet** sensor worn at home ($388 USD target price). Through the Flutter mobile app, the user authenticates passwordlessly via FIDO2 Passkeys, selects from 4 operational modes (Sleep Monitoring, Athletic Training, Health Check, Meditation), completes a **single-stage IDLE Band calibration** (a worn ~10 s idle sample that learns the resting signal's min/max, followed by a wear check), and sleeps while the app evaluates the raw signal against that band every 100 ms. If no valid band excursion occurs for ≥ 10 s, the patient receives a sub-200 ms Tier-1 local mobile alarm.
 * **Caregiver / Family Member:** Acts as the designated secondary contact. If the patient does not acknowledge a Tier-1 mobile alarm within 30 seconds, the cloud emergency dispatch worker automatically triggers Tier-2 high-priority SMS and automated voice telephony calls to the caregiver.
 * **Emergency Center Dispatcher:** Operators in a 24/7 command center monitor an active web portal displaying real-time WebSocket alert feeds (sub-1.5s latency). Unacknowledged 30-second apnea stops instantly pop up on the dashboard with patient GPS coordinates, allowing dispatchers to verify emergency status and alert local EMS responders.
-* **Attending Physician / Clinical Researcher:** Clinicians and researchers access morning sleep summaries, Apnea-Hypopnea Index (AHI) classifications (Normal <5, Mild 5–15, Moderate 15–30, Severe >30), time-series respiration wave exports, and de-identified cloud big data analytics for AI model refinement (PolyU / CUHK clinical research platform).
+* **Attending Physician / Clinical Researcher:** Clinicians and researchers access morning sleep summaries and the **Apnea Index (AI)** — apnea-only (the airflow-only D-BAND does not score hypopneas), with the standard AHI severity bands (Normal < 5, Mild 5–15, Moderate 15–30, Severe ≥ 30) applied to the AI and an apnea-only caveat on every surface — plus time-series respiration wave exports and de-identified cloud big data analytics for AI model refinement (PolyU / CUHK clinical research platform).
 
 #### 💡 Guidance for Downstream Workflows (PRD & UX)
 > [!TIP]
@@ -64,21 +64,24 @@ The following core invariants govern all mobile application, BLE sensor driver, 
 - **AD-01 (Atomic Design System Hierarchy):** Strict separation across UI Atoms, Molecules, 14 Organisms, and Page Templates.
 - **AD-02 (BLoC + RxDart Unidirectional Data Flow):** Event streams managed via `flutter_bloc` and `rxdart`; UI-facing BLoCs decimate the 10Hz bio-signal to ≤5 FPS via `sampleTime`/`throttleTime` and use `switchMap` event transformers. The single upstream bio-signal source that feeds every BLoC is the boot-time unified queue defined in **AD-12** — BLoCs subscribe to it, never to a driver or GATT channel directly.
 - **AD-03 (FIDO2 / WebAuthn Biometric Authentication):** Passwordless Passkey login enforcing HIPAA 45 CFR § 164.312(a) technical access control.
-- **AD-04 (2-Stage Thermal Sensor Calibration):** Stage 1 room noise floor ($N_{\text{idle}}$) + Stage 2 active breath baseline ($V_{pp}$) setting dynamic zero-airflow thresholds ($0.10 \times V_{pp}$).
-- **AD-05 (Wear Verification Guardrail):** Recording blocked if active breathing delta $\Delta V < 1.5 \times N_{\text{idle}}$.
+- **AD-04 (IDLE Band Calibration & Signal Model):**
+  * **Binds:** the calibration wizard (`MOB_CALIBRATION`), the on-device apnea evaluator (`ApneaEvaluator`), the wear check, the `DeveloperSimulatorBarOrganism`, and the respiration-waveform renderer.
+  * **Prevents:** those units diverging on how the band is built, what counts as a breath, or reintroducing a litres-per-second transform; the evaluator and the renderer disagreeing on the reference lines.
+  * **Rule:** a single **worn** ~10 s idle sample records the running **minimum** and **maximum** of the raw bio-signal stream — those two values are the session **IDLE Band** `[lower_bound, upper_bound]` (monotonically widening within the window; no margin). A **valid breath** is a cycle in which the raw signal rises to/above `upper_bound` (inhale) **and** falls to/below `lower_bound` (exhale). A **"stop-breathing" sample** is one where the signal lies within `[lower_bound, upper_bound]`. The client works in **raw signal units end to end** — no thermal-to-volumetric (L/s) transform, no `V_pp` peak-to-peak baseline, no `0.10 × V_pp` threshold. The band is per-session (re-learned each night), persisted on `SleepSession` (`idle_band_lower` / `idle_band_upper`), and reused across nights only until stale/invalid.
+- **AD-05 (Wear Verification Guardrail):** after the AD-04 idle sample, "Start Sleep Monitoring" stays blocked until the app observes **≥ 2 valid IDLE-Band breath-excursion cycles** (per AD-04) within a bounded window (~15 s `[ASSUMPTION]`); on failure it shows *"Sensor not detecting breathing — check the fit."* with a retry.
 - **AD-06 (0-FPS Night Mode):** Pitch-black screen lock state (`#000000`, <8.0% battery drain over 8h) with 10Hz RAM ring buffer.
 - **AD-07 (Two-Tier Emergency Response):** Sub-200ms latency escalating siren tones ($40\text{dB} \to 75+\text{dB}$) & haptics, 30s "I'm Safe" tap, 5s auto-silence, and Tier-2 caregiver dispatch.
-- **AD-08 (Developer Options & Contextual Simulator Bar):** Interactive simulation of calibration ($N_{\text{idle}}$ & $V_{pp}$) and sleep cycle alarms via `DeveloperOptionsPage` and `DeveloperSimulatorBarOrganism`.
+- **AD-08 (Developer Options & Contextual Simulator Bar):** Interactive simulation of the IDLE Band idle sample, the wear check, and sleep-cycle scenarios (`IDLE Band Sample`, `Normal 16 bpm`, `In-Band (no excursion) >10s`, `Recovery 5s`) via `DeveloperOptionsPage` and `DeveloperSimulatorBarOrganism`, feeding the AD-12 unified queue through `BleTelemetryService`.
 - **AD-09 (Cryptographic Encryption):** AES-128 BLE link encryption, HTTPS TLS 1.3 in transit, AES-256 SQLCipher local database encryption at rest.
-- **AD-10 (Clinical Respiration & GPU Charting):** 60 FPS Skia GPU line plots (`fl_chart`), 256-point FFT spectral graphs, AHI score rings, and signed FHIR JSON / PDF exports. The Doctor Report export (`Task_ExportDoctorReport`) is a **plan-gated action** — see **AD-13** and the §4.7 right-of-access open item.
+- **AD-10 (Clinical Respiration & GPU Charting):** 60 FPS Skia GPU line plots (`fl_chart`) of the raw bio-signal with the IDLE Band `lower_bound` / `upper_bound` drawn as horizontal reference lines, 256-point FFT spectral graphs (on the raw signal), **Apnea Index** rings, and signed FHIR JSON / PDF exports. The Doctor Report export (`Task_ExportDoctorReport`) is a **plan-gated action** — see **AD-13** and the §4.7 right-of-access open item (basic export stays free).
 - **AD-11 (SOLID Dependency Inversion & `IBLESensorDriver` Interface Polymorphism):**  
   * **Binds:** All BLE sensor telemetry drivers (`BLESensorDriver`, `BleTelemetryService`, `FlutterBlueSensorDriver`), stream evaluators (`ApneaEvaluator`, `BleBloc`), and live UI views (`MeasurementPage`).  
   * **Prevents:** Tightly coupling UI pages or monitoring evaluators to specific hardware or simulation drivers, enabling zero-code-change driver swapping and unit test mocking.  
   * **Rule:** High-level monitoring services (`ApneaEvaluator`, `BleBloc`) and UI pages (`MeasurementPage`) MUST depend exclusively on the abstract interface `IBLESensorDriver`. Physical hardware drivers (`FlutterBlueSensorDriver`), mock drivers (`BLESensorDriver`), and background simulation engines (`BleTelemetryService`) MUST implement `IBLESensorDriver`. Constructor Dependency Injection (DI) MUST be used to pass driver instances.
 - **AD-12 (App-Boot Unified Reactive Bio-Signal Ingestion Queue):**
-  * **Binds:** App bootstrap (`main()` / composition root), the BLE background receiver service, every `IBLESensorDriver` implementation (`FlutterBlueSensorDriver`, `BleTelemetryService`, `BLESensorDriver`), and all downstream bio-signal consumers (`BleBloc`, `ApneaEvaluator`, `MeasurementPage`, the Stage-1 idle and Stage-2 active-breath calibration controllers, and `SleepMonitoringBloc`).
+  * **Binds:** App bootstrap (`main()` / composition root), the BLE background receiver service, every `IBLESensorDriver` implementation (`FlutterBlueSensorDriver`, `BleTelemetryService`, `BLESensorDriver`), and all downstream bio-signal consumers (`BleBloc`, `ApneaEvaluator`, `MeasurementPage`, the IDLE Band calibration and wear-check controllers, and `SleepMonitoringBloc`).
   * **Prevents:** Per-screen or per-phase BLE subscriptions that each open their own GATT channel; divergent queue primitives (a plain `StreamController` or `PublishSubject`) that drop the latest-value replay a late subscriber needs; calibration and nocturnal monitoring racing to own the connection lifecycle; a driver swap (AD-11) forcing consumers to re-subscribe.
-  * **Rule:** On application launch the BLE background receiver service MUST start and stay resident for the process lifetime — Android **Foreground Service** (`foregroundServiceType` `connectedDevice`\|`dataSync`, persistent notification) and iOS `UIBackgroundModes` = `bluetooth-central`. Bootstrap binds **exactly one** active `IBLESensorDriver` by Constructor DI (per AD-11). Every inbound sample — a physical GATT notification **or** a `BleTelemetryService` simulator tick — MUST be pushed with RxDart `.add()` into a **single process-wide `BehaviorSubject<double>`** exposed as the driver's `thermalStream` / `signalStream` (`ValueStream<double>`). All consumers (Stage-1 5–10 s idle calibration, Stage-2 10–30 s active-breath calibration, and 8+ h nocturnal monitoring) MUST consume that one stream; none may open its own BLE subscription or instantiate a second queue. Queue identity and the `ValueStream` reference are stable across a driver swap. The receiver **service and queue** start at boot; the physical BLE radio link (`scanAndConnect`) MAY be established lazily — when a bound D-BAND is in range or the first consumer requires it — and is then held alive by the Foreground Service for the session, preserving the AD-06 `<8%` / 8 h battery budget. `EndSession` calls `stopTelemetryLogging()` only; the receiver service and queue survive for the next session. **Home's D-BAND device-status card is a read-only consumer of this receiver-service state (per AD-15) — it never opens its own scan or subscription.**
+  * **Rule:** On application launch the BLE background receiver service MUST start and stay resident for the process lifetime — Android **Foreground Service** (`foregroundServiceType` `connectedDevice`\|`dataSync`, persistent notification) and iOS `UIBackgroundModes` = `bluetooth-central`. Bootstrap binds **exactly one** active `IBLESensorDriver` by Constructor DI (per AD-11). Every inbound sample — a physical GATT notification **or** a `BleTelemetryService` simulator tick — MUST be pushed with RxDart `.add()` into a **single process-wide `BehaviorSubject<double>`** exposed as the driver's `signalStream` (`ValueStream<double>`). All consumers (the IDLE Band idle calibration, the wear check, and 8+ h nocturnal monitoring) MUST consume that one stream; none may open its own BLE subscription or instantiate a second queue. Queue identity and the `ValueStream` reference are stable across a driver swap. The receiver **service and queue** start at boot; the physical BLE radio link (`scanAndConnect`) MAY be established lazily — when a bound D-BAND is in range or the first consumer requires it — and is then held alive by the Foreground Service for the session, preserving the AD-06 `<8%` / 8 h battery budget. `EndSession` calls `stopTelemetryLogging()` only; the receiver service and queue survive for the next session. **Home's D-BAND device-status card is a read-only consumer of this receiver-service state (per AD-15) — it never opens its own scan or subscription.**
 
 - **AD-13 (Subscription State & Server-Verified Entitlement):**
   * **Binds:** the backend **Billing service**, the Flutter `BillingBloc` / `SubscriptionRepository` / `EntitlementService`, every plan-gated feature call (today: Doctor Report Export — `Task_ExportDoctorReport`), and the Stripe **webhook receiver**.
@@ -91,9 +94,9 @@ The following core invariants govern all mobile application, BLE sensor driver, 
   * **Rule:** card capture occurs **only** inside Stripe's hosted **PaymentSheet** (mobile) / **Stripe Elements** (web). The platform persists and renders **only** the display triplet — `brand`, `last4`, `exp_month`/`exp_year` — plus the opaque `stripe_payment_method_id`. No platform component enters the cardholder-data environment, keeping the platform **PCI-DSS SAQ-A** eligible. Card-on-file add / replace go through PaymentSheet; "remove card" detaches the token via the Billing service.
 
 - **AD-15 (Local `SessionSummary` Read Model for the Dashboard):**
-  * **Binds:** `HomeDashboardBloc`, `MOB_HOME` (7-night AHI trend card, monitoring streak, D-BAND device-status card), the `HomeSummaryCardOrganism` and the `MOB_SLEEP_SUMMARY` score card, and session finalization (`Task_EndSession` / `State_MorningSummary`).
+  * **Binds:** `HomeDashboardBloc`, `MOB_HOME` (7-night Apnea Index trend card, monitoring streak, D-BAND device-status card), the `HomeSummaryCardOrganism` and the `MOB_SLEEP_SUMMARY` score card, and session finalization (`Task_EndSession` / `State_MorningSummary`).
   * **Prevents:** the dashboard recomputing trends from raw `TelemetryStream` blobs (AD-10) at read time; Home opening its own BLE subscription for device status (violates AD-12); the "alarm fired last night" signal being inferred divergently on Home versus Summary.
-  * **Rule:** on session finalization a **`SessionSummary`** record is written — `{date, ahi_score, quality_score, total_duration, apnea_alarm_count, safety_tap_count, alarm_fired}` — to the cloud **Isolated Data Zone** (1:1 with `SleepSession`, **Level 1 PHI**) as source of truth, with the device holding a **local rolling cache of the last N** (`N ≥ 7`) for the offline dashboard. Home's device-status card reads connection / battery / last-sync / permission **from the AD-12 receiver-service state only**. `alarm_fired` (≥ 1 `State_ApneaBreach` reached in the session) is the **single persisted field** both summary cards read to switch to the amber "N apnea alert(s)" treatment — written at finalization, never re-derived at read time.
+  * **Rule:** on session finalization a **`SessionSummary`** record is written — `{date, ai_score, quality_score, total_duration, apnea_alarm_count, safety_tap_count, alarm_fired}` (`ai_score` = **Apnea Index**, apnea-only) — to the cloud **Isolated Data Zone** (1:1 with `SleepSession`, **Level 1 PHI**) as source of truth, with the device holding a **local rolling cache of the last N** (`N ≥ 7`) for the offline dashboard. Home's device-status card reads connection / battery / last-sync / permission **from the AD-12 receiver-service state only**. `alarm_fired` (≥ 1 `State_ApneaBreach` reached in the session) is the **single persisted field** both summary cards read to switch to the amber "N apnea alert(s)" treatment — written at finalization, never re-derived at read time.
 
 ---
 
@@ -115,7 +118,7 @@ Person(doctor, "Physician / Researcher", "Attending clinician / AI researcher.")
 
 Container(hardware, "D-BAND Sensor Hardware", "Conducting Polymer Firmware", "Captures 10Hz inhale/exhale thermal deviations (ΔT); streams GATT notifications via BLE.")
 
-Container(mobile_app, "Mobile Application", "Flutter (iOS & Android)", "Handles Passkey auth, 4-mode UX, thermal-to-volumetric conversion, 0-FPS night mode, and Tier-1 audio/haptic alarms.")
+Container(mobile_app, "Mobile Application", "Flutter (iOS & Android)", "Handles Passkey auth, 4-mode UX, IDLE Band calibration, the raw-signal-vs-band apnea evaluator, 0-FPS night mode, and Tier-1 audio/haptic alarms.")
 
 Container(auth_service, "Authentication Service", "WebAuthn / FIDO2 Service", "Manages passwordless Passkey tokens and JWT session verification.")
 
@@ -129,7 +132,7 @@ ContainerDb(app_db, "Application Database & Big Data Store", "Document / Relatio
 
 Container(command_portal, "Emergency Center Web Portal", "React / Next.js Web App", "Real-time WebSocket dashboard displaying unacknowledged apnea stops, patient GPS, and caregiver contact info.")
 
-Container(clinic_portal, "Clinic & Physician Portal", "React / Next.js Web App", "Web dashboard rendering morning sleep scores, AHI trends, AI waveform classification, and PDF exports.")
+Container(clinic_portal, "Clinic & Physician Portal", "React / Next.js Web App", "Web dashboard rendering morning sleep scores, Apnea Index trends, AI waveform classification, and PDF exports.")
 
 Rel(hardware, mobile_app, "Streams Raw Thermal ΔT Packets (10Hz)", "BLE / AES-128")
 Rel(patient, mobile_app, "Interacts via Touch UI & Passkey Biometrics")
@@ -139,9 +142,9 @@ Rel(data_streaming, stream_workers, "Pushes Ingested Webhook Stream Messages", "
 Rel(stream_workers, timeseries_db, "Writes Compressed Bio-Signal Time Series", "gRPC")
 Rel(stream_workers, app_db, "Updates Sleep Session Metrics, Alert Queues & AI Big Data", "gRPC")
 Rel(app_db, command_portal, "Pushes High-Priority Unacknowledged Alerts", "WSS / WebSockets")
-Rel(app_db, clinic_portal, "Syncs Morning Sleep Reports, AHI Graphs & AI Analytics", "HTTPS / REST")
+Rel(app_db, clinic_portal, "Syncs Morning Sleep Reports, Apnea Index Graphs & AI Analytics", "HTTPS / REST")
 Rel(dispatcher, command_portal, "Manages Real-Time Emergency Escalations")
-Rel(doctor, clinic_portal, "Reviews Patient AHI Trends & Clinical Research Data")
+Rel(doctor, clinic_portal, "Reviews Patient Apnea Index Trends & Clinical Research Data")
 
 @enduml
 ```
@@ -149,10 +152,8 @@ Rel(doctor, clinic_portal, "Reviews Patient AHI Trends & Clinical Research Data"
 #### 📖 Technical Container Subsystems & Invariants
 
 1. **D-BAND Sensor Hardware Firmware:** Patented conducting polymer thermal sensor array capturing 10Hz inhale ($T_{\text{inhale}}$) and exhalation ($T_{\text{exhale}}$) temperature deviations ($\Delta T = T_{\text{exhale}} - T_{\text{inhale}}$) streaming over Bluetooth Low Energy (`0x180D` service / `0x2A37` characteristic). Data packets are encrypted via AES-128 session keys.
-2. **Flutter Mobile Client (iOS & Android):** Primary edge node. It executes 2-stage thermal calibration, local 100ms signal conversion ($\Delta T \rightarrow V_{\text{volumetric}}$), 4-mode operational state management (Sleep Monitoring, Athletic Training, Health Check, Meditation), 0-FPS locked low-power display modes during sleep, and Tier-1 audio/haptic alarms. Telemetry is batched into 10-second compressed JSON payloads and pushed to the cloud gateway over HTTPS/TLS 1.3. On launch it starts an **always-on background BLE receiver service** (Android Foreground Service / iOS `bluetooth-central` background mode) that pushes every inbound sample — physical D-BAND GATT notification or in-process simulator tick — into a single unified `BehaviorSubject<double>` reactive queue consumed by calibration and monitoring alike (**AD-12**).
-3. **Cloud Ingestion & Processing Workers (Data Streaming Service + Stream Processing Workers & AI Engine):** High-throughput data streaming service handling millions of concurrent device connections. Container stream workers process telemetry streams via gRPC, compute moving average baselines ($V_{pp}$ peak-to-trough breathing amplitude), execute AI waveform pattern analytics (PolyU / CUHK clinical model), and evaluate American Academy of Sleep Medicine (AASM) diagnostic rules:
-   $$\text{Apnea Breach} \iff \text{Airflow Drop} \ge 90\% \text{ for } \ge 10\text{ seconds}$$
-   $$\text{Hypopnea Breach} \iff \text{Airflow Drop} \ge 30\% \text{ for } \ge 10\text{ seconds}$$
+2. **Flutter Mobile Client (iOS & Android):** Primary edge node **and owner of primary apnea detection**. It executes the single-stage **IDLE Band calibration** (worn idle sample → `[lower_bound, upper_bound]`, then the wear check), the local 100 ms **raw-signal-vs-IDLE-Band evaluator** (`AD-04`), 4-mode operational state management (Sleep Monitoring, Athletic Training, Health Check, Meditation), 0-FPS locked low-power display modes during sleep, and Tier-1 audio/haptic alarms. It works in **raw signal units** — no thermal-to-volumetric conversion. Telemetry is batched into 10-second compressed JSON payloads and pushed to the cloud gateway over HTTPS/TLS 1.3. On launch it starts an **always-on background BLE receiver service** (Android Foreground Service / iOS `bluetooth-central` background mode) that pushes every inbound sample — physical D-BAND GATT notification or in-process simulator tick — into a single unified `BehaviorSubject<double>` reactive queue consumed by calibration and monitoring alike (**AD-12**).
+3. **Cloud Ingestion & Processing Workers (Data Streaming Service + Stream Processing Workers & AI Engine):** High-throughput data streaming service handling millions of concurrent device connections. Container stream workers process telemetry streams via gRPC and execute **AI waveform pattern analytics (PolyU / CUHK clinical model, a Premium capability)** to **refine** the on-device apnea classification and flag anomalous patterns. Primary apnea detection stays on the client (`AD-04`); an apnea event retains the AASM **≥ 10-second minimum-duration** standard, restated in the band model as *no valid IDLE-Band breath excursion for ≥ 10 s*. **Hypopnea is not scored** in MVP1 — the airflow-only signal lacks the SpO₂ desaturation / EEG arousal AASM hypopnea requires; the nightly metric is an **Apnea Index (AI)**, not a full AHI.
 4. **Dual Persistence Tier (Bio-Signal Time-Series Store + Application Database & Big Data Store):**
    * **Bio-Signal Time-Series Store:** Columnar storage designed for high-frequency bio-signal time-series blobs (compressed via snappy/zstd, encrypted with AES-256 at rest).
    * **Application Database & Big Data Store:** Primary database storing user profiles, health baselines, device bindings, real-time alert queues pushing sub-1.5s updates to connected WebSocket clients, `SessionSummary` per-night rollups, and de-identified big data research records.
@@ -193,11 +194,11 @@ The BPMN 2.0 process model (`sleep_apnea_process.bpmn`) specifies the operationa
 
 * **Patient Sleep Operations Swimlane (`Lane_PatientAtHome`)**  
   * **Epic / Feature Mapping:** **Epic 1: Patient Mobile Client Experience & Sleep Operations**  
-  * **Downstream Story Grouping:** Groups user stories for patient-facing nighttime sleep operations. This includes biometric FIDO2 authentication login, interactive 2-stage calibration wizards (idle noise floor + active breath baseline), low-power night-mode sleep monitoring screens, high-priority Tier-1 alarm screen with 30s safety tap cancellation, and morning sleep summary reports.  
+  * **Downstream Story Grouping:** Groups user stories for patient-facing nighttime sleep operations. This includes biometric FIDO2 authentication login, the single-stage IDLE Band calibration wizard (worn idle sample + wear check), low-power night-mode sleep monitoring screens, high-priority Tier-1 alarm screen with 30s safety tap cancellation, and morning sleep summary reports.  
   * **Activity Breakdown:**
     * **`Task_PasskeyAuth`: Authenticate via Passkey (FIDO2)** — Launches app and performs FIDO2 biometric passkey authentication.
-    * **`Task_Stage1Cal`: Execute Stage 1 Idle Noise Calibration** — Samples ambient noise floor ($N_{\text{idle}}$) for 10s with sensor on bedside table.
-    * **`Task_Stage2Cal`: Execute Stage 2 Active Breath Calibration** — Calculates peak-to-trough breathing baseline ($V_{pp}$) over 30s active respiration.
+    * **`Task_IdleBandCal`: Learn the session IDLE Band** — With the D-BAND worn and the patient still, samples the raw signal for ~10s and records the running min/max → `[lower_bound, upper_bound]`.
+    * **`Task_WearCheck`: Confirm the sensor is sensing breath** — Patient breathes normally; the app requires ≥ 2 valid IDLE-Band breath-excursion cycles before "Start Sleep Monitoring" unlocks (else "Sensor not detecting breathing — check the fit." + retry).
     * **`Task_SleepMonitoring`: Sleep with Device Attached** — Continuous nocturnal monitoring in low-power 0-FPS night mode.
     * **`Task_TapSafe`: Tap 'I'm Safe' Button** — Patient taps single-touch cancellation button on Tier-1 alarm screen during 30s window.
     * **`Task_EndSession`: Tap 'End Sleep Session'** — Concludes sleep session, closes BLE stream, and generates morning sleep summary.
@@ -213,10 +214,10 @@ The BPMN 2.0 process model (`sleep_apnea_process.bpmn`) specifies the operationa
 
 * **Clinic & Physician Swimlane (`Lane_ClinicPhysician`) [Future Release / Phase 2]**  
   * **Epic / Feature Mapping:** **Epic 6: Clinical Operations & Diagnostic Reports (Future Expansion)**  
-  * **Downstream Story Grouping:** Designates future expansion stories for physician portals, morning sleep report synchronizations, AHI classification analytics, and clinical diagnostic note entries.  
+  * **Downstream Story Grouping:** Designates future expansion stories for physician portals, morning sleep report synchronizations, Apnea Index classification analytics, and clinical diagnostic note entries.  
   * **Activity Breakdown:**
-    * **`Task_DoctorSync`: Sync Morning Sleep Scores & AHI Reports [Future]** — Syncs morning sleep session summary metrics, AHI score, and respiration wave graphs to clinic portal.
-    * **`Task_PhysicianReview`: Physician Reviews AHI Classification & Notes [Future]** — Attending physician reviews patient AHI trend charts, adds diagnostic notes, and updates prescription settings.
+    * **`Task_DoctorSync`: Sync Morning Sleep Scores & Apnea Index Reports [Future]** — Syncs morning sleep session summary metrics, Apnea Index (ai_score), and respiration wave graphs to clinic portal.
+    * **`Task_PhysicianReview`: Physician Reviews Apnea Index Classification & Notes [Future]** — Attending physician reviews patient Apnea Index trend charts, adds diagnostic notes, and updates prescription settings.
 
 * **Device Loss & Mobile Recovery Operations Swimlane (`Lane_DeviceLostRecovery`)**  
   * **Epic / Feature Mapping:** **Epic 7: Device Loss, Mobile Recovery & Security Wipe Operations**  
@@ -231,7 +232,7 @@ The BPMN 2.0 process model (`sleep_apnea_process.bpmn`) specifies the operationa
   * **Epic / Feature Mapping:** **Epic 8: Mobile Patient Dashboard & Historical Analytics**  
   * **Downstream Story Grouping:** Groups user stories for reviewing morning sleep summaries, displaying interactive Skia/`fl_chart` respiration waveforms, analyzing 256-point FFT frequency spectrums, filtering date-based historical sessions, and exporting signed FHIR-compliant clinical charts for physician sharing.  
   * **Activity Breakdown:**
-    * **`Task_ReviewMorningSummary`: Review Morning Sleep Summary & AHI Score** — Displays total sleep duration, overnight AHI score (apnea/hypopnea events per hour), intervention count, and quality score.
+    * **`Task_ReviewMorningSummary`: Review Morning Sleep Summary & Apnea Index** — Displays total sleep duration, overnight Apnea Index (apnea events per hour, apnea-only caveat), intervention count, and quality score.
     * **`Task_InspectRespirationWaveform`: Inspect Interactive Respiration Waveform & FFT Spectrum** — Renders 60 FPS GPU interactive wave graph with pinch-to-zoom and spectral peak respiration rate extraction.
     * **`Task_FilterHistoricalSessions`: Filter Historical Sleep Sessions & Trends** — Date range and severity filtering across encrypted local SQLCipher history database.
     * **`Task_ExportDoctorReport`: Generate Signed Clinical Report for Physician** — Generates signed FHIR JSON / PDF clinical chart for primary care doctor sharing.
@@ -285,8 +286,6 @@ package "BPMN Phase 1: Onboarding & Calibration" {
         + double weight_kg
         + double height_cm
         + double computed_bmi
-        + double idle_noise_floor
-        + double vpp_breath_baseline
     }
 
     class DeviceBinding << (E,#3498DB) Level 2 PII >> {
@@ -307,7 +306,9 @@ package "BPMN Phase 2 & 3: Telemetry & Apnea Detection" {
         + String user_id {FK}
         + DateTime start_time
         + DateTime end_time
-        + double ahi_score
+        + double idle_band_lower
+        + double idle_band_upper
+        + double ai_score
         + int total_apnea_events
         + int quality_score
     }
@@ -396,7 +397,7 @@ PatientUser "1" -- "*" PhiAuditLog : generates >
 
 The Conceptual Data Model structures database entities around the 6 process phases of the BPMN workflow, establishing strict HIPAA privacy levels:
 
-* **Level 1 (PHI - Protected Health Information):** Requires AES-256 encryption at rest and TLS 1.3 in transit. Includes `PatientUser`, `HealthBaseline`, `SleepSession`, `SessionSummary` (per-night finalized rollup — AHI, duration, `apnea_alarm_count`, `safety_tap_count`, `alarm_fired`, quality; source of truth for the Home dashboard read model per **AD-15**), `TelemetryStream` (compressed raw bio-signal blobs), `ApneaEvent`, `EmergencyAlertQueue`, `CareDispatchRecord`, and `DeviceRecoveryRecord` (tracking lost device reports, session revocations, and remote wipe events). Access is gated by strict Role-Based Access Control (RBAC).
+* **Level 1 (PHI - Protected Health Information):** Requires AES-256 encryption at rest and TLS 1.3 in transit. Includes `PatientUser`, `HealthBaseline`, `SleepSession` (holds the per-session IDLE Band `idle_band_lower`/`idle_band_upper`), `SessionSummary` (per-night finalized rollup — Apnea Index, duration, `apnea_alarm_count`, `safety_tap_count`, `alarm_fired`, quality; source of truth for the Home dashboard read model per **AD-15**), `TelemetryStream` (compressed raw bio-signal blobs), `ApneaEvent`, `EmergencyAlertQueue`, `CareDispatchRecord`, and `DeviceRecoveryRecord` (tracking lost device reports, session revocations, and remote wipe events). Access is gated by strict Role-Based Access Control (RBAC).
 * **Level 2 (PII - Personally Identifiable Information):** Technical metadata and device identifiers (`DeviceBinding`, `ClinicDoctorAssignment`); non-sensitive client settings (`UserPreferences` — locale, region, units).
 * **Level 2 (Audit):** `PhiAuditLog` — an immutable, write-once audit log capturing every access event, read operation, unbinding request, remote wipe signal, and dispatch action across the platform.
 * **Level 3 (Financial PII — isolated Billing store):** `Subscription`, `PaymentMethodRef`, `Invoice`, `Entitlement`. Held in a **separate Billing datastore** in the Application Core zone — **not** the HIPAA Isolated Data Zone — referencing `user_id` only and containing **no PHI**. `PaymentMethodRef` stores only the display triplet (`brand`, `last4`, `exp_month`/`exp_year`) plus the opaque `stripe_payment_method_id`; **no cardholder data ever enters the platform** (PCI-DSS SAQ-A, **AD-14**). The Billing service is the sole source of truth for subscription state (**AD-13**). Standard AES-256 at rest + TLS 1.3 in transit; the PHI zone's per-field envelope encryption and write-once audit do not apply.
@@ -408,13 +409,13 @@ The Conceptual Data Model structures database entities around the 6 process phas
 
 | BPMN Process Phase | Data Produced / Transformed in Workflow | Derived PlantUML Conceptual Entity | Key Data Attributes | HIPAA Safeguard Level |
 | :--- | :--- | :--- | :--- | :--- |
-| **Phase 1: Onboarding & Calibration** | Passkey FIDO2 token, age, weight, height, computed BMI, $N_{\text{idle}}$ noise floor, $V_{pp}$ breath baseline, BLE MAC address. | `PatientUser`, `HealthBaseline`, `DeviceBinding` | `user_id`, `passkey_credential_id`, `age`, `weight_kg`, `height_cm`, `computed_bmi`, `idle_noise_floor`, `device_hardware_id`. | **Level 1 (PHI)** — AES-256 Encryption at Rest. |
+| **Phase 1: Onboarding & Calibration** | Passkey FIDO2 token, age, weight, height, computed BMI, session IDLE Band `[lower_bound, upper_bound]`, BLE MAC address. | `PatientUser`, `HealthBaseline`, `DeviceBinding`, `SleepSession` | `user_id`, `passkey_credential_id`, `age`, `weight_kg`, `height_cm`, `computed_bmi`, `idle_band_lower`, `idle_band_upper`, `device_hardware_id`. | **Level 1 (PHI)** — AES-256 Encryption at Rest. |
 | **Phase 2: Overnight Telemetry** | 100ms raw airflow samples, 10s webhook stream batch, sequence number, heartbeats, battery level. | `SleepSession`, `TelemetryStream` | `session_id`, `user_id`, `start_time`, `sequence_number`, `compressed_bio_signals`, `battery_pct`. | **Level 1 (PHI)** — Compressed AES-256 Time-Series Blob. |
-| **Phase 3: Apnea & Tier-1 Alarm** | Airflow stop timestamp, apnea duration (>10s), peak-to-trough breach margin, 30s cancellation token, "I'm Safe" tap timestamp. | `ApneaEvent`, `EmergencyAlertQueue` | `event_id`, `session_id`, `triggered_at`, `apnea_duration_seconds`, `patient_acknowledged`, `cancellation_token_id`. | **Level 1 (PHI)** — Real-Time Alert Event Queue. |
+| **Phase 3: Apnea & Tier-1 Alarm** | Stop-breathing start timestamp, apnea duration (≥10s with no valid band excursion), 30s cancellation token, "I'm Safe" tap timestamp. | `ApneaEvent`, `EmergencyAlertQueue` | `event_id`, `session_id`, `triggered_at`, `apnea_duration_seconds`, `patient_acknowledged`, `cancellation_token_id`. | **Level 1 (PHI)** — Real-Time Alert Event Queue. |
 | **Phase 4: Emergency Center & Caregiver** | GPS coordinates, address, emergency contact phone, dispatcher action log, SMS/Voice call dispatch timestamp, EMS status. | `CareDispatchRecord`, `ClinicDoctorAssignment` | `dispatch_id`, `alert_id`, `dispatcher_id`, `caregiver_phone`, `gps_location`, `ems_dispatched`, `doctor_npi_number`. | **Level 1 (PHI)** — Role-Based Access Control (RBAC). |
-| **Phase 5: Morning Analytics & Doctor** | Session end time, total sleep duration, final AHI score, total apnea stops, quality score (0–100), doctor share payload. | `SleepSession`, `ClinicDoctorAssignment` | `end_time`, `total_duration_hours`, `ahi_score`, `quality_score`, `doctor_npi_number`. | **Level 1 (PHI)** — HL7 FHIR Export Stream. |
+| **Phase 5: Morning Analytics & Doctor** | Session end time, total sleep duration, final Apnea Index (`ai_score`), total apnea stops, quality score (0–100), doctor share payload. | `SleepSession`, `ClinicDoctorAssignment` | `end_time`, `total_duration_hours`, `ai_score`, `quality_score`, `doctor_npi_number`. | **Level 1 (PHI)** — HL7 FHIR Export Stream. |
 | **Phase 6: Device & Mobile Lost Recovery** | Hardware loss report, lost MAC address, WebAuthn revocation token, remote wipe execution signal, replacement hardware serial pairing. | `DeviceBinding`, `DeviceRecoveryRecord`, `PhiAuditLog` | `recovery_id`, `user_id`, `incident_type`, `remote_wipe_status`, `unbound_reason`, `reported_at`, `status`. | **Level 1 (PHI)** — Cryptographic Wipe Audit & RBAC. |
-| **Phase 7: Mobile Dashboard Review & Analytics** | Home dashboard read (last-N `SessionSummary` cache, streak, device-status from the AD-12 receiver state), morning summary metrics, AHI score, 60 FPS Skia GPU waveform data, 256-point FFT spectral peaks, date-range history filter, **server-side entitlement check (AD-13) preceding** the signed FHIR clinical export payload. | `SessionSummary`, `SleepSession`, `TelemetryStream`, `Entitlement`, `PhiAuditLog` | `session_id`, `ahi_score`, `quality_score`, `apnea_alarm_count`, `safety_tap_count`, `alarm_fired`, `compressed_bio_signals`, `action_type = "EXPORT_DOCTOR_REPORT"`. | **Level 1 (PHI)** — Encrypted SQLCipher DB & Signed FHIR Export. |
+| **Phase 7: Mobile Dashboard Review & Analytics** | Home dashboard read (last-N `SessionSummary` cache, streak, device-status from the AD-12 receiver state), morning summary metrics, Apnea Index (`ai_score`), 60 FPS Skia GPU raw-signal + IDLE-Band waveform data, 256-point FFT spectral peaks, date-range history filter, **server-side entitlement check (AD-13) preceding** the signed FHIR clinical export payload. | `SessionSummary`, `SleepSession`, `TelemetryStream`, `Entitlement`, `PhiAuditLog` | `session_id`, `ai_score`, `quality_score`, `apnea_alarm_count`, `safety_tap_count`, `alarm_fired`, `compressed_bio_signals`, `action_type = "EXPORT_DOCTOR_REPORT"`. | **Level 1 (PHI)** — Encrypted SQLCipher DB & Signed FHIR Export. |
 | **Phase 8: Subscription & Billing** | Plan selection, Stripe PaymentSheet tokenization result, HMAC-verified subscription/invoice webhook events, signed entitlement claim, card-on-file display triplet. | `Subscription`, `PaymentMethodRef`, `Invoice`, `Entitlement` | `user_id`, `stripe_customer_id`, `stripe_subscription_id`, `plan`, `status`, `current_period_end`, `pm_brand`, `pm_last4`, `stripe_payment_method_id`. | **Level 3 (Financial PII)** — isolated Billing store; **no cardholder data** (PCI-DSS SAQ-A, AD-14). |
 | **All Phases** | User ID, action performed, accessed table/entity, IP address, timestamp. | `PhiAuditLog` | `audit_id`, `user_id`, `action_type`, `accessed_entity`, `ip_address`, `timestamp`. | **Level 2 (Audit)** — Immutable Write-Once Log. |
 
@@ -441,7 +442,7 @@ The Conceptual Data Model structures database entities around the 6 process phas
 | :--- | :--- | :--- |
 | **`Task_PatientRegister`**<br>`Register Patient Account` | **Screen ID:** `MOB_REGISTER_ACCOUNT`<br>**Visual Components:** Account creation form (Email, Password / Federated identity creation, Terms & HIPAA Consent checkbox).<br>**User Action:** Enter credentials & tap *"Create Account"*.<br>**Next UI State:** `MOB_USER_PROFILE` on success. | **Actors:** Patient $\rightarrow$ Mobile App $\rightarrow$ Authentication Service.<br>**Protocol:** HTTPS / TLS 1.3 (Request-Reply Endpoint [IF-01]).<br>**Payload:** `{ email, password_hash, user_type: "PATIENT" }`.<br>**Processing:** Creates `PatientUser` authentication record.<br>**Latency SLA:** $< 400\text{ms}$ registration. |
 | **`Task_CreateUserProfile`**<br>`Create Patient Medical Profile` | **Screen ID:** `MOB_USER_PROFILE`<br>**Visual Components:** Patient medical profile form (Demographics: Age, Weight kg, Height cm, computed BMI; Emergency Caregiver Contact Name & Phone; Attending Physician NPI).<br>**User Action:** Fill medical profile details & tap *"Save Profile"*.<br>**Next UI State:** `MOB_REGISTER_PASSKEY` on success. | **Actors:** Patient $\rightarrow$ Mobile App UI $\rightarrow$ Patient Profile API $\rightarrow$ Platform DB.<br>**Protocol:** HTTPS / TLS 1.3 (Request-Reply Endpoint [IF-02]).<br>**Payload:** `{ user_id, full_name, age, weight_kg, height_cm, computed_bmi, emergency_contact_phone, doctor_npi }`.<br>**Processing:** Stores patient demographic & medical profile record in DB.<br>**Latency SLA:** $< 500\text{ms}$ profile save. |
-| **`Task_RegisterPasskey`**<br>`Register & Enroll FIDO2 Passkey` | **Screen ID:** `MOB_REGISTER_PASSKEY`<br>**Visual Components:** Passkey enrollment wizard screen. Text: *"Secure your account with biometric Passkey"*. TouchID/FaceID pulse animation.<br>**User Action:** Tap *"Enroll Passkey"* & scan Fingerprint/Face.<br>**Next UI State:** Dialog *"Passkey Enrolled ✓"*, then auto-advances to `MOB_PASSKEY_AUTH` or `MOB_CALIBRATION_STAGE1`. | **Actors:** Patient $\rightarrow$ Mobile App UI $\rightarrow$ OS Secure Enclave $\rightarrow$ Auth Service.<br>**Protocol:** WebAuthn FIDO2 Assertion over HTTPS / TLS 1.3 (Request-Reply [IF-03, IF-04]).<br>**Payload:** `{ user_id, passkey_credential_id, public_key_pem, device_hardware_id }`.<br>**Processing:** Binds hardware-backed public key to `PatientUser` record in DB.<br>**Latency SLA:** $< 600\text{ms}$ passkey enrollment. |
+| **`Task_RegisterPasskey`**<br>`Register & Enroll FIDO2 Passkey` | **Screen ID:** `MOB_REGISTER_PASSKEY`<br>**Visual Components:** Passkey enrollment wizard screen. Text: *"Secure your account with biometric Passkey"*. TouchID/FaceID pulse animation.<br>**User Action:** Tap *"Enroll Passkey"* & scan Fingerprint/Face.<br>**Next UI State:** Dialog *"Passkey Enrolled ✓"*, then auto-advances to `MOB_PASSKEY_AUTH` or `MOB_CALIBRATION`. | **Actors:** Patient $\rightarrow$ Mobile App UI $\rightarrow$ OS Secure Enclave $\rightarrow$ Auth Service.<br>**Protocol:** WebAuthn FIDO2 Assertion over HTTPS / TLS 1.3 (Request-Reply [IF-03, IF-04]).<br>**Payload:** `{ user_id, passkey_credential_id, public_key_pem, device_hardware_id }`.<br>**Processing:** Binds hardware-backed public key to `PatientUser` record in DB.<br>**Latency SLA:** $< 600\text{ms}$ passkey enrollment. |
 
 #### 🏊 Swimlane 2: Backoffice Operations Activities
 
@@ -455,18 +456,18 @@ The Conceptual Data Model structures database entities around the 6 process phas
 
 | BPMN Activity ID & Name | UI Flow Specification (Screen, Visuals & User Actions) | Sequence Diagram Specification (Actors, Payload, Protocol & SLA) |
 | :--- | :--- | :--- |
-| **`Task_PasskeyAuth`**<br>`Authenticate via Passkey (FIDO2)` | **Screen ID:** `MOB_PASSKEY_AUTH`<br>**Visual Components:** Biometric prompt modal (FaceID / TouchID / Windows Hello), Passkey pulse graphic.<br>**User Action:** Fingerprint touch or Face scan.<br>**Next UI State:** `MOB_CALIBRATION_STAGE1` on success; error toast with retry button on failure. | **Actors:** Patient $\rightarrow$ Mobile App $\rightarrow$ Authentication Service Gateway.<br>**Protocol:** WebAuthn FIDO2 Assertion over HTTPS / TLS 1.3 (Request-Reply [IF-09, IF-10]).<br>**Payload:** `{ user_id, passkey_credential_id, challenge_signature }`.<br>**Latency SLA:** $< 500\text{ms}$ authentication verification. |
-| **`Task_Stage1Cal`**<br>`Execute Stage 1 Idle Noise Calibration` | **Screen ID:** `MOB_CALIBRATION_STAGE1`<br>**Visual Components:** Full-screen step 1 wizard. Text: *"Place sensor on bedside table, remain silent"*. 10s circular progress ring + ambient sound wave indicator ($N_{\text{idle}}$ sampling).<br>**User Action:** Tap *"Start 10s Calibration"*.<br>**Next UI State:** Auto-advances to `MOB_CALIBRATION_STAGE2` upon 100% completion. | **Actors:** Mobile App Edge $\leftarrow$ BLE GATT Sensor (`0x2A37` characteristic).<br>**Protocol:** BLE GATT AES-128 Notification Stream @ 10Hz [IF-11].<br>**Payload:** 100 differential pressure samples.<br>**Processing:** Local Dart Isolate computes $N_{\text{idle}}$ baseline noise floor.<br>**Latency SLA:** Exactly $10.0\text{s}$ window sampling. |
-| **`Task_Stage2Cal`**<br>`Execute Stage 2 Active Breath Calibration` | **Screen ID:** `MOB_CALIBRATION_STAGE2`<br>**Visual Components:** Step 2 wizard. Text: *"Attach mask/sensor and take 5 normal breaths"*. Real-time canvas rendering peak-to-trough breath wave ($V_{pp}$).<br>**User Action:** Breathe normally into sensor for 30s.<br>**Next UI State:** Dialog *"Baseline Verified ✓"*, then transitions to `MOB_SLEEP_MONITOR`. | **Actors:** Mobile App Edge $\leftarrow$ BLE GATT Sensor $\rightarrow$ Local Hive DB.<br>**Protocol:** BLE GATT notifications $\rightarrow$ FFT Signal Processing Isolate [IF-11].<br>**Payload:** `{ idle_noise_floor, vpp_breath_baseline, apnea_threshold = 0.10 * vpp }`.<br>**Processing:** Calculates moving average peak-to-trough breathing baseline.<br>**Latency SLA:** $30.0\text{s}$ calibration window. |
+| **`Task_PasskeyAuth`**<br>`Authenticate via Passkey (FIDO2)` | **Screen ID:** `MOB_PASSKEY_AUTH`<br>**Visual Components:** Biometric prompt modal (FaceID / TouchID / Windows Hello), Passkey pulse graphic.<br>**User Action:** Fingerprint touch or Face scan.<br>**Next UI State:** `MOB_CALIBRATION` on success; error toast with retry button on failure. | **Actors:** Patient $\rightarrow$ Mobile App $\rightarrow$ Authentication Service Gateway.<br>**Protocol:** WebAuthn FIDO2 Assertion over HTTPS / TLS 1.3 (Request-Reply [IF-09, IF-10]).<br>**Payload:** `{ user_id, passkey_credential_id, challenge_signature }`.<br>**Latency SLA:** $< 500\text{ms}$ authentication verification. |
+| **`Task_IdleBandCal`**<br>`Learn the session IDLE Band` | **Screen ID:** `MOB_CALIBRATION` (step 1 of 2)<br>**Visual Components:** Full-screen wizard. Text: *"Put on your D-BAND, sit still, and breathe gently for 10 seconds"*. ~10s circular progress ring + live band readout (`lower_bound` / `upper_bound`).<br>**User Action:** Tap *"Start"*, then hold still.<br>**Next UI State:** Advances to the wear-check step. | **Actors:** Mobile App Edge $\leftarrow$ BLE GATT Sensor (`0x2A37` characteristic).<br>**Protocol:** BLE GATT AES-128 Notification Stream @ 10Hz [IF-11].<br>**Payload:** ~100 raw signal samples.<br>**Processing:** Local Dart Isolate tracks the running min/max → `[lower_bound, upper_bound]`; persisted on `SleepSession`.<br>**Latency SLA:** ~10s window sampling. |
+| **`Task_WearCheck`**<br>`Confirm the sensor is sensing breath` | **Screen ID:** `MOB_CALIBRATION` (step 2 of 2)<br>**Visual Components:** Text: *"Now take a few normal breaths so we can check the fit"*. Real-time canvas showing the trace crossing both band lines.<br>**User Action:** Breathe normally.<br>**Next UI State:** *"Calibration Complete — Ready for Sleep ✓"* then `MOB_SLEEP_MONITOR`; on failure the toast *"Sensor not detecting breathing — check the fit."* + retry. | **Actors:** Mobile App Edge $\leftarrow$ BLE GATT Sensor $\rightarrow$ Local Hive DB.<br>**Protocol:** BLE GATT notifications [IF-11].<br>**Payload:** raw signal samples.<br>**Processing:** Requires ≥ 2 valid IDLE-Band breath-excursion cycles (AD-04) within ~15s before "Start Sleep Monitoring" unlocks.<br>**Latency SLA:** ≤ ~15s check window. |
 | **`Task_SleepMonitoring`**<br>`Sleep with Device Attached` | **Screen ID:** `MOB_SLEEP_MONITOR`<br>**Visual Components:** Low-power Night Mode (0-FPS locked black display `#000000` with subtle dim pulsing green heartbeat dot). Screen touch locked to prevent accidental keypresses.<br>**User Action:** None (User sleeps).<br>**Next UI State:** Remains dark until morning unlock OR pops `MOB_TIER1_ALARM` if airflow breach detected. | **Actors:** Patient $\rightarrow$ Sensor BLE GATT $\rightarrow$ Mobile Circular RAM Buffer.<br>**Protocol:** BLE GATT AES-128 @ 100ms interval [IF-11] + HTTPS/gRPC Batch Stream [IF-12].<br>**Payload:** 100ms bio-signal stream array.<br>**Processing:** 1-hour circular RAM ring buffer maintains sliding window.<br>**Latency SLA:** Continuous 10Hz stream processing. |
 | **`Task_TapSafe`**<br>`Tap 'I'm Safe' Button` | **Screen ID:** `MOB_TIER1_ALARM`<br>**Visual Components:** High-priority visual alert overlay (Flashing 100% brightness red/yellow `#FF3B30`, pulsating 120dB audio siren, haptic vibration). Large central button: *"I'M SAFE - DISMISS ALARM"*. 30s countdown timer display.<br>**User Action:** Single tap on *"I'm Safe"* button.<br>**Next UI State:** `MOB_ALARM_CANCELED` (Silences alarm, returns to `MOB_SLEEP_MONITOR`). | **Actors:** Patient $\rightarrow$ Mobile UI Driver $\rightarrow$ Local Audio Engine $\rightarrow$ Application DB.<br>**Protocol:** Local UI Touch Event + Request-Reply Cancellation Payload.<br>**Payload:** `{ session_id, cancellation_token_id, acknowledged_at, tap_lat_long }`.<br>**Processing:** Cancels 30s cancellation token timer; updates `patient_acknowledged = true`.<br>**Latency SLA:** $< 50\text{ms}$ local audio/haptic shutdown. |
-| **`Task_EndSession`**<br>`Tap 'End Sleep Session'` | **Screen ID:** `MOB_SLEEP_SUMMARY`<br>**Visual Components:** Morning sleep summary dashboard. Displays total sleep hours (e.g., 7h 45m), overnight AHI score (e.g., AHI 3.2 - Normal), respiration wave timeline chart, and *"Share with Physician"* button.<br>**User Action:** Tap *"End Sleep Session"*.<br>**Next UI State:** Home Screen / Session Archive. | **Actors:** Patient $\rightarrow$ Mobile App $\rightarrow$ Cloud Session API.<br>**Protocol:** HTTPS / TLS 1.3 (Request-Reply [IF-16]).<br>**Payload:** `{ session_id, end_time, total_duration_seconds, final_ahi_score }`.<br>**Processing:** Closes BLE connection, computes final AHI index, syncs report.<br>**Latency SLA:** $< 1.0\text{s}$ report generation. |
+| **`Task_EndSession`**<br>`Tap 'End Sleep Session'` | **Screen ID:** `MOB_SLEEP_SUMMARY`<br>**Visual Components:** Morning sleep summary dashboard. Displays total sleep hours (e.g., 7h 45m), overnight **Apnea Index** (e.g., AI 3.2 · Normal) with the apnea-only caveat, raw-signal + IDLE-Band waveform chart, and *"Share with Physician"* button.<br>**User Action:** Tap *"End Sleep Session"*.<br>**Next UI State:** Home Screen / Session Archive. | **Actors:** Patient $\rightarrow$ Mobile App $\rightarrow$ Cloud Session API.<br>**Protocol:** HTTPS / TLS 1.3 (Request-Reply [IF-16]).<br>**Payload:** `{ session_id, end_time, total_duration_seconds, final_ai_score }`.<br>**Processing:** Closes BLE connection, computes the final Apnea Index, syncs report.<br>**Latency SLA:** $< 1.0\text{s}$ report generation. |
 
 #### 🏊 Swimlane 4: Emergency Center Activities
 
 | BPMN Activity ID & Name | UI Flow Specification (Screen, Visuals & User Actions) | Sequence Diagram Specification (Actors, Payload, Protocol & SLA) |
 | :--- | :--- | :--- |
-| **`Task_DashboardAlert`**<br>`Command Center Dashboard Alert Pop-up` | **Screen ID:** `WEB_COMMAND_DASHBOARD`<br>**Visual Components:** High-contrast red modal popup (`#D32F2F`) overlays command center screen. Audio siren chime. Displays patient name, age, phone, AHI score, elapsed apnea time, and large *"ACCEPT DISPATCH"* button.<br>**User Action:** Auto-pop on WSS message; dispatcher clicks *"Accept Dispatch"*.<br>**Next UI State:** Opens `WEB_EMERGENCY_MAP_VIEW`. | **Actors:** Command Portal React Client $\leftarrow$ WebSocket Gateway Node.<br>**Protocol:** WSS TLS 1.3 (Real-Time Push Notification [IF-13]).<br>**Payload:** Emergency Alert Frame.<br>**Processing:** Auto-focuses modal cursor, triggers audio chime, locks dispatcher session to alert.<br>**Latency SLA:** $< 100\text{ms}$ UI pop-up render. |
+| **`Task_DashboardAlert`**<br>`Command Center Dashboard Alert Pop-up` | **Screen ID:** `WEB_COMMAND_DASHBOARD`<br>**Visual Components:** High-contrast red modal popup (`#D32F2F`) overlays command center screen. Audio siren chime. Displays patient name, age, phone, Apnea Index, elapsed apnea time, and large *"ACCEPT DISPATCH"* button.<br>**User Action:** Auto-pop on WSS message; dispatcher clicks *"Accept Dispatch"*.<br>**Next UI State:** Opens `WEB_EMERGENCY_MAP_VIEW`. | **Actors:** Command Portal React Client $\leftarrow$ WebSocket Gateway Node.<br>**Protocol:** WSS TLS 1.3 (Real-Time Push Notification [IF-13]).<br>**Payload:** Emergency Alert Frame.<br>**Processing:** Auto-focuses modal cursor, triggers audio chime, locks dispatcher session to alert.<br>**Latency SLA:** $< 100\text{ms}$ UI pop-up render. |
 | **`Task_MetricCollection`**<br>`Collect Emergency Alert Metrics` | **Screen ID:** Background Service / Operational Console.<br>**Visual Components:** Real-time metrics widget showing dispatcher response times, call latency counters, and SLA compliance indicators.<br>**User Action:** Automated system collection upon alert trigger & dispatcher response.<br>**Next UI State:** Logs operational metrics to `PhiAuditLog` and updates telemetry dashboard. | **Actors:** Emergency Center Backend $\rightarrow$ Application DB $\rightarrow$ PhiAuditLog.<br>**Protocol:** gRPC / HTTP/2 (Asynchronous One-Way Audit Stream [IF-19]).<br>**Payload:** `{ alert_id, session_id, alert_received_at, dispatcher_ack_at, caregiver_call_lat_ms }`.<br>**Processing:** Records SLA performance metrics and operational logs.<br>**Latency SLA:** $< 100\text{ms}$ metrics aggregation. |
 | **`Task_CaregiverCall`**<br>`Trigger Voice Call & SMS to Caregiver` | **Screen ID:** `WEB_CAREGIVER_PANEL`<br>**Visual Components:** Telephony status card showing caregiver name, relationship, phone number, and real-time status pill (`DIALING` $\rightarrow$ `RINGING` $\rightarrow$ `ANSWERED` / `NO_ANSWER`).<br>**User Action:** 1-Click trigger or automated 5s fall-through.<br>**Next UI State:** Updates panel status pill to `CALL_IN_PROGRESS`. | **Actors:** Command Portal Backend $\rightarrow$ Twilio Telephony Gateway API $\rightarrow$ Caregiver Phone.<br>**Protocol:** HTTPS / TLS 1.3 (Outbound Webhook Push [IF-14]).<br>**Payload:** `{ to: caregiver_phone, text: "EMERGENCY: Sleep apnea alert for [Patient Name]. Please check immediately.", voice_twiml_url }`.<br>**Processing:** Triggers automated voice call & priority SMS to caregiver.<br>**Latency SLA:** $< 2.0\text{s}$ call initiation. |
 | **`Task_DispatchEMS`**<br>`Dispatch Local EMS / 911 Responders` | **Screen ID:** `WEB_EMS_DISPATCH_MODAL`<br>**Visual Components:** 911 Computer-Aided Dispatch (CAD) integration panel. Displays dispatch confirmation ID, estimated EMS ETA, and notes entry box.<br>**User Action:** Dispatcher clicks *"DISPATCH EMS / 911 NOW"*.<br>**Next UI State:** `WEB_DISPATCH_COMPLETE` (Shows active EMS unit tracking & audit confirmation). | **Actors:** Dispatcher $\rightarrow$ Command Portal $\rightarrow$ Local EMS CAD Gateway API $\rightarrow$ CareDispatchRecord.<br>**Protocol:** HTTPS / TLS 1.3 (Request-Reply CAD Gateway [IF-15]).<br>**Payload:** `{ alert_id, patient_name, gps_lat_long, street_address, medical_condition: "NOCTURNAL_APNEA_STOP" }`.<br>**Processing:** Confirms CAD order; updates `CareDispatchRecord` (`ems_dispatched = true`).<br>**Latency SLA:** $< 500\text{ms}$ CAD response confirmation. |
@@ -475,7 +476,7 @@ The Conceptual Data Model structures database entities around the 6 process phas
 
 | BPMN Activity ID & Name | UI Flow Specification (Screen, Visuals & User Actions) | Sequence Diagram Specification (Actors, Payload, Protocol & SLA) |
 | :--- | :--- | :--- |
-| **`Task_PhysicianReview`**<br>`Physician Reviews AHI Classification & Signs Diagnosis` | **Screen ID:** `WEB_PHYSICIAN_PATIENT_DETAIL`<br>**Visual Components:** Patient medical detail view. Real-time alert badge *"Morning Sleep Report Ready"*, 8-hour respiration wave graphs, AHI trend breakdown (Normal/Mild/Moderate/Severe), and clinical note entry box.<br>**User Action:** Physician reviews AHI graph, inputs clinical notes, & taps *"Sign & Save Diagnosis"*.<br>**Next UI State:** `WEB_DIAGNOSIS_SIGNED` (Diagnostic report locked & appended to patient medical chart). | **Actors:** Cloud Session API $\rightarrow$ Attending Sleep Specialist Physician $\rightarrow$ Clinic Web Portal $\rightarrow$ Application DB.<br>**Protocol:** HTTPS / TLS 1.3 (Request-Reply Transactions [IF-17, IF-18]).<br>**Payload:** `{ session_id, patient_id, doctor_npi, ahi_score, diagnostic_notes, prescription_adjustment }`.<br>**Processing:** Syncs morning report, stores physician signature & diagnostic notes, and updates patient chart.<br>**Latency SLA:** $< 400\text{ms}$ diagnosis save & sync. |
+| **`Task_PhysicianReview`**<br>`Physician Reviews Apnea Index Classification & Signs Diagnosis` | **Screen ID:** `WEB_PHYSICIAN_PATIENT_DETAIL`<br>**Visual Components:** Patient medical detail view. Real-time alert badge *"Morning Sleep Report Ready"*, 8-hour respiration wave graphs, Apnea Index trend breakdown (Normal/Mild/Moderate/Severe, apnea-only), and clinical note entry box.<br>**User Action:** Physician reviews the Apnea Index graph, inputs clinical notes, & taps *"Sign & Save Diagnosis"*.<br>**Next UI State:** `WEB_DIAGNOSIS_SIGNED` (Diagnostic report locked & appended to patient medical chart). | **Actors:** Cloud Session API $\rightarrow$ Attending Sleep Specialist Physician $\rightarrow$ Clinic Web Portal $\rightarrow$ Application DB.<br>**Protocol:** HTTPS / TLS 1.3 (Request-Reply Transactions [IF-17, IF-18]).<br>**Payload:** `{ session_id, patient_id, doctor_npi, ai_score, diagnostic_notes, prescription_adjustment }`.<br>**Processing:** Syncs morning report, stores physician signature & diagnostic notes, and updates patient chart.<br>**Latency SLA:** $< 400\text{ms}$ diagnosis save & sync. |
 
 #### 🏊 Swimlane 6: Device Loss & Mobile Recovery Activities
 
@@ -490,7 +491,7 @@ The Conceptual Data Model structures database entities around the 6 process phas
 
 | BPMN Activity ID & Name | UI Flow Specification (Screen, Visuals & User Actions) | Sequence Diagram Specification (Actors, Payload, Protocol & SLA) |
 | :--- | :--- | :--- |
-| **`Task_ReviewMorningSummary`**<br>`Review Morning Sleep Summary & AHI Score` | **Screen ID:** `MOB_SLEEP_SUMMARY`<br>**Visual Components:** Morning sleep summary card. Displays total sleep duration (e.g. 7h 45m), AHI score badge (e.g., `AHI 3.2 - Normal`), intervention count, and quality score ring.<br>**User Action:** Patient views morning metrics & taps *"Inspect Respiration Waveform"*.<br>**Next UI State:** `MOB_GRAPH_WAVEFORM`. | **Actors:** Patient $\rightarrow$ Mobile App UI $\rightarrow$ Application DB.<br>**Protocol:** Local SQLCipher Query / HTTPS TLS 1.3 Endpoint [IF-16].<br>**Payload:** `{ session_id, duration_seconds, ahi_score, quality_score, intervention_count }`.<br>**Processing:** Renders morning sleep metrics summary.<br>**Latency SLA:** $< 200\text{ms}$ rendering SLA. |
+| **`Task_ReviewMorningSummary`**<br>`Review Morning Sleep Summary & Apnea Index` | **Screen ID:** `MOB_SLEEP_SUMMARY`<br>**Visual Components:** Morning sleep summary card. Displays total sleep duration (e.g. 7h 45m), Apnea Index score badge (e.g., `AI 3.2 · Normal`), intervention count, and quality score ring.<br>**User Action:** Patient views morning metrics & taps *"Inspect Respiration Waveform"*.<br>**Next UI State:** `MOB_GRAPH_WAVEFORM`. | **Actors:** Patient $\rightarrow$ Mobile App UI $\rightarrow$ Application DB.<br>**Protocol:** Local SQLCipher Query / HTTPS TLS 1.3 Endpoint [IF-16].<br>**Payload:** `{ session_id, duration_seconds, ai_score, quality_score, intervention_count }`.<br>**Processing:** Renders morning sleep metrics summary.<br>**Latency SLA:** $< 200\text{ms}$ rendering SLA. |
 | **`Task_InspectRespirationWaveform`**<br>`Inspect Respiration Waveform & FFT Spectrum` | **Screen ID:** `MOB_GRAPH_WAVEFORM`<br>**Visual Components:** Interactive 60 FPS Skia GPU waveform line chart (`fl_chart`), 256-point FFT spectral peak bar graph, and SpO2 trend timeline.<br>**User Action:** Pinch-to-zoom, pan across overnight telemetry, & toggle FFT magnitude spectrum.<br>**Next UI State:** `MOB_HISTORY_FILTER`. | **Actors:** Mobile App Edge UI $\rightarrow$ Skia GPU Layer $\rightarrow$ FFT Isolate.<br>**Protocol:** Local Flutter Render Pipeline + Dart Isolate Memory Buffer.<br>**Payload:** `{ 10Hz_telemetry_array, 256_pt_fft_spectrum, respiration_rate_bpm }`.<br>**Processing:** Hardware accelerated Skia GPU chart rendering.<br>**Latency SLA:** Continuous 60 FPS smooth rendering. |
 | **`Task_FilterHistoricalSessions`**<br>`Filter Historical Sleep Sessions & Trends` | **Screen ID:** `MOB_HISTORY_FILTER`<br>**Visual Components:** Calendar history view with date range pickers, severity filters (All, Normal, Hypopnea, Apnea), and list of past sleep sessions.<br>**User Action:** Select date range & tap *"Apply Severity Filter"*.<br>**Next UI State:** Updates session history list with filtered metrics. | **Actors:** Patient $\rightarrow$ Mobile App UI $\rightarrow$ Local Encrypted SQLCipher DB.<br>**Protocol:** Encrypted Local SQL Query (Request-Reply).<br>**Payload:** `{ start_date, end_date, severity_filter: "ALL" }`.<br>**Processing:** Queries local encrypted database history.<br>**Latency SLA:** $< 150\text{ms}$ local query SLA. |
 | **`Task_ExportDoctorReport`**<br>`Generate Signed Clinical Report for Physician` | **Screen ID:** `MOB_EXPORT_DOCTOR_REPORT`<br>**Visual Components:** Doctor report export modal with FHIR JSON preview, PDF chart generator button, and *"Share with Physician"* button.<br>**User Action:** Patient taps *"Generate Signed Report & Share with Doctor"*.<br>**Next UI State:** Launches native OS share sheet with signed PDF / JSON clinical chart. | **Actors:** Patient $\rightarrow$ Mobile App UI $\rightarrow$ Patient Profile Service.<br>**Protocol:** HTTPS / TLS 1.3 (Request-Reply [IF-17, IF-18]).<br>**Payload:** `{ patient_id, session_id, fhir_json_payload, digital_signature }`.<br>**Processing:** Formats FHIR JSON and generates signed PDF chart.<br>**Latency SLA:** $< 800\text{ms}$ report generation. |
@@ -498,7 +499,7 @@ The Conceptual Data Model structures database entities around the 6 process phas
 #### 📖 Guidance for Downstream Workflows (PRD, UX & Code Implementation)
 > [!TIP]
 > **Traceability & UX Alignment:**  
-> 1. **UX Designers:** Must reference the Screen IDs (`MOB_PASSKEY_AUTH`, `MOB_CALIBRATION_STAGE1`, `MOB_TIER1_ALARM`, `WEB_COMMAND_DASHBOARD`, `MOB_REPORT_DEVICE_LOST`, `WEB_REPORT_MOBILE_LOST`) defined in Section 3.2 when constructing wireframes and Figma components.  
+> 1. **UX Designers:** Must reference the Screen IDs (`MOB_PASSKEY_AUTH`, `MOB_CALIBRATION`, `MOB_TIER1_ALARM`, `WEB_COMMAND_DASHBOARD`, `MOB_REPORT_DEVICE_LOST`, `WEB_REPORT_MOBILE_LOST`) defined in Section 3.2 when constructing wireframes and Figma components.  
 > 2. **Frontend Developers (Flutter & React):** Every UI screen must implement the exact state transitions and visual feedback mechanisms specified in the UI Flow tables.  
 
 ---
@@ -538,7 +539,7 @@ Container_Boundary(cloud_services, "Backend Microservices Platform") {
     Component(device_svc, "Device Management Service", "REST Microservice", "Manages hardware sensor bindings, barcode serial validation, and MAC address registration.")
     Component(audit_svc, "Audit Service", "HIPAA Log Engine", "Receives asynchronous one-way audit streams and writes immutable entries to PhiAuditLog.")
     Component(data_streaming_svc, "Data Streaming Service", "Event Ingestion Engine", "High-throughput webhook gateway ingesting 10s compressed bio-signal batches and 30s unacknowledged emergency pushes.")
-    Component(stream_workers, "Stream Processing Workers", "gRPC Container Workers", "Executes 2-stage noise/breath calibration isolate algorithms and AASM 90%/30% apnea breach detection rules.")
+    Component(stream_workers, "Stream Processing Workers", "gRPC Container Workers", "Runs the Premium cloud AI waveform-refinement pipeline; primary apnea detection stays on the client (AD-04).")
     Component(telephony_svc, "Telephony Service", "Twilio Gateway Client", "Automates voice calls and priority SMS dispatch to locked caregiver emergency contacts.")
     Component(ems_gateway, "EMS CAD Gateway", "911 REST Client", "Dispatches CAD emergency orders to local 911 dispatch centers upon Tier-2 escalation.")
 }
@@ -546,7 +547,7 @@ Container_Boundary(cloud_services, "Backend Microservices Platform") {
 Container_Boundary(web_portals, "Web Operations Portals") {
     Component(backoffice_portal, "Backoffice Web Portal", "React / REST Dashboard", "Renders WEB_BACKOFFICE_VERIFICATION, WEB_DEVICE_BINDING, and WEB_CAREGIVER_LOCK panels.")
     Component(command_portal, "Emergency Center Web Portal", "React / WSS Dashboard", "Displays real-time alert pop-up modals (WEB_COMMAND_DASHBOARD), Mapbox patient GPS, and dispatcher action controls.")
-    Component(clinic_portal, "Clinic & Physician Portal", "React / REST Dashboard", "Syncs morning sleep summaries, AHI trend graphs, and physician diagnostic notes.")
+    Component(clinic_portal, "Clinic & Physician Portal", "React / REST Dashboard", "Syncs morning sleep summaries, Apnea Index trend graphs, and physician diagnostic notes.")
 }
 
 ContainerDb(app_db, "Application Database", "Relational / Document DB", "Stores PatientUser, HealthBaseline, DeviceBinding, SleepSession, ApneaEvent, EmergencyAlertQueue, CareDispatchRecord.")
@@ -578,8 +579,8 @@ Rel(command_portal, telephony_svc, "PatientUser caregiver_phone & CareDispatchRe
 Rel(command_portal, ems_gateway, "CareDispatchRecord 911 CAD order & GPS coordinates")
 Rel(command_portal, audit_svc, "PhiAuditLog (Dispatch Audit Logs)")
 
-Rel(app_db, clinic_portal, "SleepSession morning summaries & HealthBaseline AHI trends")
-Rel(doctor, clinic_portal, "ClinicDoctorAssignment diagnostic notes & AHI reviews")
+Rel(app_db, clinic_portal, "SleepSession morning summaries & Apnea Index trends")
+Rel(doctor, clinic_portal, "ClinicDoctorAssignment diagnostic notes & Apnea Index reviews")
 
 @enduml
 ```
@@ -590,7 +591,7 @@ Rel(doctor, clinic_portal, "ClinicDoctorAssignment diagnostic notes & AHI review
 | :--- | :--- | :--- | :--- | :--- |
 | **`User`** | External Actor | `Patient` / `Dispatcher` / `Physician` / `Backoffice Admin` | `PatientUser` / Human Actor | Human actor triggering UI events or reviewing healthcare dashboards. |
 | **`Small Breathing Device (Sensor)`** | Hardware Device | `Small Breathing Device` | Differential Pressure Stream | Embedded hardware sensor sampling differential pressure and streaming 100ms BLE GATT notifications. |
-| **`BLE Background Receiver Service (Receiver)`** | `Mobile Application` | `BLE Background Receiver Service` | `TelemetryStream` (on-device, pre-batch) | Boot-time Android Foreground Service / iOS `bluetooth-central` singleton; DI-binds one `IBLESensorDriver` and pushes every 10Hz sample into the single process-wide `BehaviorSubject<double>` unified queue consumed by Stage-1/Stage-2 calibration and 8+ h monitoring (`AD-11`, `AD-12`, PRD `FR-1.11`). |
+| **`BLE Background Receiver Service (Receiver)`** | `Mobile Application` | `BLE Background Receiver Service` | `TelemetryStream` (on-device, pre-batch) | Boot-time Android Foreground Service / iOS `bluetooth-central` singleton; DI-binds one `IBLESensorDriver` and pushes every 10Hz sample into the single process-wide `BehaviorSubject<double>` unified queue consumed by the IDLE Band calibration, the wear check, and 8+ h monitoring (`AD-11`, `AD-12`, PRD `FR-1.11`). |
 | **`Backoffice Admin (Admin)`** | External Actor | `Backoffice Admin` | Human Administrator | Verifies patient identity, scans sensor barcodes, and locks caregiver contacts. |
 | **`Patient App UI (UI)`** | `Mobile Application` | `Patient App UI` | `PatientUser`, `HealthBaseline` | Renders Flutter onboarding, calibration, sleep monitoring, and Tier-1 alarm screens. |
 | **`Backoffice Web Portal (Admin UI)`** | `Web Operations Portals` | `Backoffice Web Portal` | `PatientUser`, `DeviceBinding` | Renders web panels for identity verification, device pairing, and caregiver contact locks. |
@@ -600,14 +601,14 @@ Rel(doctor, clinic_portal, "ClinicDoctorAssignment diagnostic notes & AHI review
 | **`Device Management Service (DeviceSvc)`** | `Backend Platform Services` | `Device Management Service` | `DeviceBinding` | REST microservice managing BLE sensor MAC bindings, barcode serial validation, and device inventory. |
 | **`Audit Service (AuditSvc)`** | `Backend Platform Services` | `Audit Service` | `PhiAuditLog` | Non-blocking HIPAA compliance service writing write-once audit logs to `PhiAuditLog`. |
 | **`Data Streaming Service`** | `Data Streaming Service` | `Data Streaming Service` | `TelemetryStream`, `EmergencyAlertQueue` | High-throughput event ingestion engine handling 10s bio-signal batches and 30s emergency pushes. |
-| **`Stream Processing Workers`** | `Stream Processing Workers` | `Stream Processing Workers` | `TelemetryStream`, `ApneaEvent`, `SleepSession` | gRPC container workers executing calibration FFT analysis and AASM 90%/30% apnea breach detection rules. |
+| **`Stream Processing Workers`** | `Stream Processing Workers` | `Stream Processing Workers` | `TelemetryStream`, `ApneaEvent`, `SleepSession` | gRPC container workers running the Premium cloud AI waveform-refinement pipeline; primary apnea detection is the client's IDLE-Band evaluator (AD-04). |
 | **`Emergency Center Web Portal`** | `Emergency Center Web Portal` | `Emergency Center Web Portal` | `EmergencyAlertQueue`, `CareDispatchRecord` | React WSS dashboard displaying alert pop-ups, Mapbox GPS geocoding, and dispatch action buttons. |
 | **`Telephony Service`** | `Backend Platform Services` | `Telephony Service` | `CareDispatchRecord`, `PatientUser` | Automated Twilio telephony client triggering voice calls and priority SMS to emergency contacts. |
 | **`EMS CAD Gateway`** | `Backend Platform Services` | `EMS CAD Gateway` | `CareDispatchRecord` | Integration gateway initiating 911 Computer-Aided Dispatch (CAD) emergency responder orders. |
-| **`Clinic Portal Backend`** | `Clinic & Physician Portal` | `Clinic & Physician Portal` | `SleepSession`, `ClinicDoctorAssignment` | Web backend syncing morning sleep scores, AHI trends, and physician diagnostic notes. |
+| **`Clinic Portal Backend`** | `Clinic & Physician Portal` | `Clinic & Physician Portal` | `SleepSession`, `ClinicDoctorAssignment` | Web backend syncing morning sleep scores (Apnea Index), trends, and physician diagnostic notes. |
 | **`Application Database (DB)`** | `Application Database` | `Application Database` | All Primary Application Entities | Relational/Document database persisting user state, health baselines, device bindings, and alert queues. |
 | **`Bio-Signal Time-Series Store`** | `Bio-Signal Time-Series Store` | `Bio-Signal Time-Series Store` | `TelemetryStream` | Columnar database storing compressed high-frequency bio-signal streams. |
-| **`Home Dashboard BLoC`** | `Mobile Application` | `HomeDashboardBloc` | `SessionSummary` (local last-N cache), receiver-service state | Assembles the `MOB_HOME` read model — 7-night AHI trend, monitoring streak, D-BAND device-status — from the local `SessionSummary` cache (AD-15) and the AD-12 receiver-service state; opens **no** BLE subscription of its own. |
+| **`Home Dashboard BLoC`** | `Mobile Application` | `HomeDashboardBloc` | `SessionSummary` (local last-N cache), receiver-service state | Assembles the `MOB_HOME` read model — 7-night Apnea Index trend, monitoring streak, D-BAND device-status — from the local `SessionSummary` cache (AD-15) and the AD-12 receiver-service state; opens **no** BLE subscription of its own. |
 | **`Billing BLoC / SubscriptionRepository`** | `Mobile Application` | `BillingBloc`, `SubscriptionRepository` | `Subscription`, `PaymentMethodRef`, `Invoice` | Renders `MOB_BILLING` / `MOB_PAYMENT_METHOD`; reads plan + card-on-file display triplet + invoice list from the Billing service; never derives entitlement from raw Stripe data. |
 | **`Entitlement Service (client)`** | `Mobile Application` | `EntitlementService` | `Entitlement` (signed claim) | Holds the signed entitlement claim, applies the plan-gate before a gated action (`Task_ExportDoctorReport`), re-checks server-side, falls back to the cached claim within the bounded grace window (AD-13). |
 | **`Stripe PaymentSheet Gateway`** | `Mobile Application` | `StripePaymentSheetGateway` | tokenized card → `stripe_payment_method_id` | Presents Stripe's hosted PaymentSheet for card capture; returns only an opaque payment-method token — no PAN/CVC crosses into the app (AD-14). |
@@ -644,8 +645,6 @@ entity "HealthBaseline" as health_baseline {
     weight_kg : DECIMAL(5,2)
     height_cm : DECIMAL(5,2)
     computed_bmi : DECIMAL(4,2)
-    idle_noise_floor : DOUBLE
-    vpp_breath_baseline : DOUBLE
 }
 
 entity "DeviceBinding" as device_binding {
@@ -666,7 +665,9 @@ entity "SleepSession" as sleep_session {
     * user_id : VARCHAR(36) <<FK>>
     start_time : TIMESTAMP
     end_time : TIMESTAMP
-    ahi_score : DECIMAL(4,1)
+    idle_band_lower : DOUBLE
+    idle_band_upper : DOUBLE
+    ai_score : DECIMAL(4,1)
     total_apnea_events : INT
     quality_score : INT
 }
@@ -747,7 +748,7 @@ entity "SessionSummary" as session_summary {
     * session_id : VARCHAR(36) <<FK>> [1:1 SleepSession]
     * user_id : VARCHAR(36) <<FK>>
     session_date : DATE
-    ahi_score : DECIMAL(4,2)
+    ai_score : DECIMAL(4,2)
     quality_score : INT
     total_duration_minutes : INT
     apnea_alarm_count : INT
@@ -1131,9 +1132,9 @@ The **Passkey Authentication (FIDO2) Flow** (`Task_PasskeyAuth`) models the end-
 
 ---
 
-#### 3.5.4 🌙 End-to-End Sequence Diagram 4: Patient Sleep Operations Journey Flow (`Task_PasskeyAuth`, `Task_Stage1Cal`, `Task_Stage2Cal`, `Task_SleepMonitoring`, `Task_TapSafe`, `Task_EndSession`)
+#### 3.5.4 🌙 End-to-End Sequence Diagram 4: Patient Sleep Operations Journey Flow (`Task_PasskeyAuth`, `Task_IdleBandCal`, `Task_WearCheck`, `Task_SleepMonitoring`, `Task_TapSafe`, `Task_EndSession`)
 
-This end-to-end sequence diagram models the execution of **Patient Sleep Operations** (`Lane_PatientAtHome` / Swimlane 3), encapsulating biometric passkey authentication, 2-stage noise/breath sensor calibration, 10Hz continuous bio-signal telemetry streaming, real-time AASM apnea breach detection, local Tier-1 alarm & 30s countdown safety tap ("I'm Safe"), and morning sleep report sync.
+This end-to-end sequence diagram models the execution of **Patient Sleep Operations** (`Lane_PatientAtHome` / Swimlane 3), encapsulating biometric passkey authentication, the single-stage IDLE Band calibration + wear check, 10Hz continuous bio-signal telemetry streaming, real-time AASM apnea breach detection, local Tier-1 alarm & 30s countdown safety tap ("I'm Safe"), and morning sleep report sync.
 
 ```plantuml
 @startuml Patient_Sleep_Operations_Journey_Sequence_Diagram
@@ -1191,27 +1192,27 @@ activate AuditSvc
 deactivate AuditSvc
 AuthSvc --> UI: 11. Session Token Authorized Confirmation ✓
 deactivate AuthSvc
-UI -> UI: 12. Auto-advance to MOB_CALIBRATION_STAGE1
+UI -> UI: 12. Auto-advance to MOB_CALIBRATION
 
-== Phase 2: Stage 1 Idle Noise Calibration (Task_Stage1Cal) ==
-Patient -> UI: 13. Tap "Start 10s Idle Calibration" (MOB_CALIBRATION_STAGE1)
+== Phase 2: IDLE Band Idle Sample (Task_IdleBandCal) ==
+Patient -> UI: 13. Put on D-BAND, sit still, tap "Start" (MOB_CALIBRATION step 1)
 UI -> Receiver: 14. Subscribe to unified BehaviorSubject<double> queue (streaming since boot — AD-12; no new GATT channel)
 activate Receiver
-Sensor -> Receiver: 15. 10s Ambient Noise Packets (10Hz) pushed to queue via .add() [IF-11]
-Receiver --> UI: 15a. Emit seeded latest + 10s idle window to subscriber
+Sensor -> Receiver: 15. ~10s worn resting-signal samples (10Hz) pushed to queue via .add() [IF-11]
+Receiver --> UI: 15a. Emit seeded latest + ~10s idle window to subscriber
 deactivate Receiver
-UI -> UI: 16. Compute Idle Noise Baseline (N_idle) via Dart FFT Isolate
-UI -> UI: 17. Auto-advance to MOB_CALIBRATION_STAGE2
+UI -> UI: 16. Track running min/max -> IDLE Band [lower_bound, upper_bound]
+UI -> UI: 17. Advance to MOB_CALIBRATION step 2 (wear check)
 
-== Phase 3: Stage 2 Active Breath Calibration (Task_Stage2Cal) ==
-Patient -> UI: 18. Attach Sensor Mask & Take 5 Normal Breaths (MOB_CALIBRATION_STAGE2)
-UI -> Receiver: 19. Read 30s Breathing Waveform from same unified queue (AD-12)
+== Phase 3: Wear Check (Task_WearCheck) ==
+Patient -> UI: 18. Take a few normal breaths (MOB_CALIBRATION step 2)
+UI -> Receiver: 19. Read breathing samples from the same unified queue (AD-12)
 activate Receiver
-Sensor -> Receiver: 20. 30s Peak-to-Trough Pressure Packets pushed to queue via .add() [IF-11]
-Receiver --> UI: 20a. Emit 30s active-breath window to subscriber
+Sensor -> Receiver: 20. Breath samples pushed to queue via .add() [IF-11]
+Receiver --> UI: 20a. Emit breath window to subscriber
 deactivate Receiver
-UI -> UI: 21. Compute Baseline Breathing Amplitude (Vpp) & Threshold (0.10 * Vpp)
-UI --> AppDB: 22. Save Calibration Metrics Request (HealthBaseline)
+UI -> UI: 21. Require >= 2 valid IDLE-Band breath-excursion cycles (AD-04) to unlock "Start"
+UI --> AppDB: 22. Save IDLE Band Request (SleepSession.idle_band_lower/upper)
 activate AppDB
 AppDB --> UI: 23. Baseline Saved Confirmation
 deactivate AppDB
@@ -1233,8 +1234,8 @@ deactivate StreamWorkers
 deactivate StreamingSvc
 
 == Phase 5: Apnea Breach Detection & Tier-1 Local Alarm / Tap 'I'm Safe' (Task_TapSafe) ==
-Sensor -> Receiver: 31. Airflow samples pushed to unified queue drop below Threshold (< 0.10 * Vpp for 30s)
-Receiver --> UI: 31a. ApneaEvaluator (subscribed to same queue, AD-12) flags sustained breach
+Sensor -> Receiver: 31. Signal stays inside the IDLE Band — no valid breath excursion — for >= 10s
+Receiver --> UI: 31a. ApneaEvaluator (subscribed to same queue, AD-12; AD-04) flags the apnea event
 UI -> UI: 32. Trigger Tier-1 Local Siren & High-Priority Visual Overlay (MOB_TIER1_ALARM)
 UI --> StreamingSvc: 33. Push Emergency Alert & 30s Countdown Token [IF-13]
 activate StreamingSvc
@@ -1258,16 +1259,16 @@ end
 Patient -> UI: 40. Wake Up & Tap "End Sleep Session" (MOB_SLEEP_SUMMARY)
 UI -> Receiver: 41. stopTelemetryLogging() — stop pushing samples; receiver service + unified queue stay resident for next session (AD-12)
 deactivate Receiver
-UI --> StreamingSvc: 42. End Session Notification [IF-16]\n{ session_id, end_time, total_duration_seconds, final_ahi_score }
+UI --> StreamingSvc: 42. End Session Notification [IF-16]\n{ session_id, end_time, total_duration_seconds, final_ai_score }
 activate StreamingSvc
-StreamingSvc --> AppDB: 43. Finalize SleepSession Record & Update AHI Score
+StreamingSvc --> AppDB: 43. Finalize SleepSession Record & Update Apnea Index (ai_score)
 activate AppDB
 AppDB --> AuditSvc: 44. Record Sleep Session Concluded Audit Event [IF-19]
 activate AuditSvc
 deactivate AuditSvc
 AppDB --> StreamingSvc: 45. Session Finalized Confirmation
 deactivate AppDB
-StreamingSvc --> UI: 46. Return Morning AHI Report Summary Payload
+StreamingSvc --> UI: 46. Return Morning Apnea Index Report Summary Payload
 deactivate StreamingSvc
 UI -> Patient: 47. Render Morning Sleep Summary Dashboard (MOB_SLEEP_SUMMARY)
 deactivate UI
@@ -1283,88 +1284,57 @@ The **Patient Sleep Operations Journey** (`Lane_PatientAtHome` / Swimlane 3) mod
    On application launch the composition root starts the **BLE Background Receiver Service** (Android Foreground Service with a persistent notification / iOS `bluetooth-central` background mode) and DI-binds exactly one `IBLESensorDriver` (physical `FlutterBlueSensorDriver` in production, `BleTelemetryService` simulator in `DEV_MODE`). The service opens a single process-wide `BehaviorSubject<double>` unified queue (seeded) and, from this point on, every inbound sample — a physical D-BAND GATT notification or an in-process simulator tick — is pushed into that one queue via RxDart `.add()`. The physical radio link (`scanAndConnect`) is established lazily when a bound D-BAND is in range or the first consumer requires it; the service and queue then stay resident for the whole process lifetime, so no later phase opens its own BLE subscription.
 
 1. **Phase 1: Passkey Biometric Login (`Task_PasskeyAuth`):**  
-   The patient taps *"Start Bedtime Monitoring"* on `MOB_PASSKEY_AUTH`. The Patient App UI fetches a WebAuthn challenge nonce from the **Auth Service** (`IF-09`), prompts the OS **Secure Enclave** for biometric scan (`FaceID / TouchID`), signs the nonce in hardware, and submits the assertion payload (`IF-10`) to the Auth Service. Upon verification and non-blocking audit logging by the **Audit Service** (`IF-19`), the App UI receives a session authorization confirmation and auto-advances to `MOB_CALIBRATION_STAGE1`.
+   The patient taps *"Start Bedtime Monitoring"* on `MOB_PASSKEY_AUTH`. The Patient App UI fetches a WebAuthn challenge nonce from the **Auth Service** (`IF-09`), prompts the OS **Secure Enclave** for biometric scan (`FaceID / TouchID`), signs the nonce in hardware, and submits the assertion payload (`IF-10`) to the Auth Service. Upon verification and non-blocking audit logging by the **Audit Service** (`IF-19`), the App UI receives a session authorization confirmation and auto-advances to `MOB_CALIBRATION`.
 
-2. **Phase 2: Stage 1 Idle Noise Calibration (`Task_Stage1Cal`):**  
-   The patient places the sensor on the bedside table and taps *"Start 10s Calibration"* on `MOB_CALIBRATION_STAGE1`. The App UI **subscribes to the unified queue already streaming since Phase 0** (`AD-12`; no new GATT channel) and reads a 10s window of ambient differential pressure. The local Dart FFT isolate computes $N_{\text{idle}}$ baseline noise floor and advances to `MOB_CALIBRATION_STAGE2`.
+2. **Phase 2: IDLE Band Idle Sample (`Task_IdleBandCal`):**  
+   With the D-BAND worn, the patient sits still and taps *"Start"* on `MOB_CALIBRATION` (step 1). The App UI **subscribes to the unified queue already streaming since Phase 0** (`AD-12`; no new GATT channel) and reads a ~10s window of the worn resting signal. The local isolate tracks the running minimum and maximum → the session **IDLE Band** `[lower_bound, upper_bound]`, then advances to the wear-check step.
 
-3. **Phase 3: Stage 2 Active Breath Calibration (`Task_Stage2Cal`):**  
-   The patient attaches the sensor mask and breathes normally for 30s on `MOB_CALIBRATION_STAGE2`. Reading the **same unified queue** (`IF-11`, `AD-12`), the App UI processes 30s peak-to-trough pressure waves, calculates moving average breathing amplitude ($V_{pp}$), computes apnea threshold ($0.10 \times V_{pp}$), saves baseline metrics to the **Application Database**, and auto-advances to `MOB_SLEEP_MONITOR`.
+3. **Phase 3: Wear Check (`Task_WearCheck`):**  
+   The patient takes a few normal breaths on `MOB_CALIBRATION` (step 2). Reading the **same unified queue** (`IF-11`, `AD-12`), the App UI requires **≥ 2 valid IDLE-Band breath-excursion cycles** (`AD-04`) before *"Start Sleep Monitoring"* unlocks; on failure it shows *"Sensor not detecting breathing — check the fit."* + retry. On success it persists `idle_band_lower` / `idle_band_upper` on `SleepSession` and auto-advances to `MOB_SLEEP_MONITOR`.
 
 4. **Phase 4: Continuous Sleep Monitoring & Bio-Signal Streaming (`Task_SleepMonitoring`):**  
-   The App UI locks the screen in 0-FPS Night Mode (`#000000` with pulsing green heartbeat dot). The **BLE Background Receiver Service** continues pushing 100ms (10Hz) bio-signal samples into the unified `BehaviorSubject<double>` queue (`IF-11`, `AD-12`); `SleepMonitoringBloc` and `ApneaEvaluator` consume that one stream while `BleBloc` decimates it to ≤5 FPS for UI rendering (`AD-02`). The App UI buffers data in a local 1-hour circular RAM ring buffer and asynchronously flushes 10s compressed telemetry batches to the **Data Streaming Service** (`IF-12`). The Streaming Service forwards batches via gRPC to **Stream Processing Workers**, which store compressed blobs in the **Bio-Signal Time-Series Store** and evaluate AASM 90% airflow drop rules.
+   The App UI locks the screen in 0-FPS Night Mode (`#000000` with pulsing green heartbeat dot). The **BLE Background Receiver Service** continues pushing 100ms (10Hz) bio-signal samples into the unified `BehaviorSubject<double>` queue (`IF-11`, `AD-12`); `SleepMonitoringBloc` and `ApneaEvaluator` consume that one stream while `BleBloc` decimates it to ≤5 FPS for UI rendering (`AD-02`). The App UI buffers data in a local 1-hour circular RAM ring buffer and asynchronously flushes 10s compressed telemetry batches to the **Data Streaming Service** (`IF-12`). The Streaming Service forwards batches via gRPC to **Stream Processing Workers**, which store compressed blobs in the **Bio-Signal Time-Series Store** and run the Premium cloud AI waveform-refinement pipeline (primary apnea detection is the client's, per `AD-04`).
 
 5. **Phase 5: Apnea Breach Detection & Tier-1 Local Alarm / Safety Tap (`Task_TapSafe`):**  
-   When airflow drops below threshold ($< 0.10 \times V_{pp}$ for $\ge 10\text{s}$), the App UI immediately pops `MOB_TIER1_ALARM`, triggering a local 120dB siren and flashing visual overlay in $<200\text{ms}$. Simultaneously, a 30s cancellation token is pushed to the **Application Database** (`IF-13`). If the patient taps *"I'M SAFE - DISMISS ALARM"* within 30s, the App UI silences the siren, updates `patient_acknowledged = true`, and transitions to `MOB_ALARM_CANCELED`. If the 30s timer expires without a tap, the system triggers Tier-2 Command Center escalation (`IF-13`).
+   When the signal stays inside the IDLE Band — no valid breath excursion — for $\ge 10\text{s}$, the App UI immediately pops `MOB_TIER1_ALARM`, triggering a local 120dB siren and flashing visual overlay in $<200\text{ms}$. Simultaneously, a 30s cancellation token is pushed to the **Application Database** (`IF-13`). If the patient taps *"I'M SAFE - DISMISS ALARM"* within 30s, the App UI silences the siren, updates `patient_acknowledged = true`, and transitions to `MOB_ALARM_CANCELED`. If the 30s timer expires without a tap, the system triggers Tier-2 Command Center escalation (`IF-13`).
 
 6. **Phase 6: Morning Session Conclusion & Sleep Report Sync (`Task_EndSession`):**  
-   In the morning, the patient taps *"End Sleep Session"* on `MOB_SLEEP_SUMMARY`. The App UI calls `stopTelemetryLogging()` — the driver stops pushing samples, but per `AD-12` the **BLE Background Receiver Service and the unified queue stay resident** for the next session (they are torn down only on process exit). The App UI sends a session end payload (`IF-16`) to the **Data Streaming Service**. The backend updates the `SleepSession` record in the **Application Database**, computes overnight AHI index, records an audit log entry in the **Audit Service** (`IF-19`), and returns the report summary payload to render on `MOB_SLEEP_SUMMARY`.
+   In the morning, the patient taps *"End Sleep Session"* on `MOB_SLEEP_SUMMARY`. The App UI calls `stopTelemetryLogging()` — the driver stops pushing samples, but per `AD-12` the **BLE Background Receiver Service and the unified queue stay resident** for the next session (they are torn down only on process exit). The App UI sends a session end payload (`IF-16`) to the **Data Streaming Service**. The backend updates the `SleepSession` record in the **Application Database**, computes the overnight **Apnea Index** (`ai_score`), records an audit log entry in the **Audit Service** (`IF-19`), and returns the report summary payload to render on `MOB_SLEEP_SUMMARY`.
 
 ---
 
-#### 🔬 Scientific & Mathematical Algorithm Specifications (PRD FR-1.4 – FR-1.8, FR-2.2, FR-2.3 & NFR-6.1 Aligned)
+#### 🔬 Signal Model & Detection Algorithm Specifications (PRD FR-1.4 – FR-1.8, FR-2.2, FR-2.3 & NFR-6.1 Aligned — `AD-04`)
 
-To guarantee clinical precision and satisfy PRD requirements (FR-1.4 through FR-1.8, FR-2.2, FR-2.3, NFR-3, NFR-5, and NFR-6.1 AASM diagnostic standards), the execution of idle calibration, active breathing calibration, continuous monitoring, and real-time apnea detection enforces the following mathematical and scientific signal processing algorithms:
+The client works in **raw signal units** end to end. There is no thermal-to-volumetric (L/s) transform, no `V_pp` peak-to-peak baseline, and no `0.10 × V_pp` threshold. The following is the normative signal model; see `AD-04` for the invariant.
 
-##### 1. Stage 1: Idle Sensor Noise Floor Calibration Algorithm ($N_{\text{idle}}$ Sampling) — PRD FR-1.4
-Prior to attaching the breathing device, the patient places the sensor on a stationary surface for a mandatory 10-second sampling phase ($M = 100$ samples @ 10Hz BLE stream rate) to compute the ambient environmental differential pressure noise floor $N_{\text{idle}}$:
+##### 1. IDLE Band Calibration ($[lower\_bound, upper\_bound]$ Sampling) — PRD FR-1.4
+With the D-BAND **worn** and the patient still, the app samples the raw stream $V_{\text{raw}}(t)$ for ~10 s (`[ASSUMPTION]` window, tunable 5–30 s), tracking a running minimum and maximum:
 
-$$\mu_{\text{idle}} = \frac{1}{M} \sum_{i=1}^{M} V_{\text{raw}}(t_i)$$
+$$lower\_bound = \min_{t} V_{\text{raw}}(t), \qquad upper\_bound = \max_{t} V_{\text{raw}}(t)$$
 
-$$\sigma_{\text{idle}}^2 = \frac{1}{M-1} \sum_{i=1}^{M} \left( V_{\text{raw}}(t_i) - \mu_{\text{idle}} \right)^2$$
+Each sample only widens the band within the window; it is never narrowed and no margin is applied. The pair $[lower\_bound, upper\_bound]$ is the session **IDLE Band**, persisted on `SleepSession` and reused across nights only until stale/invalid.
 
-$$N_{\text{idle}} = \mu_{\text{idle}} + 2 \cdot \sigma_{\text{idle}}$$
+##### 2. Breath Excursion & Wear Check — PRD FR-1.6, FR-1.7, FR-1.8
+* **Valid breath (PRD FR-1.6):** a respiratory cycle in which the raw signal rises to/above `upper_bound` (inhale phase) **and** falls to/below `lower_bound` (exhale phase). A phase that fails to cross its bound is a **"stop-breathing" sample**.
+* **Stop-breathing sample (PRD FR-1.7):** any sample where $lower\_bound \le V_{\text{raw}}(t) \le upper\_bound$ — i.e. no excursion beyond either bound.
+* **Wear check (PRD FR-1.8):** immediately after the idle sample, the patient breathes normally; "Start Sleep Monitoring" stays blocked until the app observes **≥ 2 valid breath-excursion cycles** within a bounded window (~15 s `[ASSUMPTION]`). On failure it shows *"Sensor not detecting breathing — check the fit."* with a retry.
 
-* **Net Airflow Deduction (PRD FR-1.6):** For all subsequent pressure samples, instantaneous net respiratory airflow $V_{\text{net}}(t)$ is derived by subtracting the calibrated idle noise floor:
-  $$V_{\text{net}}(t) = \max\left(0, \, V_{\text{raw}}(t) - N_{\text{idle}}\right)$$
+##### 3. Nocturnal Monitoring & Apnea Event Detection — PRD FR-2.2, FR-2.3 & NFR-6.1
+Raw 100 ms BLE telemetry is processed in real time on background Dart Isolates (NFR-3) to hold the 0-FPS battery budget.
 
-##### 2. Stage 2: Active Breathing Calibration Algorithm ($V_{pp}$ Baseline & Dynamic Thresholds) — PRD FR-1.5, FR-1.7, FR-1.8
-After attaching the sensor mask, the patient breathes normally for 30 seconds ($N = 300$ samples @ 10Hz). A peak-valley detection algorithm identifies local inhalation maxima ($V_{\max, j}$) and exhalation minima ($V_{\min, j}$) across $k$ complete respiratory cycles:
-
-* **Mean Peak-to-Trough Breathing Amplitude ($V_{pp}$):**
-  $$V_{pp} = \frac{1}{k} \sum_{j=1}^{k} \left( V_{\max, j} - V_{\min, j} \right)$$
-
-* **Dynamic Obstructive Apnea Threshold Binding (PRD FR-1.7 & NFR-6.1):**  
-  Following AASM guidelines ($\ge 90\%$ airflow drop), the session's zero-airflow apnea threshold $\text{Threshold}_{\text{apnea}}$ is set dynamically to 10% of the patient's calibrated breathing amplitude:
-  $$\text{Threshold}_{\text{apnea}} = 0.10 \times V_{pp}$$
-
-* **Dynamic Hypopnea Threshold Binding (PRD NFR-6.1):**  
-  Following AASM guidelines ($\ge 30\%$ airflow drop), the hypopnea threshold $\text{Threshold}_{\text{hypopnea}}$ is set dynamically to 70% of the calibrated breathing amplitude:
-  $$\text{Threshold}_{\text{hypopnea}} = 0.70 \times V_{pp}$$
-
-* **Wear Verification Guardrail (PRD FR-1.8):**  
-  To prevent invalid sleep recordings if the mask is detached or improperly worn, the application enforces a wear verification check. Sleep recording initiation is blocked if:
-  $$\Delta V = \left( V_{\max} - V_{\min} \right) < \text{Threshold}_{\min} = 1.5 \times N_{\text{idle}}$$
-
-##### 3. Nocturnal Sleep Monitoring & Apnea Event Detection Algorithm (FFT & AASM Rules) — PRD FR-2.2, FR-2.3 & NFR-6.1
-During continuous 8+ hour sleep monitoring, raw 100ms BLE telemetry streams are processed in real time by background Dart Isolates (NFR-3) to maintain 0-FPS display battery efficiency (<8% total battery drain):
-
-* **Digital Bandpass Filtering & Fast Fourier Transform (FFT) Respiration Rate (PRD NFR-5 / CHART-02):**  
-  Raw net airflow samples $V_{\text{net}}[n]$ pass through a 4th-order digital Butterworth bandpass filter ($0.10\text{Hz} - 0.75\text{Hz}$, corresponding to human respiration rates of 6 to 45 BPM). A 256-point Fast Fourier Transform (FFT) is computed every 2.5s:
-  $$X(f) = \sum_{n=0}^{N-1} V_{\text{net}}[n] \cdot e^{-j 2\pi f n / N}$$
-  The instantaneous respiration rate $f_{\text{resp}}$ (in BPM) is extracted from the spectral magnitude peak:
-  $$f_{\text{resp}} = 60 \times \arg\max_{f \in [0.10, 0.75]} |X(f)|$$
-
-* **Sliding Window RMS Airflow Evaluator (PRD FR-2.2):**  
-  Every 100ms, the Root Mean Square (RMS) airflow magnitude is evaluated across a sliding 10-second window ($W = 100$ samples):
-  $$V_{\text{RMS}}(t) = \sqrt{\frac{1}{W} \sum_{i=0}^{W-1} \left( V_{\text{net}}(t - i \cdot 0.1\text{s}) \right)^2}$$
-
-* **AASM Obstructive Apnea Classification Rule (PRD FR-2.3 & NFR-6.1):**  
-  An **Obstructive Apnea Event** is flagged, triggering the Tier-1 local alarm (`MOB_TIER1_ALARM`), whenever net RMS airflow drops below the calibrated apnea threshold continuously for 10 seconds or longer:
-  $$\text{Flag Obstructive Apnea} \iff V_{\text{RMS}}(t) < \text{Threshold}_{\text{apnea}} \quad \forall t \in [t_0, \, t_0 + \Delta t], \quad \Delta t \ge 10.0\text{s}$$
-
-* **AASM Hypopnea Classification Rule (PRD NFR-6.1):**  
-  A **Hypopnea Event** is flagged whenever net RMS airflow drops below the hypopnea threshold for 10 seconds or longer:
-  $$\text{Flag Hypopnea} \iff \text{Threshold}_{\text{apnea}} \le V_{\text{RMS}}(t) < \text{Threshold}_{\text{hypopnea}} \quad \forall t \in [t_0, \, t_0 + \Delta t], \quad \Delta t \ge 10.0\text{s}$$
-
-* **Overnight AHI Score Computation (PRD FR-4.1):**  
-  Upon morning session conclusion (`Task_EndSession`), the total Apnea-Hypopnea Index (AHI) is computed and stored in `SleepSession`:
-  $$\text{AHI Score} = \frac{\text{Total Apnea Events} + \text{Total Hypopnea Events}}{\text{Total Sleep Duration (Hours)}}$$
+* **100 ms evaluator (PRD FR-2.2):** every 100 ms the evaluator classifies the current interval as a **valid breath excursion** (§2) or a **stop-breathing interval** against the session IDLE Band. It consumes the `AD-12` unified stream only.
+* **Apnea event (PRD FR-2.3 & NFR-6.1):** an apnea event is flagged, triggering the Tier-1 local alarm (`MOB_TIER1_ALARM`), whenever **no valid IDLE-Band breath excursion occurs for ≥ 10 seconds continuously** — the AASM **10-second minimum-duration** standard, restated for the band model:
+  $$\text{Flag Apnea} \iff \nexists\ \text{valid excursion in } [t_0,\, t_0 + \Delta t], \quad \Delta t \ge 10.0\text{s}$$
+* **Hypopnea is not scored.** AASM hypopnea requires a ≥ 3 % SpO₂ desaturation or an EEG arousal, neither of which the airflow-only D-BAND can measure. MVP1 detects apnea only.
+* **Respiration rate (PRD NFR-5 / CHART-02):** the raw signal $V_{\text{raw}}[n]$ passes through a 4th-order digital Butterworth bandpass filter ($0.10\text{ Hz} - 0.75\text{ Hz}$) and a 256-point FFT computed every 2.5 s; the instantaneous rate is $f_{\text{resp}} = 60 \times \arg\max_{f \in [0.10, 0.75]} |X(f)|$ BPM.
+* **Overnight Apnea Index (PRD FR-4.1):** on `Task_EndSession` the **Apnea Index** is computed and stored as `SleepSession.ai_score`:
+  $$\text{AI} = \frac{\text{Total Apnea Events}}{\text{Total Sleep Duration (Hours)}}$$
+  Standard AHI severity bands (Normal < 5 / Mild 5–15 / Moderate 15–30 / Severe ≥ 30) are applied to the AI, with an apnea-only caveat on every surface that shows it. A full Apnea-Hypopnea Index via oximeter co-sensing is a **Deferred** item.
 ---
 
 #### 3.5.5 🩺 End-to-End Sequence Diagram 5: Clinic & Physician Journey Flow (`Task_PhysicianReview`)
 
-This end-to-end sequence diagram models the execution of **Clinic & Physician Activities** (`Swimlane 5`), encapsulating morning sleep report retrieval, 8-hour respiration waveform & AHI trend review, physician clinical note entry, digital signature signing (`Task_PhysicianReview`), and non-blocking HIPAA audit event logging.
+This end-to-end sequence diagram models the execution of **Clinic & Physician Activities** (`Swimlane 5`), encapsulating morning sleep report retrieval, 8-hour respiration waveform & Apnea Index trend review, physician clinical note entry, digital signature signing (`Task_PhysicianReview`), and non-blocking HIPAA audit event logging.
 
 ```plantuml
 @startuml Clinic_Physician_Journey_Sequence_Diagram
@@ -1394,19 +1364,19 @@ ClinicUI --> ClinicSvc: 2. Fetch Unreviewed Session Summary Request [IF-17]
 activate ClinicSvc
 ClinicSvc --> AppDB: 3. Query SleepSession, HealthBaseline & ClinicDoctorAssignment
 activate AppDB
-AppDB --> ClinicSvc: 4. Return Session Telemetry Summary { session_id, ahi_score, total_apnea_events, vpp_baseline }
+AppDB --> ClinicSvc: 4. Return Session Telemetry Summary { session_id, ai_score, total_apnea_events, idle_band_lower, idle_band_upper }
 deactivate AppDB
 ClinicSvc --> ClinicUI: 5. Patient Session Detail Response
 deactivate ClinicSvc
-ClinicUI -> Doctor: 6. Render 8-Hour Respiration Graph, AHI Severity Pill & Diagnostic Note Editor
+ClinicUI -> Doctor: 6. Render 8-Hour Respiration Graph, Apnea Index Severity Pill & Diagnostic Note Editor
 
-== Phase 2: Clinical Respiration Waveform & AHI Severity Review ==
-Doctor -> ClinicUI: 7. Inspect Respiration Waveform & AHI Breakdown (AHI 18.5 - Moderate Apnea)
+== Phase 2: Clinical Respiration Waveform & Apnea Index Severity Review ==
+Doctor -> ClinicUI: 7. Inspect Respiration Waveform & Apnea Index Breakdown (AI 18.5 - Moderate, apnea-only)
 ClinicUI -> ClinicUI: 8. Auto-populate Pre-diagnostic Classification (Moderate Obstructive Sleep Apnea)
 
 == Phase 3: Diagnostic Note Signing & EHR Integration ==
 Doctor -> ClinicUI: 9. Enter Clinical Notes & Click "Sign & Save Diagnosis"
-ClinicUI --> ClinicSvc: 10. Async Sign Diagnosis Request [IF-18]\n{ session_id, patient_id, doctor_npi, ahi_score, diagnostic_notes, prescription_adjustment }
+ClinicUI --> ClinicSvc: 10. Async Sign Diagnosis Request [IF-18]\n{ session_id, patient_id, doctor_npi, ai_score, diagnostic_notes, prescription_adjustment }
 activate ClinicSvc
 ClinicSvc --> AppDB: 11. Persist Diagnosis Notes & Update ClinicDoctorAssignment Record
 activate AppDB
@@ -1434,11 +1404,11 @@ The **Clinic & Physician Journey** (`Swimlane 5` / `Task_PhysicianReview`) compl
 1. **Phase 1: Morning Sleep Session Alert Notification & Patient Record Retrieval (`Task_PhysicianReview`):**  
    Upon morning sleep session conclusion, the attending physician receives an in-portal notification ("Morning Sleep Reports Ready") on `WEB_PHYSICIAN_PATIENT_DETAIL`. Tapping the notification triggers an asynchronous session summary fetch request (`IF-17`) to the **Clinic Portal Backend**. The backend queries the `SleepSession`, `HealthBaseline`, and `ClinicDoctorAssignment` records in the **Application Database** and returns the patient's nocturnal summary payload.
 
-2. **Phase 2: Clinical Respiration Waveform & AHI Severity Review:**  
-   The **Clinic Web Portal** renders an interactive 8-hour respiration wave chart, overnight AHI score breakdown (e.g., AHI 18.5 - Moderate Apnea), and pre-diagnostic severity classification pills for clinical review.
+2. **Phase 2: Clinical Respiration Waveform & Apnea Index Severity Review:**  
+   The **Clinic Web Portal** renders an interactive 8-hour respiration wave chart, overnight Apnea Index breakdown (e.g., AI 18.5 · Moderate, apnea-only), and pre-diagnostic severity classification pills for clinical review.
 
 3. **Phase 3: Diagnostic Note Signing & EHR Integration:**  
-   The attending physician inputs formal clinical notes, adjusts prescription recommendations, and clicks *"Sign & Save Diagnosis"*. The Portal UI sends a diagnostic signing request (`IF-18`) containing `{ session_id, patient_id, doctor_npi, ahi_score, diagnostic_notes, prescription_adjustment }` to the **Clinic Portal Backend**. The backend updates the patient chart in the **Application Database** and emits a non-blocking HIPAA PHI access/export audit log entry (`IF-19`) to the **Audit Service**.
+   The attending physician inputs formal clinical notes, adjusts prescription recommendations, and clicks *"Sign & Save Diagnosis"*. The Portal UI sends a diagnostic signing request (`IF-18`) containing `{ session_id, patient_id, doctor_npi, ai_score, diagnostic_notes, prescription_adjustment }` to the **Clinic Portal Backend**. The backend updates the patient chart in the **Application Database** and emits a non-blocking HIPAA PHI access/export audit log entry (`IF-19`) to the **Audit Service**.
 
 4. **Phase 4: Diagnosis Signed & Chart Locked:**  
    The Clinic Web Portal renders *"Diagnosis Signed & Medical Chart Locked ✓"* (`WEB_DIAGNOSIS_SIGNED`), locking diagnostic notes against retrospective tampering in compliance with HIPAA §164.312(b) audit standards.
@@ -1544,7 +1514,7 @@ The **Device Loss & Mobile Recovery Journey** (`Swimlane 6`) establishes enterpr
    If a patient's mobile smartphone is lost or stolen, the patient or caregiver logs into the Web Portal (`WEB_REPORT_MOBILE_LOST`) and triggers a remote wipe command (`IF-21`). The **Authentication Service** invalidates all active JWT tokens, revokes WebAuthn Passkey credentials, creates a `DeviceRecoveryRecord` in the **Application Database**, and issues a priority push signal (`IF-21`) via the **Push Notification Service**. Upon receiving the payload, the lost mobile node executes a sub-1-second zeroization routine—deleting local SQLCipher database files, Hive key-value stores, and destroying master keys in the OS Secure Enclave under HIPAA 45 CFR §164.312(c).
 
 3. **Phase 3: Replacement D-BAND Hardware Pairing & Re-Binding (`Task_RebindReplacementDevice`):**  
-   The patient acquires a replacement D-BAND hardware sensor and taps *"Pair & Bind Replacement Sensor"* on `MOB_REBIND_DEVICE`. The mobile app executes `POST /api/v1/devices/bind` (`IF-22`) with the **Device Management Service**, binding the new hardware serial number to the `PatientUser` account while preserving all historical sleep session metrics and AHI analytics stored in the cloud.
+   The patient acquires a replacement D-BAND hardware sensor and taps *"Pair & Bind Replacement Sensor"* on `MOB_REBIND_DEVICE`. The mobile app executes `POST /api/v1/devices/bind` (`IF-22`) with the **Device Management Service**, binding the new hardware serial number to the `PatientUser` account while preserving all historical sleep session metrics and Apnea Index analytics stored in the cloud.
 
 ---
 
@@ -1576,9 +1546,9 @@ User -> UI: 1. Launch App / Tap Morning Summary Card (MOB_SLEEP_SUMMARY)
 activate UI
 UI --> LocalDB: 2. Query Overnight Session Summary Metrics
 activate LocalDB
-LocalDB --> UI: 3. Return Session Summary { session_id, duration_seconds, ahi_score, quality_score }
+LocalDB --> UI: 3. Return Session Summary { session_id, duration_seconds, ai_score, quality_score }
 deactivate LocalDB
-UI -> User: 4. Display Morning Summary Dashboard Card (AHI 3.2 Normal ✓)
+UI -> User: 4. Display Morning Summary Dashboard Card (AI 3.2 · Normal ✓)
 
 == Phase 2: Inspect Respiration Waveform & FFT Spectrum (Task_InspectRespirationWaveform) ==
 User -> UI: 5. Tap "Inspect Respiration Waveform" (MOB_GRAPH_WAVEFORM)
@@ -1594,7 +1564,7 @@ UI --> LocalDB: 10. Execute Encrypted SQL History Query { start_date, end_date, 
 activate LocalDB
 LocalDB --> UI: 11. Return Filtered Session Records Array
 deactivate LocalDB
-UI -> User: 12. Display Filtered Historical Sleep Sessions & AHI Trend Graphs
+UI -> User: 12. Display Filtered Historical Sleep Sessions & Apnea Index Trend Graphs
 
 == Phase 4: Export Signed Clinical Report for Physician (Task_ExportDoctorReport) ==
 User -> UI: 13. Tap "Generate Signed Report & Share with Doctor" (MOB_EXPORT_DOCTOR_REPORT)
@@ -1620,10 +1590,10 @@ deactivate UI
 The **Mobile Dashboard Review Journey** (`Swimlane 7`) empowers patients and physicians with deep historical sleep analytics and clinical reporting:
 
 0. **Phase 0: Home Dashboard (`MOB_HOME`, post-onboarding default landing):**  
-   On every normal app open the patient lands on `MOB_HOME`. `HomeDashboardBloc` assembles a read-only dashboard from the **local last-N `SessionSummary` cache** (`AD-15`) — greeting + monitoring streak, last-night card, 7-night AHI trend — and the **AD-12 receiver-service state** for the D-BAND device-status card (connection / battery / last sync / permission). Home opens **no** BLE subscription and issues **no** network read on the critical path. Where a session logged `alarm_fired`, the last-night card and the `MOB_SLEEP_SUMMARY` score card both switch to the amber "N apnea alert(s)" treatment, reading the single persisted `apnea_alarm_count` field.
+   On every normal app open the patient lands on `MOB_HOME`. `HomeDashboardBloc` assembles a read-only dashboard from the **local last-N `SessionSummary` cache** (`AD-15`) — greeting + monitoring streak, last-night card, 7-night Apnea Index trend — and the **AD-12 receiver-service state** for the D-BAND device-status card (connection / battery / last sync / permission). Home opens **no** BLE subscription and issues **no** network read on the critical path. Where a session logged `alarm_fired`, the last-night card and the `MOB_SLEEP_SUMMARY` score card both switch to the amber "N apnea alert(s)" treatment, reading the single persisted `apnea_alarm_count` field.
 
 1. **Phase 1: Review Morning Sleep Summary (`Task_ReviewMorningSummary`):**  
-   Upon waking up or opening the app, the patient views `MOB_SLEEP_SUMMARY`. The client queries the local encrypted database or cloud session API (`IF-16`) to retrieve overnight sleep metrics, displaying total sleep hours, computed AHI score, and quality score.
+   Upon waking up or opening the app, the patient views `MOB_SLEEP_SUMMARY`. The client queries the local encrypted database or cloud session API (`IF-16`) to retrieve overnight sleep metrics, displaying total sleep hours, the computed Apnea Index, and quality score.
 
 2. **Phase 2: Inspect Respiration Waveform & FFT Spectrum (`Task_InspectRespirationWaveform`):**  
    The patient taps *"Inspect Respiration Waveform"* to open `MOB_GRAPH_WAVEFORM`. Signal processing logic offloads 256-point FFT spectral analysis to a dedicated Dart Isolate (`FFTIsolate`), rendering a 60 FPS Skia GPU accelerated line chart (`fl_chart`) with pinch-to-zoom and spectral peak overlays.
@@ -1658,12 +1628,12 @@ To ensure maximum enterprise architectural flexibility, high availability, and p
 | **`IF-08: Emergency Recovery Token Issuance`** | **Sequence Diagram 2 (Backoffice Operations Journey Flow):** Step 15 (`Task_LockEmergencyContacts`) | `Backoffice Web Portal` $\rightarrow$ `Auth Service` $\rightarrow$ `Twilio SMS` | Request-Reply + Outbound Push | Endpoint / SMS Gateway Dispatch (`/admin/passkey/issue-recovery-token`) | HTTPS / TLS 1.3 + SMS API | Asynchronous Token Dispatch | On-Demand (15-min Expiring Token) | Single-Use Cryptographic Token, Encrypted SMS Dispatch Channel |
 | **`IF-09: FIDO2 Authentication Challenge`** | **Sequence Diagrams 3 & 4 (Passkey Auth / Sleep Ops):** Step 2 (`Task_PasskeyAuth`) | `Patient App UI` $\rightarrow$ `Auth Service` | Request-Reply | Endpoint / Auth Challenge (`/auth/passkey/challenge`) | HTTPS / TLS 1.3 | Real-Time Synchronous | On-Demand (Bedtime App Launch) | Time-bound Challenge Nonce (30s expiration window) |
 | **`IF-10: FIDO2 Authentication Verification`** | **Sequence Diagrams 3 & 4 (Passkey Auth / Sleep Ops):** Step 9/10 (`Task_PasskeyAuth`) | `Patient App UI` $\rightarrow$ `Auth Service` | Request-Reply | Endpoint / Auth Verification (`/auth/passkey/verify`) | HTTPS / TLS 1.3 | Real-Time Synchronous | On-Demand (Biometric Auth) | OS Secure Enclave Private Key Signature, Signed JWT + HTTP-Only Cookie |
-| **`IF-11: Continuous Sensor BLE Telemetry Stream`** | **Sequence Diagram 4 (Patient Sleep Operations Journey Flow):** Steps 14, 15, 19, 20, 26 (`Task_Stage1Cal`, `Task_Stage2Cal`, `Task_SleepMonitoring`) | `Small Breathing Device` $\rightarrow$ `Patient App UI` | Publisher-Subscriber / Notification Stream | BLE GATT Characteristic (`0x2A37 Notification`) | BLE GATT (AES-128) | Real-Time Telemetry Streaming | Continuous 100ms (10Hz) Packets | AES-128 Encrypted BLE Session Link, Hardware MAC Pairing |
+| **`IF-11: Continuous Sensor BLE Telemetry Stream`** | **Sequence Diagram 4 (Patient Sleep Operations Journey Flow):** Steps 14, 15, 19, 20, 26 (`Task_IdleBandCal`, `Task_WearCheck`, `Task_SleepMonitoring`) | `Small Breathing Device` $\rightarrow$ `Patient App UI` | Publisher-Subscriber / Notification Stream | BLE GATT Characteristic (`0x2A37 Notification`) | BLE GATT (AES-128) | Real-Time Telemetry Streaming | Continuous 100ms (10Hz) Packets | AES-128 Encrypted BLE Session Link, Hardware MAC Pairing |
 | **`IF-12: Telemetry Batch Ingestion`** | **Sequence Diagram 4 (Patient Sleep Operations Journey Flow):** Step 27 (`Task_SleepMonitoring`) | `Patient App UI` $\rightarrow$ `Data Streaming Service` $\rightarrow$ `Stream Workers` | Batch Push / Message Queue Stream | Ingestion Webhook / gRPC Stream (`/telemetry/stream`) | HTTPS / TLS 1.3 $\rightarrow$ gRPC | Asynchronous Batch Stream | Every 10 Seconds (Compressed Batch) | Snappy/Zstd Compression, AES-256 Encrypted Columnar Storage |
 | **`IF-13: Emergency Alert Escalation Push`** | **Sequence Diagram 4 (Patient Sleep Operations Journey Flow):** Steps 33 & 39 (`Task_TapSafe`) | `Data Streaming Service` $\rightarrow$ `Emergency Center Web Portal` | Publish-Subscribe / Push Notification | WebSocket Feed / WSS Broadcast (`wss://alert-gateway/feed`) | WSS (WebSockets over TLS 1.3) | Real-Time Asynchronous Push | Event-Driven (Unacknowledged 30s Apnea Stop) | WSS Token Session, Sub-1.5s Latency SLA, Failover Broadcast Ring |
 | **`IF-14: Caregiver Telephony & SMS Dispatch`** | **Sequence Diagram 4 (Patient Sleep Operations Journey Flow):** Escalation (`Task_CaregiverCall`) | `Command Portal Backend` $\rightarrow$ `Twilio Telephony Gateway` $\rightarrow$ `Caregiver Phone` | Outbound Webhook / Telephony Push | Telephony Gateway Webhook (`/telephony/v2/Calls`) | HTTPS / TLS 1.3 (REST Webhook) | Asynchronous Priority Push | Event-Driven (Dispatcher Action / 5s Timeout) | Locked Caregiver Phone Verification, Webhook Signature Signing |
 | **`IF-15: EMS 911 CAD Dispatch Integration`** | **Sequence Diagram 4 (Patient Sleep Operations Journey Flow):** Escalation (`Task_DispatchEMS`) | `Command Portal` $\rightarrow$ `Local EMS CAD Gateway API` | Request-Reply (Command Integration) | CAD Gateway Endpoint (`/cad/dispatch`) | HTTPS / TLS 1.3 (REST API) | Real-Time Synchronous Command | Event-Driven (Dispatcher EMS Trigger) | Mutually Authenticated TLS (mTLS), Encrypted Patient GPS Payload |
-| **`IF-16: Session End & AHI Summary Finalization`** | **Sequence Diagram 4 (Patient Sleep Operations Journey Flow):** Step 42 (`Task_EndSession`) | `Patient App UI` $\rightarrow$ `Data Streaming Service` $\rightarrow$ `Application DB` | Request-Reply | Endpoint / Session Finalize (`/session/end`) | HTTPS / TLS 1.3 | Real-Time Synchronous | On-Demand (Morning Wake-up) | JWT Bearer Token, AHI Index Verification, Sleep Session Lock |
+| **`IF-16: Session End & Apnea Index Summary Finalization`** | **Sequence Diagram 4 (Patient Sleep Operations Journey Flow):** Step 42 (`Task_EndSession`) | `Patient App UI` $\rightarrow$ `Data Streaming Service` $\rightarrow$ `Application DB` | Request-Reply | Endpoint / Session Finalize (`/session/end`) | HTTPS / TLS 1.3 | Real-Time Synchronous | On-Demand (Morning Wake-up) | JWT Bearer Token, Apnea Index Verification, Sleep Session Lock |
 | **`IF-17: Physician Patient Session Summary Fetch`** | **Sequence Diagram 5 (Clinic & Physician Journey Flow):** Step 2 (`Task_PhysicianReview`) | `Clinic Web Portal` $\rightarrow$ `Clinic Portal Backend` $\rightarrow$ `Application DB` | Request-Reply (Query) | Endpoint / EHR Query (`/clinic/patient/{id}/session/latest`) | HTTPS / TLS 1.3 | Real-Time Synchronous | On-Demand (Physician Review) | Physician NPI Authorization, RBAC, HIPAA Level 1 PHI Data Masking |
 | **`IF-18: Physician Diagnostic Note Signing & Chart Lock`** | **Sequence Diagram 5 (Clinic & Physician Journey Flow):** Step 10 (`Task_PhysicianReview`) | `Clinic Web Portal` $\rightarrow$ `Clinic Portal Backend` $\rightarrow$ `Application DB` | Request-Reply (Transaction) | Endpoint / Diagnosis Sign (`/clinic/diagnosis/sign`) | HTTPS / TLS 1.3 | Real-Time Synchronous | On-Demand (Diagnostic Signoff) | Digital Signature Verification, Immutable Chart Lock, HIPAA §164.312(b) |
 | **`IF-19: Non-blocking HIPAA Audit Event Stream`** | **All Sequence Diagrams 1–6:** Steps 3, 8, 12, 16, 20, 44 (`PhiAuditLog`) | `All Microservices` $\rightarrow$ `Audit Service` $\rightarrow$ `PhiAuditLog` | Publish-Subscribe / Asynchronous Event Stream | Internal Event Bus / gRPC Stream (`grpc://audit-bus/log`) | gRPC / HTTP/2 (TLS 1.3) | Asynchronous Fire-and-Forget | Event-Driven (Auth, Access, or Mutation) | Service Mesh mTLS, Write-Once Immutable DB Log (`PhiAuditLog`) |
@@ -1705,12 +1675,12 @@ graph TD
   * `MetricStatCard`: Renders numeric metric value, unit label, status badge, and icon.
   * `CalibrationStepHeader`: Displays calibration step index, title, subtitle, and progress bar.
   * `ApneaAlertBanner`: Displays emergency countdown timer, pulse animation, and severity badge.
-  * `SessionHistoryListItem`: Renders session date, duration, AHI score badge, and chevron button.
+  * `SessionHistoryListItem`: Renders session date, duration, Apnea Index score badge, and chevron button.
 * **Organisms (Feature Logic & Reactive State-Bound Components):**  
   Complex UI modules that combine Molecules and Atoms while binding directly to **BLoC / RxDart reactive state controllers**. Organisms handle local event streams, subscribe to BLoC state streams, and execute feature workflows.
   * `LiveAirflowMonitorOrganism`: Binds to `SleepMonitoringBloc`, rendering 10Hz live Skia GPU waveform charts, 0-FPS night mode state (`#000000`), and active AASM threshold indicators.
-  * `ThermalCalibrationWizardOrganism`: Binds to `CalibrationBloc`, executing Stage-1 room noise sampling ($N_{\text{idle}}$) and Stage-2 active breath training ($V_{pp}$) step transitions.
-  * `MorningSummaryDashboardOrganism`: Binds to `SummaryBloc`, rendering morning AHI metrics, duration, intervention count, and interactive wave zoom graphs.
+  * `IdleBandCalibrationWizardOrganism`: Binds to `CalibrationBloc`, executing the idle-sample step (`State_CalibratingIdleBand` — running min/max → `[lower_bound, upper_bound]`) and the wear-check step (`State_WearCheck` — ≥ 2 valid band-excursion cycles) transitions.
+  * `MorningSummaryDashboardOrganism`: Binds to `SummaryBloc`, rendering morning Apnea Index metrics, duration, intervention count, and interactive wave zoom graphs.
   * `HistoryFilterOrganism`: Binds to `HistoryBloc`, managing date range pickers, severity filters, and historical session lists.
 * **Templates & Pages (Full-Screen Navigation Targets):**  
   Full-screen layout structures and routing destinations (`HomePage`, `TestingGraphPage`, `SummaryScreenPage`, `SettingsPage`) that inject BLoCs and orchestrate page transitions.
@@ -1724,9 +1694,9 @@ graph TD
     GATT["D-BAND GATT notification<br/>(FlutterBlueSensorDriver)"]
     Sim["Simulator tick<br/>(BleTelemetryService · DEV_MODE)"]
     Queue["Single process-wide BehaviorSubject&lt;double&gt; unified queue<br/>App-Boot Background BLE Receiver · one active IBLESensorDriver by DI (AD-11, AD-12)"]
-    Stage1["Stage-1 idle calibration<br/>full 10Hz window → N_idle"]
-    Stage2["Stage-2 active-breath calibration<br/>full 10Hz window → V_pp, 0.10·V_pp threshold"]
-    Monitor["SleepMonitoringBloc / ApneaEvaluator<br/>AASM breach detection"]
+    Stage1["IDLE Band idle calibration<br/>~10s window → [lower_bound, upper_bound] (running min/max)"]
+    Stage2["Wear check<br/>≥ 2 valid band-excursion cycles"]
+    Monitor["SleepMonitoringBloc / ApneaEvaluator<br/>raw-signal vs IDLE Band, apnea = no excursion ≥ 10s (AD-04)"]
     Pipeline["RxDart UI pipeline<br/>sampleTime(200ms) · distinct · switchMap<br/>(10Hz decimated to ≤5 FPS — AD-02, AD-06)"]
     State["Immutable State output stream"]
     View["UI View — BlocBuilder / StreamBuilder<br/>passive observer · no state mutation or side-effects in build()"]
@@ -1746,7 +1716,7 @@ graph TD
     style View fill:#EFF6FF,stroke:#1D4ED8,stroke-width:2px
 ```
 
-* **Single On-Device Ingestion Entry Point (`AD-12`):** Every bio-signal consumer subscribes to **one** `BehaviorSubject<double>` owned by the boot-time BLE background receiver service. Both the physical driver (`FlutterBlueSensorDriver`) and the simulator (`BleTelemetryService`) feed it through the same `IBLESensorDriver.thermalStream` contract (`AD-11`), so swapping drivers by DI never changes the queue or forces a re-subscribe. No screen or BLoC opens its own BLE subscription or a second queue.
+* **Single On-Device Ingestion Entry Point (`AD-12`):** Every bio-signal consumer subscribes to **one** `BehaviorSubject<double>` owned by the boot-time BLE background receiver service. Both the physical driver (`FlutterBlueSensorDriver`) and the simulator (`BleTelemetryService`) feed it through the same `IBLESensorDriver.signalStream` contract (`AD-11`), so swapping drivers by DI never changes the queue or forces a re-subscribe. No screen or BLoC opens its own BLE subscription or a second queue.
 * **One-Way Data Binding:** UI Views are strictly passive observers. They NEVER mutate state directly or trigger side-effects inside layout build methods. Views render exclusively based on the latest immutable `State` object emitted by a `Bloc` or `BehaviorSubject`.
 * **ReactiveX Stream Operators (`RxDart`):**  
   State controllers and repositories utilize `RxDart` stream transformers to manage continuous telemetry streams and async API workflows:
@@ -1763,10 +1733,10 @@ Building upon the chart implementations in `dennis-masker` (which utilized `vict
 
 | Chart Component Identifier | Chart Type & UI Classification | Rendering Engine & Acceleration | Data Rendered & Stream Input | Isolate Offloading & Performance Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| **`CHART-01: LiveAirflowWaveformChart`** | **Molecule Component:** Continuous Real-Time Line Chart | `fl_chart` + Skia GPU Layer | Real-time 10Hz net volumetric airflow wave ($V_{\text{volumetric}}$ in L/s) over 10s sliding window. | 60 FPS active display / 0 FPS locked in Night Mode (`#000000`). Signal filtering offloaded to `TelemetryIsolate`. |
-| **`CHART-02: FFTFrequencySpectrumChart`** | **Molecule Component:** Bar / Frequency Spectrum Graph | `fl_chart` / CustomPainter GPU | 256-point FFT magnitude spectrum vs Frequency (0.10Hz – 0.75Hz) to extract respiration rate (BPM). | 256-point FFT math executed every 2.5s on `FFTIsolate` (porting `fft.js` / `fft_methods.js` logic). Zero main thread jank. |
-| **`CHART-03: CircularProgressMetricRings`** | **Molecule Component:** Animated Progress Metric Rings | CustomPainter / Shader Mask | Stage 1/2 Calibration progress %, Sleep Quality Score % (0–100), and AHI severity ring. | GPU animated stroke sweep with HSL dynamic status colors (Green = Normal, Orange = Hypopnea, Red = Apnea). |
-| **`CHART-04: MultiAxisHistoricalSessionChart`** | **Organism Component:** Interactive Multi-Series Chart | `fl_chart` + Touch Gestures | 8-hour overnight AHI event markers, SpO2 trend, and respiratory amplitude curves with pinch-to-zoom. | Interactive panning & zoom with lazy segment loading from local SQLCipher database. |
+| **`CHART-01: LiveSignalWaveformChart`** | **Molecule Component:** Continuous Real-Time Line Chart | `fl_chart` + Skia GPU Layer | Real-time 10Hz **raw bio-signal** trace with the IDLE Band `lower_bound` / `upper_bound` drawn as horizontal reference lines (no L/s axis). | 60 FPS active display / 0 FPS locked in Night Mode (`#000000`). Signal filtering offloaded to `TelemetryIsolate`. |
+| **`CHART-02: FFTFrequencySpectrumChart`** | **Molecule Component:** Bar / Frequency Spectrum Graph | `fl_chart` / CustomPainter GPU | 256-point FFT magnitude spectrum vs Frequency (0.10Hz – 0.75Hz) on the raw signal to extract respiration rate (BPM). | 256-point FFT math executed every 2.5s on `FFTIsolate`. Zero main thread jank. |
+| **`CHART-03: CircularProgressMetricRings`** | **Molecule Component:** Animated Progress Metric Rings | CustomPainter / Shader Mask | IDLE Band calibration / wear-check progress %, Sleep Quality Score % (0–100), and Apnea Index severity ring. | GPU animated stroke sweep with HSL dynamic status colors (Green = Normal, Amber = alarm-fired, Red = Severe). |
+| **`CHART-04: MultiAxisHistoricalSessionChart`** | **Organism Component:** Interactive Multi-Series Chart | `fl_chart` + Touch Gestures | 8-hour overnight Apnea Index event markers, SpO2 trend, and respiratory amplitude curves with pinch-to-zoom. | Interactive panning & zoom with lazy segment loading from local SQLCipher database. |
 
 #### 4. App-Boot Background BLE Receiver & OS Background-Execution Envelope (`AD-12`, PRD `FR-1.11`)
 
@@ -1840,20 +1810,20 @@ Every inter-subsystem interaction flow (`IF-01` to `IF-22`), database entity, an
 | **TH-S2** | **Spoofing** | Passkey Auth (`IF-09`, `IF-10`) | Attacker replays stolen FIDO2 assertion signatures or forges JWT access tokens. | Unauthorized takeover of patient mobile app session. | Cryptographic challenge nonce with 30s expiration + OS Secure Enclave private key signing + SameSite HTTP-Only JWT cookies (**FR-5.1, NFR-4.1**). |
 | **TH-S3** | **Spoofing** | EMS 911 CAD Dispatch (`IF-15`) | Malicious actor injects forged CAD dispatch requests into local emergency gateway endpoints. | False dispatch of first responders / EMS resource depletion. | Mutually Authenticated TLS (mTLS x509 certificates) + signed CAD dispatch payload HMAC + Dispatcher RBAC verification (**IF-15, NFR-4.4**). |
 | **TH-S4** | **Spoofing** | Session Revocation (`IF-21`) | Compromised web portal session or unauthorized actor attempts to trigger forged remote wipe signals on patient smartphones. | Malicious remote zeroization of legitimate patient mobile app state. | WebAuthn FIDO2 re-authentication challenge + double-confirmation token + RBAC audit logging (**FR-5.4, IF-21**). |
-| **TH-T1** | **Tampering** | Telemetry Ingestion (`IF-12`) | Man-In-The-Middle (MITM) alters 10s compressed telemetry batches during transmission. | Corrupts overnight AHI calculations and baseline metrics. | End-to-end TLS 1.3 transport certificate pinning + Snappy/Zstd compressed payload SHA-256 checksum validation (**NFR-4.3, NFR-4.5**). |
+| **TH-T1** | **Tampering** | Telemetry Ingestion (`IF-12`) | Man-In-The-Middle (MITM) alters 10s compressed telemetry batches during transmission. | Corrupts overnight Apnea Index calculations and baseline metrics. | End-to-end TLS 1.3 transport certificate pinning + Snappy/Zstd compressed payload SHA-256 checksum validation (**NFR-4.3, NFR-4.5**). |
 | **TH-T2** | **Tampering** | Local Database (`PatientUser`, `TelemetryStream`) | Physical theft of mobile phone followed by SQLite/Hive local database extraction. | Exposure or modification of cached bio-signals and credentials. | FlutterSecureStorage key wrapping + AES-256 SQLCipher disk encryption + 5-minute inactivity local database lock (**NFR-4.1, NFR-4.3**). |
 | **TH-T3** | **Tampering** | Diagnostic Signatures (`IF-18`) | Malicious insider or altered request modifies physician diagnostic notes after signoff. | Legal non-compliance & corrupted patient medical chart. | Immutable medical chart locking upon digital signature + write-once `PhiAuditLog` under HIPAA §164.312(b) (**IF-18, NFR-4.2**). |
 | **TH-T4** | **Tampering** | Stolen Hardware Re-pairing (`IF-20`, `IF-22`) | Stolen D-BAND hardware sensor re-paired to an unauthorized mobile device to corrupt another patient's data stream. | Data stream corruption / device impersonation. | Hardware serial blacklisting in `DeviceBinding` (`status = DEPRECATED/LOST`) + cloud serial validation during `POST /api/v1/devices/bind` (**FR-1.10, IF-20, IF-22**). |
 | **TH-T5** | **Tampering** | Stolen Mobile Node (`IF-21`) | Stolen smartphone analyzed offline to extract cached local PHI data and biometric keys. | Compromise of offline PHI data caches on lost hardware. | Automated HIPAA cryptographic remote wipe zeroizing local SQLCipher DBs, Hive key-value stores, and destroying OS Secure Enclave master keys in sub-1s (**FR-5.4, NFR-4.3, IF-21**). |
 | **TH-R1** | **Repudiation** | Safety Tap ("I'm Safe") (`Task_TapSafe`) | Patient or caregiver claims they tapped "I'm Safe" when no tap occurred, or vice versa. | Unverifiable emergency liability during adverse medical events. | Cryptographic server timestamping + 30s cancellation token tracking + non-blocking write-once audit event stream (`IF-19, NFR-4.2`). |
 | **TH-R2** | **Repudiation** | Backoffice Recovery (`IF-06`, `IF-07`, `IF-08`) | Backoffice admin denies revoking passkey credentials or issuing emergency recovery tokens. | Unaudited privilege execution / compliance audit failure. | Mandatory support ticket ID binding + Admin RBAC session recording + write-once `PhiAuditLog` entry (**IF-05 to IF-08**). |
-| **TH-I1** | **Information Disclosure** | Medical Profile & Telemetry (`IF-02`, `IF-17`) | Interception or leak of Protected Health Information (PHI) bio-signals, AHI scores, or GPS data. | Severe HIPAA violation ($100k+ fines) & patient privacy breach. | Strict separation of Level 1 PHI (AES-256 field encrypted) vs Level 2 PII + HIPAA Level 1 data masking in EHR portal (**NFR-4.1**). |
+| **TH-I1** | **Information Disclosure** | Medical Profile & Telemetry (`IF-02`, `IF-17`) | Interception or leak of Protected Health Information (PHI) bio-signals, Apnea Index scores, or GPS data. | Severe HIPAA violation ($100k+ fines) & patient privacy breach. | Strict separation of Level 1 PHI (AES-256 field encrypted) vs Level 2 PII + HIPAA Level 1 data masking in EHR portal (**NFR-4.1**). |
 | **TH-I2** | **Information Disclosure** | Telephony Dispatch (`IF-14`) | Unencrypted SMS payload exposing patient medical condition or full home address. | Privacy breach via SMS sniffing or shared caregiver phone. | Encrypted single-use recovery links + SMS notification containing minimal emergency alert context without raw PHI (**IF-14**). |
 | **TH-D1** | **Denial of Service** | BLE Telemetry Stream (`IF-11`) | BLE connection drops during deep sleep or phone OS kills background app process. | Unmonitored nocturnal sleep / Missed critical apnea event. | Automatic edge reconnect in **< 3.0s** + 1-hour circular RAM ring buffer + Dart Isolate background thread execution (<8% battery drain) (**NFR-1, NFR-3**). |
 | **TH-D2** | **Denial of Service** | Ingestion Gateway (`IF-12`) | Massive telemetry ingestion flood or DDoS attack exhausting backend ingestion workers. | Pipeline bottleneck delaying real-time emergency alerts. | Edge 10s batch aggregation + Snappy compression + API Gateway rate limiting + asynchronous message queue backpressure (**IF-12, NFR-2**). |
 | **TH-D3** | **Denial of Service** | WSS Alert Gateway (`IF-13`) | WebSocket connection failure or server crash blocking Tier-2 emergency alert broadcast. | Delayed command center escalation beyond 1.5s SLA. | Redundant WebSocket node pools + heartbeat ping/pong keep-alive + failover broadcast ring (**IF-13, NFR-2**). |
 | **TH-E1** | **Elevation of Privilege** | Backoffice Admin Portal (`IF-05`) | Support admin elevates privileges to view full patient medical charts or diagnostic trends. | Unauthorized PHI inspection by non-clinical personnel. | Role-Based Access Control (RBAC) restricting Backoffice Admins to passkey/device reset actions without PHI chart access (**NFR-4.1**). |
-| **TH-E2** | **Elevation of Privilege** | Emergency Dispatcher Portal (`IF-13`, `IF-15`) | Emergency Center dispatcher attempts to access historical sleep session data or AHI trends. | Scope creep / HIPAA violation by emergency response personnel. | Scoped ephemeral alert tokens granting access solely to 30s alert metadata, patient GPS, and emergency contact phone (**IF-13, IF-15**). |
+| **TH-E2** | **Elevation of Privilege** | Emergency Dispatcher Portal (`IF-13`, `IF-15`) | Emergency Center dispatcher attempts to access historical sleep session data or Apnea Index trends. | Scope creep / HIPAA violation by emergency response personnel. | Scoped ephemeral alert tokens granting access solely to 30s alert metadata, patient GPS, and emergency contact phone (**IF-13, IF-15**). |
 | **TH-S5** | **Spoofing** | Stripe Billing Webhook (`TB-6`, `StripeWebhookReceiver`) | Attacker POSTs a forged `customer.subscription.updated` / `invoice.paid` to the webhook endpoint to fabricate an active Premium subscription. | Free account gains Premium entitlement without payment; revenue loss; downstream feature-gate bypass. | **HMAC-SHA256 `Stripe-Signature` verification** against the endpoint signing secret + timestamp-tolerance check + replay-protection idempotency keys; the receiver is the **only** writer of subscription state (**AD-13**). |
 | **TH-T6** | **Tampering / Elevation** | Client entitlement check (`EntitlementService`, `Task_ExportDoctorReport`) | Patched/rooted client forges a `Premium` entitlement claim or skips the gate to unlock the Doctor Report export. | Paid clinical feature used without a subscription. | Server-side re-check at every gated action against the Billing service; the client claim is **signed** and short-TTL; a gated action never trusts a locally-set flag (**AD-13**). Note: a **free basic export** fallback (per the §4.7 open item) removes the incentive entirely. |
 | **TH-R3** | **Repudiation** | Subscription lifecycle (`BillingService`, Stripe events) | User disputes a charge or a cancellation; or an internal actor alters `Subscription.status`. | Billing dispute with no defensible trail; unaudited plan mutation. | Stripe's immutable event log + a local **webhook audit log** mirroring every processed event (id, type, signature-verified, applied-at); `Subscription` mutations only via the webhook path. |
@@ -1870,7 +1840,7 @@ The platform's NFR targets (NFR-1 through NFR-6) are evaluated against operation
 | **Edge Resilience** | **NFR-1** (Auto-Reconnect <3.0s & 1h RAM Buffer) | Nocturnal BLE signal loss due to physical barrier or RF interference, risking data loss. | **CRITICAL** | Edge client auto-reconnects in **< 3.0s** and buffers up to **1 hour** of 10Hz telemetry in a local circular RAM ring buffer without dropping packets. |
 | **Real-Time Latency** | **NFR-2** (<200ms Local / <1.5s Cloud WSS) | Cellular network outage or latency spike delaying emergency alarm notification. | **CRITICAL** | Edge mobile evaluation triggers local Tier-1 siren in **< 200ms** (zero cloud dependency); Cloud WSS gateway dispatches Tier-2 alerts in **< 1.5s**. |
 | **Battery Throttling** | **NFR-3** (<8.0% Battery Drain over 8h) | Mobile OS (iOS/Android) kills background app due to excessive CPU/GPU battery consumption during sleep. | **HIGH** | Display locked in **0-FPS Night Mode** (`#000000`); FFT signal processing offloaded to background **Dart Isolates**, keeping total battery drain **< 8.0%**. |
-| **HIPAA Compliance** | **NFR-4** (45 CFR §164.312 Rules) | Unauthorized local or cloud access to PHI bio-signals, AHI scores, or patient GPS coordinates. | **CRITICAL** | FIDO2 Passkeys + 5-minute inactivity lock + TLS 1.3 certificate pinning + AES-256 field encryption + write-once `PhiAuditLog` + sub-1s remote wipe. |
+| **HIPAA Compliance** | **NFR-4** (45 CFR §164.312 Rules) | Unauthorized local or cloud access to PHI bio-signals, Apnea Index scores, or patient GPS coordinates. | **CRITICAL** | FIDO2 Passkeys + 5-minute inactivity lock + TLS 1.3 certificate pinning + AES-256 field encryption + write-once `PhiAuditLog` + sub-1s remote wipe. |
 | **Signal Processing** | **NFR-5** (4th-order Butterworth & 256-pt FFT) | Sensor signal noise or motion artifacts causing false positive apnea detections. | **MEDIUM** | 4th-order digital Butterworth bandpass filter ($0.10\text{Hz} - 0.75\text{Hz}$) + 256-point FFT respiration rate extraction every 2.5s. |
 | **Medical Standards** | **NFR-6.1 / NFR-6.2** (AASM Rules & IEC 60601-1-8) | Non-compliant alarm audio tones or inaccurate apnea classification failing clinical audit. | **HIGH** | AASM 90% airflow drop classification rule ($\ge 10\text{s}$) + IEC 60601-1-8 escalating audio alarm hierarchy (40 dB $\rightarrow$ 75+ dB siren). |
 
@@ -1965,7 +1935,7 @@ Access to platform features, APIs, and database entities is governed by strict *
 2. **`Role_Caregiver`:** Designated family member/caregiver receiving emergency telephony alerts.
 3. **`Role_BackofficeAdmin`:** Platform support administrator performing identity verification and device recovery.
 4. **`Role_EmergencyDispatcher`:** 24/7 command center operator managing active 30s unacknowledged apnea alarms.
-5. **`Role_AttendingPhysician`:** Licensed sleep specialist reviewing AHI trends and signing diagnostic reports.
+5. **`Role_AttendingPhysician`:** Licensed sleep specialist reviewing Apnea Index trends and signing diagnostic reports.
 
 #### 2. Fine-Grained Access Control Matrix
 
@@ -1973,7 +1943,7 @@ Access to platform features, APIs, and database entities is governed by strict *
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **`PatientUser` (Identity)** | Read / Update Self | No Access | Read / Verify Identity | Ephemeral Read (Alert context) | Read Assigned Patients |
 | **`HealthBaseline` (Calibration)** | Read / Update Self | No Access | No Access | No Access | Read Assigned Patients |
-| **`SleepSession` (AHI Analytics)** | Read Self Summary | No Access | No Access | No Access | Read / Annotate Assigned |
+| **`SleepSession` (Apnea Index Analytics)** | Read Self Summary | No Access | No Access | No Access | Read / Annotate Assigned |
 | **`TelemetryStream` (Bio-Signals)** | Stream Self (BLE) | No Access | No Access | No Access | Read 8h Waveform |
 | **`ApneaEvent` (Breach Logs)** | Read Self Events | No Access | Ephemeral Read (Support) | Read Active 30s Alert | Read Assigned Patients |
 | **`EmergencyAlertQueue`** | Write / Cancel Self | Read SMS / Voice | No Access | Read / Dispatch EMS | No Access |
@@ -2113,10 +2083,10 @@ architecture-beta
 ```
 
 > **Inter-zone transport (`architecture-beta` has no edge labels):**
-> Z1 → Z2 `HTTPS TLS 1.3 / WSS` · Z2 → Z3 `10 s Snappy/Zstd-compressed telemetry batches` · Z2 → Z4 `authenticated REST / WebAuthn` · Z3 → Z4 `AASM apnea events` · Z3 → Z5 `compressed bio-signals + AHI events` · Z4 → Z5 `persist + write-once PhiAuditLog via gRPC mTLS; Relational DB ↔ KMS AES-256-GCM envelope` · Z4 → Z6 `30 s unacknowledged apnea → dispatch, behind FQDN allowlist` · Z1 ↔ Z7 `app attestation + crash / perf telemetry` (out-of-band).
+> Z1 → Z2 `HTTPS TLS 1.3 / WSS` · Z2 → Z3 `10 s Snappy/Zstd-compressed telemetry batches` · Z2 → Z4 `authenticated REST / WebAuthn` · Z3 → Z4 `apnea events (IDLE-Band, client-detected)` · Z3 → Z5 `compressed bio-signals + apnea events` · Z4 → Z5 `persist + write-once PhiAuditLog via gRPC mTLS; Relational DB ↔ KMS AES-256-GCM envelope` · Z4 → Z6 `30 s unacknowledged apnea → dispatch, behind FQDN allowlist` · Z1 ↔ Z7 `app attestation + crash / perf telemetry` (out-of-band).
 
 #### 📖 Conceptual Zone Specifications
-1. **Zone 1 (Edge Client & Sensor Array):** BLE sensor captures 10Hz differential pressure readings; Flutter mobile app executes Stage 1/2 calibration, stores local SQLCipher history, and buffers bio-signals.
+1. **Zone 1 (Edge Client & Sensor Array):** BLE sensor captures the 10Hz thermal signal; Flutter mobile app runs the IDLE Band calibration and the raw-signal-vs-band apnea evaluator (AD-04), stores local SQLCipher history, and buffers bio-signals.
 2. **Zone 2 (Global Edge Perimeter & i-DMZ):** Cloud WAF, Global CDN, and API Gateways filter OWASP Top 10 vulnerabilities, enforce rate limits, and terminate TLS 1.3.
 3. **Zone 3 (Real-Time Telemetry & Event Streaming Bus):** Decoupled, event-driven streaming queue ingests compressed telemetry batches every 10 seconds, offloading bio-signal processing from main API servers.
 4. **Zone 4 (Microservices & Serverless Execution Core):** Encrypted container cluster running microservices (`Auth`, `Profile`, `Device`, `Dispatch`, `Audit`) communicating via mTLS over HTTP/2.
@@ -2145,7 +2115,7 @@ To achieve production excellence, maximum operational efficiency, and sub-second
 | **Zone 4: Billing Webhook** | Stripe event ingress (`AD-13`, `TB-6`) | **Firebase Cloud Functions v2 / Cloud Run** behind **Cloud Armor** | `StripeWebhookReceiver`: verifies `Stripe-Signature` (HMAC-SHA256) + timestamp tolerance + idempotency key, then forwards the verified `customer.subscription.*` / `invoice.*` event to the `Billing` service. Sole writer of subscription state. |
 | **Zone 5: Relational DB** | Operational Database | **GCP Cloud SQL (PostgreSQL 16) / Cloud Spanner** | High-availability PostgreSQL database with automatic failover, read replicas, and AES-256 Cloud KMS integration. `SessionSummary` (dashboard rollup) lives here alongside `SleepSession`. |
 | **Zone 5: Billing DB** | Isolated Billing datastore (`AD-13`, Financial PII) | **GCP Cloud SQL (PostgreSQL 16)** — separate instance | Holds `Subscription` / `PaymentMethodRef` / `Invoice` / `Entitlement`; **no PHI, no cardholder data** (PCI-DSS SAQ-A, `AD-14`); separate instance/VPC from the PHI Isolated Data Zone, its own IAM. |
-| **Zone 5: Timeseries Data** | Time-Series & Data Warehouse | **GCP BigQuery (Time-Series Partitioning)** | Columnar partitioned storage for 8-hour overnight bio-signal telemetry streams, FFT spectral logs, and AHI trend analytics. |
+| **Zone 5: Timeseries Data** | Time-Series & Data Warehouse | **GCP BigQuery (Time-Series Partitioning)** | Columnar partitioned storage for 8-hour overnight bio-signal telemetry streams, FFT spectral logs, and Apnea Index trend analytics. |
 | **Zone 5: Cryptography** | Master Key & Envelope Encryption | **GCP Cloud Key Management Service (Cloud KMS) + Cloud HSM** | Hardware Security Module (HSM) backed master key ($K_{\text{master}}$) with automatic 90-day rotation for AES-256-GCM envelope encryption. |
 | **Zone 6: Mobile Push** | Emergency & Remote Wipe Push | **Firebase Cloud Messaging (FCM) High-Priority** | Sub-1s priority push notification payload for emergency alert alarms (`Task_TapSafe`) and HIPAA remote wipes (`Task_TriggerRemoteWipe`). |
 | **Zone 6: Egress Proxy** | Outbound Telephony, CAD & Payments | **GCP Serverless VPC Access + NAT Gateway** | Static outbound IP pool with Cloud NAT for strict FQDN whitelisting to Twilio (`api.twilio.com`), EMS CAD, and **`api.stripe.com`** (from the `Billing` service only). |
@@ -2189,7 +2159,7 @@ To optimize mobile battery performance and eliminate network overhead on mobile 
 3. **Eventarc & GCP Cloud Pub/Sub Bridge (GCP Ingestion):**  
    Firebase triggers a zero-copy **GCP Eventarc** event, streaming the raw `Protobuf` payload into a high-throughput **GCP Cloud Pub/Sub** topic (`telemetry-ingestion-topic`) with zero main-thread API server overhead.
 4. **Dataflow Processing & Storage Pipeline (GCP Processing):**  
-   **GCP Dataflow (Apache Beam)** consumes the Pub/Sub queue, decompresses Snappy payloads, evaluates AASM nocturnal apnea rules ($V_{\text{airflow}} < 0.10 \times V_{pp}$ for $>10\text{s}$), and streams:
+   **GCP Dataflow (Apache Beam)** consumes the Pub/Sub queue, decompresses Snappy payloads, runs the Premium cloud AI waveform-refinement pipeline over the raw signal (primary apnea detection — no valid IDLE-Band excursion ≥ 10 s — is the client's, per AD-04), and streams:
    * Continuous raw telemetry points to **GCP BigQuery** (partitioned by `session_id` and `timestamp`).
    * Detected apnea breach events to **GCP Cloud SQL** (`ApneaEvent` table) and pushes 30s emergency alert triggers to **Firebase Cloud Messaging (FCM)** for command center escalation (`Task_DashboardAlert`).
 
@@ -2316,15 +2286,15 @@ This Architecture Specification provides the complete build substrate for downst
 
 * **Visual & Technical Precision:** Standard BPMN 2.0 vector diagram (`.svg`) + full `.bpmn` artifact for workflow engines, paired with PlantUML C4 Context, C4 Container, Conceptual Data Models, 7 End-to-End Sequence Diagrams, Cloud-Agnostic Infrastructure Mermaid Diagrams, and Firebase/GCP Mapping Tables.
 * **100% Traceability:** Links business process flows directly to software containers, generic integration patterns (`IF-01` to `IF-22`), database entities, STRIDE security threats, IAM/RBAC matrices, HIPAA/FDA regulatory compliance rules, i-DMZ/e-DMZ perimeter network defenses, and Firebase/GCP streaming pipelines under HIPAA Level 1 PHI vs Level 2 PII rules.
-* **System Invariants:** 15 architectural decisions (`AD-01` … `AD-15`) govern the mobile, BLE-driver, data, **subscription/billing**, security, and UI layers. `AD-11` fixes `IBLESensorDriver` polymorphism + DI; `AD-12` (PRD `FR-1.11`) fixes the app-boot background BLE receiver service and the single process-wide `BehaviorSubject<double>` unified bio-signal queue. **`AD-13`** fixes subscription state as backend-owned and entitlement as server-verified (Stripe executes payment only, webhook-fed, HMAC-verified; client caches a signed claim with a bounded connectivity grace window). **`AD-14`** contains cardholder data entirely within Stripe's hosted PaymentSheet, keeping the platform at **PCI-DSS SAQ-A**. **`AD-15`** fixes a local last-N `SessionSummary` read model as the single source for the `MOB_HOME` dashboard and the persisted `alarm_fired` field both summary cards read.
+* **System Invariants:** 15 architectural decisions (`AD-01` … `AD-15`) govern the mobile, BLE-driver, data, **subscription/billing**, security, and UI layers. **`AD-04`** (rewritten v21.0.0) fixes the **IDLE Band signal model** — a per-session `[lower_bound, upper_bound]` learned from the running min/max of a worn ~10 s idle sample; a valid breath crosses both bounds; a stop-breathing sample stays inside them; the client works in raw signal units with no L/s transform and no `V_pp` threshold. **`AD-05`** is the wear check (≥ 2 valid band-excursion cycles). `AD-11` fixes `IBLESensorDriver` polymorphism + DI; `AD-12` (PRD `FR-1.11`) fixes the app-boot background BLE receiver service and the single process-wide `BehaviorSubject<double>` unified bio-signal queue. **`AD-13`** fixes subscription state as backend-owned and entitlement as server-verified (Stripe executes payment only, webhook-fed, HMAC-verified; client caches a signed claim with a bounded connectivity grace window). **`AD-14`** contains cardholder data entirely within Stripe's hosted PaymentSheet, keeping the platform at **PCI-DSS SAQ-A**. **`AD-15`** fixes a local last-N `SessionSummary` read model as the single source for the `MOB_HOME` dashboard and the persisted `alarm_fired` field both summary cards read.
+* **Metric:** the nightly score is an **Apnea Index (AI)**, apnea-only — hypopnea is not scored in MVP1 (the airflow-only D-BAND lacks the SpO₂/EEG inputs AASM hypopnea requires). Standard AHI severity bands are applied to the AI with an apnea-only caveat on every surface. A full Apnea-Hypopnea Index via oximeter co-sensing is **Deferred**.
 * **Open call for confirmation (`AD-12`):** the receiver *service + queue* start at boot while the *physical radio link* (`scanAndConnect`) is established lazily. If `FR-1.11` intends a truly always-on radio link from launch, `AD-12`'s Rule and Sequence Diagram 4 Phase 0 need tightening — and the `AD-06` `<8%` / 8 h battery budget must be re-validated.
 * **Open item — legal (`AD-13`, §4.7):** gating the Doctor Report export (`Task_ExportDoctorReport`) behind Premium likely conflicts with **HIPAA §164.524** right-of-access (a patient's access to their own PHI cannot be conditioned on payment). Privacy/Legal sign-off is required before the export gate ships; the standing fallback is a free basic signed-FHIR/PDF export with Premium gating only enhancements. `bmad-create-epics-and-stories` / `bmad-build` **must not** ship the gate until this resolves.
-* **Source-input divergence to reconcile:** the **PRD has no subscription/billing requirements** — it needs new `FR-*` entries for Free/Premium, the entitlement gate, and Stripe billing before the billing epic is built. The **UX** (`MOB_EXPORT_DOCTOR`) needs a free-vs-premium export variant once the legal question resolves.
+* **Source alignment (v21.0.0):** the spine is now consistent with **PRD v2.5.0** (IDLE Band model, "Apnea Index", Stage-2 removed) and **epics.md** (10-epic breakdown; `AD-04`/`AD-05`/`AD-13`/`AD-14`/`AD-15` cited). No open source-input divergence.
 * **Next Steps in BMad Workflow:**
-  1. **`bmad-prd`** (update): add subscription/billing requirements so the epic breakdown has a requirements anchor.
-  2. **`bmad-create-epics-and-stories`**: Decompose into feature epics — now including a **Subscription & Billing** epic (Billing service, Stripe webhook receiver, PaymentSheet gateway, entitlement gate) and a **Home Dashboard** epic (`SessionSummary` read model, `HomeDashboardBloc`). Refresh the requirements inventory with `FR-1.11` → `AD-12` and the new billing `FR-*` → `AD-13`/`AD-14`, and `MOB_HOME` → `AD-15`.
-  3. **`bmad-build`**: Implement clean, compliant working code artifacts following the invariants established in this specification. Hold the export gate pending §4.7 legal sign-off.
-* **Diagram regen note:** the C4 L3 PlantUML body (3.3) and the ER PlantUML (3.4) gained new nodes via their tables/entity blocks; the rendered `ARCHITECTURE-SPINE.html` is stale versus this `.md` and should be regenerated on next publish.
+  1. **`bmad-spec`** (optional): adopt/refresh the spine as a spec companion, keeping `AD` IDs stable.
+  2. **`bmad-build`**: Implement following the invariants in this specification. The detailed Sequence Diagram 4 / §3.5 step-level narrative and the §3.5.4 algorithm block were folded to the IDLE Band model at spec level; treat them as seed and regenerate against `AD-04` if the code diverges. Hold the FR-5.3 export gate pending §4.7 legal sign-off, and the FR-3.3/FR-3.5 Premium gating pending its own sign-off.
+* **Diagram regen note:** the rendered `ARCHITECTURE-SPINE.html` is stale versus this `.md` (v20→v21 IDLE Band fold plus the prior subscription round) and should be regenerated on next publish.
 
 
 
