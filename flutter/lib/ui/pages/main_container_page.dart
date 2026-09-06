@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import 'history_filter_page.dart';
 import 'home_page.dart';
 import 'measurement_page.dart';
 import 'summary_screen_page.dart';
@@ -26,11 +27,23 @@ class _MainContainerPageState extends State<MainContainerPage> {
     final List<Widget> pages = [
       HomePage(
         onOpenSummary: () => _navigateToTab(2),
-        onOpenHistory: () => _navigateToTab(2),
+        onOpenHistory: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const HistoryFilterPage(),
+            ),
+          );
+        },
       ),
       const MeasurementPage(),
       SummaryScreenPage(
-        onOpenHistory: () {},
+        onOpenHistory: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const HistoryFilterPage(),
+            ),
+          );
+        },
       ),
       const SettingsPage(),
     ];
