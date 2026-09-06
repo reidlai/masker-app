@@ -42,19 +42,22 @@ class _ExportDoctorPageState extends State<ExportDoctorPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: const [
-                        Text(
-                          "PHYSICIAN SUMMARY REPORT",
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 0.04,
-                            color: AppColors.textSecondary,
+                        Expanded(
+                          child: Text(
+                            "PHYSICIAN SUMMARY REPORT",
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.04,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                         ),
+                        SizedBox(width: 8),
                         ShadBadge(
-                          label: "Cryptographically Signed",
+                          label: "Signed",
                           variant: ShadBadgeVariant.normal,
                           icon: Icon(Icons.verified, size: 12, color: AppColors.accentGreen),
                         ),
@@ -133,7 +136,15 @@ class _ExportDoctorPageState extends State<ExportDoctorPage> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-        Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.textPrimary)),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.textPrimary),
+          ),
+        ),
       ],
     );
   }
@@ -187,17 +198,29 @@ class _ExportDoctorPageState extends State<ExportDoctorPage> {
                 ],
               ),
             ),
-            Radio<int>(
-              value: index,
-              groupValue: _selectedFormatIndex,
-              activeColor: AppColors.accentGreen,
-              onChanged: (val) {
-                if (val != null) {
-                  setState(() {
-                    _selectedFormatIndex = val;
-                  });
-                }
-              },
+            const SizedBox(width: 8),
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? AppColors.accentGreen : AppColors.textSecondary,
+                  width: 2,
+                ),
+              ),
+              child: isSelected
+                  ? Center(
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.accentGreen,
+                        ),
+                      ),
+                    )
+                  : null,
             ),
           ],
         ),
