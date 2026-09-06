@@ -1,9 +1,9 @@
 ---
 name: Sleep Apnea Detection App (D-BAND Integrated Platform)
 status: final
-version: 1.2.0
+version: 1.2.3
 created: 2026-09-01
-updated: 2026-09-04
+updated: 2026-09-06
 author: Sally (UX Designer) & Winston (System Architect)
 colors:
   primary: "#0F172A"       # Slate 900 (Deep Night Background)
@@ -49,11 +49,16 @@ components:
   - ShadDialog
   - ShadProgress
   - MetricStatCard
+  - HomeSummaryCard
+  - DeviceStatusCard
+  - WeeklyTrendCard
   - CalibrationStepHeader
   - ApneaAlertBanner
   - SessionHistoryListItem
   - BottomNavBar
   - SettingsMenuRow
+  - SubscriptionPlanCard
+  - PaymentMethodCard
   - SettingsSectionHeader
   - DeveloperSimulatorBarOrganism
   - BlePermissionPrimerOrganism
@@ -137,6 +142,16 @@ Caption:      12px / Medium (500) / Line Height 1.4  -->  Chart Axes, Timestamps
 ### 1. `MetricStatCard` (Molecule Component)
 * **Visual Structure:** Dark card (`#1E293B`) with 1px border (`#334155`). Top row displays metric label (`#94A3B8`) and status icon. Center displays large tabular numeric value (`32px #F8FAFC`) with unit text. Bottom row displays status pill badge (`#10B981` Green for Normal, `#EF4444` Red for Severe).
 
+### 1a. `HomeSummaryCard` (Molecule Component)
+* **Visual Structure:** The hero card on the `MOB_HOME` dashboard. Dark card (`{colors.surface}` `#1E293B`, `8px` radius `{rounded.md}`, 1px `#334155` border), `20px` inner padding, full content width. **Label row:** `"LAST NIGHT"` (`{typography.caption}` `12px`, `0.04em` tracking, `#94A3B8`) on the left, session date (`12px #94A3B8`) on the right. **Hero row:** AHI value (`{typography.h1}` `32px / 700`, `#F8FAFC`, tabular-nums) with a small `"AHI"` unit label, and a trailing status pill (`ShadBadge`, `{rounded.full}`, `11px` semibold): `{colors.accent_green}` fill @12% + green text `"Normal"` (AHI < 5), `{colors.warning_amber}` `"Moderate"` (5–29), `{colors.danger_red}` `"Severe"` (≥ 30). **Secondary row:** two inline stats separated by a middot — `Duration 7h 45m` and `Apnea events N` (`{typography.body}` `14px`, label in `#94A3B8`, value in `#F8FAFC`). **Trailing:** a right chevron (`#94A3B8`) vertically centered, signalling the whole card is tappable. Pressed state: background lifts to `{colors.pressed_surface}` (`#273449`). **Empty variant:** the card keeps its frame — a centered column with an outlined moon glyph (`24px`, `#94A3B8`) above one line of `{typography.body}` `#94A3B8` copy; no chevron.
+* **Alarm-fired override:** when the session logged **≥ 1 Tier-1 apnea alarm** (`State_ApneaBreach` was reached — see EXPERIENCE.md Component Pattern #10), the AHI-severity pill is **replaced** by an amber alert pill: `{colors.warning_amber}` fill @14% + amber text, a `12px` warning-triangle glyph + `"N apnea alert"` / `"N apnea alerts"`. The AHI-severity word is not lost — it drops to a `{typography.caption}` `#94A3B8` line directly under the hero row (`"AHI 3.2 · normal range · you tapped \"I'm Safe\" once"`), and the `Apnea events` value in the secondary row is coloured `{colors.warning_amber}`. This override fires regardless of AHI band — a normal-range night that set off the siren still shows the amber pill.
+
+### 1b. `DeviceStatusCard` (Molecule Component)
+* **Visual Structure:** A single-row status card on `MOB_HOME`, same surface/border/radius as `HomeSummaryCard`, `16px` vertical / `18px` horizontal padding. Layout: a `8px` status dot · a primary line (`{typography.body}` `14px #F8FAFC`) · a `{colors.text_secondary}` detail line beneath or inline (`12px`). **Nominal:** `{colors.accent_green}` dot, "D-BAND connected", detail "84% · Last sync 7:02 AM", no chevron, card not elevated on press. **Actionable** (`{colors.danger_red}` for unreachable / no-sensor / permission, `{colors.warning_amber}` for low battery): matching dot colour, alert primary line ("D-BAND not found" / "Battery low — 12%" / "Bluetooth access needed"), a trailing right chevron (`#94A3B8`), and a `{colors.pressed_surface}` pressed background. The battery figure uses `{typography.numeric_tabular}`.
+
+### 1c. `WeeklyTrendCard` (Molecule Component)
+* **Visual Structure:** Card on `MOB_HOME`, `20px` padding. **Title row:** "AHI — last 7 nights" (`{typography.caption}` uppercase `0.04em` `#94A3B8`), trailing right chevron. **Chart:** a 7-slot bar strip ~`64px` tall, bars `{colors.accent_green}` — most recent night at full opacity, the other six at `60%`; a night with no session renders as a `1px` `#334155` hollow outline of the same width. No axes, no gridlines, no labels on the bars. **Delta line:** `{typography.body}` `14px` — "{mean} average" in `#F8FAFC` then " · {down/up/level} from {prior} last week" in the direction colour (`{colors.accent_green}` down, `{colors.text_secondary}` level, `{colors.warning_amber}` up). **Insufficient-data variant:** no chart — one `{typography.body}` `#94A3B8` line ("Not enough data yet — check back after a few nights").
+
 ### 2. `CalibrationStepHeader` (Molecule Component)
 * **Visual Structure:** Displays step index pill (`"STEP 1 OF 2"`), bold step title (`18px #F8FAFC`), instruction body (`14px #94A3B8`), and animated horizontal progress bar (`#10B981`).
 
@@ -150,10 +165,16 @@ Caption:      12px / Medium (500) / Line Height 1.4  -->  Chart Axes, Timestamps
 * **Visual Structure:** Persistent bottom bar on `{colors.surface}` (`#1E293B`) with a 1px top border `{colors.surface_border}` (`#334155`), respecting the device safe-area inset. Four equal-width items, each an outlined icon (24dp) above a `{typography.caption}` label (`12px`). **Active** item: icon + label in `{colors.accent_green}` (`#10B981`). **Inactive**: `{colors.text_secondary}` (`#94A3B8`). Item 4 is the outlined **gear** (`settings`) icon with label **"Settings"**. No badges. *(Visibility rules — hidden during onboarding and Night Mode — are behavioral; see `EXPERIENCE.md` §Component Patterns.)*
 
 ### 6. `SettingsMenuRow` (Molecule Component)
-* **Visual Structure:** Full-width row inside a grouped card on `{colors.surface}` (`#1E293B`, `8px` radius `{rounded.md}`, 1px `#334155` border). Layout: leading 24dp icon · label (`{typography.body}` `14px #F8FAFC`) · flexible spacer · trailing right chevron (`#94A3B8`). Horizontal padding `16px` (`{spacing.lg}`); min height `48dp` (`{spacing.touch_target_min}`); 1px `#334155` divider between rows (never after the last). **Navigable variant** (Profile): chevron present, label at full-contrast `#F8FAFC`. **Inert variant** (Debugging, Developer): **no chevron**, label at `{colors.text_secondary}` (`#94A3B8`). Pressed state (navigable rows): row background lifts to `{colors.pressed_surface}` (`#273449`).
+* **Visual Structure:** Full-width row inside a grouped card on `{colors.surface}` (`#1E293B`, `8px` radius `{rounded.md}`, 1px `#334155` border). Layout: leading 24dp icon · label (`{typography.body}` `14px #F8FAFC`) · flexible spacer · trailing right chevron (`#94A3B8`). Horizontal padding `16px` (`{spacing.lg}`); min height `48dp` (`{spacing.touch_target_min}`); 1px `#334155` divider between rows (never after the last). **Navigable variant** (Profile): chevron present, label at full-contrast `#F8FAFC`. **Value variant** (Language & Region, Billing & subscription, Payment method): a `{typography.body}` `{colors.text_secondary}` (`#94A3B8`) value string sits between the spacer and the chevron ("English", "Premium", "Visa ·· 4242"); label stays `#F8FAFC`. An optional 6px `{colors.warning_amber}` status dot may precede the value (e.g. card nearing expiry). **Inert variant** (Debugging, Developer): **no chevron**, label at `{colors.text_secondary}` (`#94A3B8`). Pressed state (navigable / value rows): row background lifts to `{colors.pressed_surface}` (`#273449`).
+
+### 6a. `SubscriptionPlanCard` (Molecule Component)
+* **Visual Structure:** The hero card on `MOB_BILLING`. Dark card (`{colors.surface}` `#1E293B`, `8px` radius `{rounded.md}`, 1px `#334155` border), `20px` padding. **Header row:** plan name (`{typography.h2}` `24px / 600` `#F8FAFC`) with a trailing `ShadBadge` (`{rounded.full}`, `11px` semibold) — `{colors.accent_green}` fill @12% + green text "Active" for Premium, `{colors.warning_amber}` "Ends {date}" when a cancel is pending, none for Free. **Price row** (Premium only): `{typography.h3}`-weight value + `{colors.text_secondary}` cycle ("$12.99 / month"). **Renewal line** (Premium only): `{typography.caption}` `{colors.text_secondary}` ("Renews 6 Oct 2026"). **Primary action:** full-width `ShadButton` — "Upgrade to Premium" on Free; omitted on active Premium (management actions live below the card). Below the card, the **"what Premium includes"** checklist: `{typography.body}` rows each led by a 16px `{colors.accent_green}` check glyph (muted to `{colors.text_secondary}` on the Free preview).
+
+### 6b. `PaymentMethodCard` (Molecule Component)
+* **Visual Structure:** The card-on-file block on `MOB_PAYMENT_METHOD` (and the compact summary on `MOB_BILLING`). Dark card, `20px` padding. **Row 1:** card-brand mark (24px, e.g. Visa) + masked number rendered as `·· ·· ·· 4242` (`{typography.body}` `#F8FAFC`, `{typography.numeric_tabular}`). **Row 2:** `{colors.text_secondary}` "Expires 08 / 27" and, right-aligned, the cardholder name. Never renders more than brand + last four + expiry — no full PAN, no CVC field, anywhere. **Actions** (stacked below the card, `MOB_PAYMENT_METHOD` only): "Replace card" — primary `ShadButton`; "Remove card" — `{colors.danger_red}` text button, no fill. **Empty variant** (`State_PaymentMethodEmpty`): no card — a centered column with a 28px `{colors.text_secondary}` card glyph, one line of `{typography.body}` `{colors.text_secondary}` copy ("No payment method on file."), and a single "Add card" primary `ShadButton`.
 
 ### 7. `SettingsSectionHeader` (Atom Component)
-* **Visual Structure:** Left-aligned label in `{typography.caption}` (`12px`, weight 500) `{colors.text_secondary}` (`#94A3B8`), `0.04em` letter-spacing, sentence case ("Advanced"). Spacing: `24px` (`{spacing.xl}`) above, `8px` (`{spacing.sm}`) below. **Rendered only when its section contains at least one visible row** — never shown above an empty section.
+* **Visual Structure:** Left-aligned label in `{typography.caption}` (`12px`, weight 500) `{colors.text_secondary}` (`#94A3B8`), `0.04em` letter-spacing, sentence case ("Account", "Preferences", "Subscription", "Advanced"). Spacing: `24px` (`{spacing.xl}`) above, `8px` (`{spacing.sm}`) below. **Rendered only when its section contains at least one visible row** — "Account", "Preferences", and "Subscription" always qualify; "Advanced" is conditional.
 
 ### 8. `DeveloperSimulatorBarOrganism` (Organism Component)
 * **Visual Structure:** Dark amber/slate glassmorphic toolbar (`#1E293B` background with `#F59E0B` amber border) embedded at the top of `MeasurementPage` when `DEV_MODE=true`. Displays a header ("⚡ DEV MODE SIMULATOR") and horizontal scrolling action chips: `[Idle Noise]`, `[Active Baseline]`, `[Normal (16 bpm)]`, `[Apnea Drop (>10s)]`, and `[Recovery (5s)]`. Active scenario chip highlights in solid `{colors.warning_amber}` or `{colors.accent_green}`.

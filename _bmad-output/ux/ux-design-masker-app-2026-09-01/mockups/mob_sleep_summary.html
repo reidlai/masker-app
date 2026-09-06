@@ -100,8 +100,22 @@
 
   /* SCREEN-SPECIFIC — MOB_SLEEP_SUMMARY */
   .summary-wrap { flex: 1 1 auto; overflow-y: auto; padding: 24px 28px 32px; }
-  .page-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: baseline; }
-  .page-title span.date { font-size: 12px; font-weight: 400; color: var(--text-secondary); }
+  .page-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .page-title .pt-right { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; }
+  .page-title .date { font-size: 12px; font-weight: 400; color: var(--text-secondary); }
+  /* Header action -> MOB_HISTORY_FILTER */
+  .history-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--surface-border);
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .history-btn svg { width: 14px; height: 14px; color: var(--text-secondary); }
 
   .score-card {
     background: linear-gradient(135deg, #1E1B4B 0%, #2E1065 100%);
@@ -117,7 +131,7 @@
     width: 88px;
     height: 88px;
     border-radius: 50%;
-    border: 6px solid var(--accent-green);
+    border: 6px solid var(--warning-amber);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -128,18 +142,23 @@
   .score-label { font-size: 9px; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.04em; }
   .score-info h3 { font-size: 16px; margin-bottom: 6px; }
   .score-info p { font-size: 13px; color: var(--text-secondary); }
-  .badge-normal {
-    display: inline-block;
-    padding: 4px 10px;
-    background: rgba(16,185,129,0.2);
-    color: var(--accent-green);
-    border: 1px solid var(--accent-green);
+  /* Alert badge: shown when >=1 Tier-1 apnea alarm fired, replacing the AHI-severity badge */
+  .badge-alert {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 11px;
+    background: rgba(245,158,11,0.2);
+    color: var(--warning-amber);
+    border: 1px solid var(--warning-amber);
     border-radius: 9999px;
     font-size: 11px;
     font-weight: 700;
     margin-top: 8px;
   }
+  .badge-alert svg { width: 12px; height: 12px; }
 
+  /* Tappable -> MOB_GRAPH_WAVEFORM */
   .chart-card {
     background: var(--surface);
     border: 1px solid var(--surface-border);
@@ -147,8 +166,11 @@
     padding: 20px;
     margin-bottom: 20px;
   }
-  .chart-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; display: flex; justify-content: space-between; }
+  .chart-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+  .chart-title .card-cta { display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--accent-green); }
+  .chart-title .card-cta svg { width: 14px; height: 14px; }
   .waveform-svg { width: 100%; height: 120px; }
+  .chart-foot { margin-top: 10px; font-size: 11px; color: var(--text-secondary); }
 
   .metrics-grid {
     display: grid;
@@ -179,6 +201,26 @@
     align-items: center;
     gap: 8px;
   }
+
+  /* PrimaryNavBarOrganism — Summary tab active (this screen is the Summary tab root) */
+  .primary-nav-bar {
+    flex: 0 0 auto;
+    display: flex;
+    background: var(--surface);
+    border-top: 1px solid var(--surface-border);
+    padding: 12px 0 8px;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    color: var(--text-secondary);
+  }
+  .nav-item.active { color: var(--accent-green); }
+  .nav-item svg { width: 24px; height: 24px; }
+  .nav-item span { font-size: 12px; font-weight: 500; }
 </style>
 </head>
 <body>
@@ -198,8 +240,14 @@
     <div class="screen-content">
       <div class="summary-wrap">
         <div class="page-title">
-          Morning Sleep Summary
-          <span class="date">Sep 1, 2026</span>
+          <span>Morning Sleep Summary</span>
+          <span class="pt-right">
+            <span class="date">Sep 1, 2026</span>
+            <span class="history-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
+              History
+            </span>
+          </span>
         </div>
 
         <div class="score-card">
@@ -208,16 +256,21 @@
             <span class="score-label">AHI</span>
           </div>
           <div class="score-info">
-            <h3>AHI 3.2 (Normal)</h3>
-            <p>7h 45m Monitoring</p>
-            <span class="badge-normal">NORMAL RESPIRATION</span>
+            <h3>AHI 3.2 &middot; normal range</h3>
+            <p>7h 45m monitoring · 1 &ldquo;I&rsquo;m Safe&rdquo; tap</p>
+            <span class="badge-alert">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+              1 APNEA ALERT
+            </span>
           </div>
         </div>
 
         <div class="chart-card">
           <div class="chart-title">
             <span>Respiration Waveform</span>
-            <span style="color: var(--accent-green); font-size: 11px;">10Hz Stream</span>
+            <span class="card-cta">View details
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </span>
           </div>
           <svg class="waveform-svg" viewBox="0 0 300 100">
             <path d="M 0 50 Q 15 20 30 50 T 60 50 T 90 50 T 120 50 T 150 90 T 180 50 T 210 20 T 240 50 T 270 50 T 300 50" stroke="#10B981" stroke-width="2.5" fill="none"/>
@@ -225,6 +278,7 @@
             <circle cx="150" cy="90" r="5" fill="#EF4444"/>
             <text x="150" y="70" fill="#EF4444" font-size="9" text-anchor="middle">Apnea Stop (12s)</text>
           </svg>
+          <div class="chart-foot">10 Hz stream · pinch &amp; pan the full timeline on the details screen</div>
         </div>
 
         <div class="metrics-grid">
@@ -240,6 +294,24 @@
 
         <button class="btn-export">📄 Export Signed Report for Physician</button>
       </div>
+      <nav class="primary-nav-bar">
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10"/></svg>
+          <span>Home</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 119.5 4a7 7 0 1010.5 10.5z"/></svg>
+          <span>Monitor</span>
+        </div>
+        <div class="nav-item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/></svg>
+          <span>Summary</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          <span>Settings</span>
+        </div>
+      </nav>
     </div>
     <div class="home-indicator"><span class="bar"></span></div>
   </div>
