@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/ble/ble_simulator_driver.dart';
 import '../../core/ble/flutter_blue_sensor_driver.dart';
 import '../../core/ble/i_ble_sensor_driver.dart';
+import '../../core/bloc/simulator/simulator_cubit.dart';
+import '../../core/bloc/simulator/simulator_state.dart';
 import '../../core/monitoring/apnea_evaluator.dart';
 import '../../core/monitoring/drift_and_noise_floor_envelope.dart';
 import '../../core/permissions/ble_permission_service.dart';
@@ -66,8 +69,14 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
   bool _permissionCheckFailed = false;
   BlePermissionStatus? _permissionStatus;
 
-  bool get _isDevMode =>
-      widget.developerEnabled ?? BleSimulatorDriver().isSimulatorActive;
+  bool get _isDevMode {
+    if (widget.developerEnabled != null) return widget.developerEnabled!;
+    try {
+      return context.read<SimulatorCubit>().state.isSimulatorActive;
+    } catch (_) {
+      return BleSimulatorDriver().isSimulatorActive;
+    }
+  }
 
   @override
   void initState() {
@@ -78,16 +87,30 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
     _bleDriver = widget.sensorDriver ??
         (_isDevMode ? BleSimulatorDriver() : FlutterBlueSensorDriver());
 
-    _simulatorSub = BleSimulatorDriver().isSimulatorStream.listen((isSim) {
-      if (mounted && widget.sensorDriver == null) {
-        setState(() {
-          _bleDriver = isSim ? BleSimulatorDriver() : FlutterBlueSensorDriver();
-        });
-        if (isSim) {
-          _checkPermissionThenConnect();
+    try {
+      final cubit = context.read<SimulatorCubit>();
+      _simulatorSub = cubit.stream.map((s) => s.isSimulatorActive).distinct().listen((isSim) {
+        if (mounted && widget.sensorDriver == null) {
+          setState(() {
+            _bleDriver = isSim ? BleSimulatorDriver() : FlutterBlueSensorDriver();
+          });
+          if (isSim) {
+            _checkPermissionThenConnect();
+          }
         }
-      }
-    });
+      });
+    } catch (_) {
+      _simulatorSub = BleSimulatorDriver().isSimulatorStream.listen((isSim) {
+        if (mounted && widget.sensorDriver == null) {
+          setState(() {
+            _bleDriver = isSim ? BleSimulatorDriver() : FlutterBlueSensorDriver();
+          });
+          if (isSim) {
+            _checkPermissionThenConnect();
+          }
+        }
+      });
+    }
 
     _checkPermissionThenConnect();
   }

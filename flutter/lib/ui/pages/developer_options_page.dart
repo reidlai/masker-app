@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../core/ble/ble_simulator_driver.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../core/bloc/simulator/simulator_cubit.dart';
+import '../../core/bloc/simulator/simulator_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../organisms/ble_simulator_organism.dart';
 import '../organisms/settings_group_card_organism.dart';
@@ -8,8 +10,7 @@ import '../molecules/settings_menu_row.dart';
 class DeveloperOptionsPage extends StatelessWidget {
   const DeveloperOptionsPage({super.key});
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildContent(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -33,11 +34,9 @@ class DeveloperOptionsPage extends StatelessWidget {
               const SizedBox(height: 20),
 
               // Master Telemetry Simulator Toggle Card
-              StreamBuilder<bool>(
-                stream: BleSimulatorDriver().isSimulatorStream,
-                initialData: BleSimulatorDriver().isSimulatorActive,
-                builder: (context, snapshot) {
-                  final isSimActive = snapshot.data ?? true;
+              BlocBuilder<SimulatorCubit, SimulatorState>(
+                builder: (context, state) {
+                  final isSimActive = state.isSimulatorActive;
                   return Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -75,7 +74,7 @@ class DeveloperOptionsPage extends StatelessWidget {
                           value: isSimActive,
                           activeThumbColor: AppColors.accentGreen,
                           onChanged: (val) {
-                            BleSimulatorDriver().setSimulatorEnabled(val);
+                            context.read<SimulatorCubit>().setSimulatorEnabled(val);
                           },
                         ),
                       ],
@@ -126,5 +125,18 @@ class DeveloperOptionsPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    try {
+      context.read<SimulatorCubit>();
+      return _buildContent(context);
+    } catch (_) {
+      return BlocProvider(
+        create: (_) => SimulatorCubit(),
+        child: Builder(builder: (bCtx) => _buildContent(bCtx)),
+      );
+    }
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/ble/ble_simulator_driver.dart';
 import '../../core/bloc/simulator/simulator_cubit.dart';
+import '../../core/bloc/simulator/simulator_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../molecules/settings_menu_row.dart';
 import '../molecules/settings_section_header.dart';
@@ -125,8 +126,9 @@ class SettingsPage extends StatelessWidget {
                         } catch (_) {}
 
                         Widget rowContent(BuildContext ctx) {
-                          return BlocBuilder<SimulatorCubit, bool>(
-                            builder: (bContext, isSimActive) {
+                          return BlocBuilder<SimulatorCubit, SimulatorState>(
+                            builder: (bContext, state) {
+                              final isSimActive = state.isSimulatorActive;
                               return SettingsMenuRow(
                                 leadingIcon: Icons.developer_board,
                                 label: "Simulator",

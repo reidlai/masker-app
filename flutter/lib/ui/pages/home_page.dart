@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../core/ble/ble_simulator_driver.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../core/bloc/simulator/simulator_cubit.dart';
+import '../../core/bloc/simulator/simulator_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../molecules/device_status_card.dart';
 import '../molecules/home_summary_card.dart';
@@ -65,20 +67,39 @@ class HomePage extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // 3 — D-BAND Device Status Card (Reactive Stream)
-              StreamBuilder<bool>(
-                stream: BleSimulatorDriver().isSimulatorStream,
-                initialData: BleSimulatorDriver().isSimulatorActive,
-                builder: (context, snapshot) {
-                  final isConnected = snapshot.data ?? false;
-                  return DeviceStatusCard(
-                    state: isConnected
-                        ? DeviceConnectionState.connected
-                        : DeviceConnectionState.disconnected,
-                    batteryLevel: isConnected ? 84 : 0,
-                    lastSyncText: isConnected ? "Last sync 7:02 AM" : "Not connected",
-                    onTap: onOpenMonitor,
-                  );
+              // 3 — D-BAND Device Status Card (BLoC Driven)
+              Builder(
+                builder: (ctx) {
+                  bool hasProvider = false;
+                  try {
+                    ctx.read<SimulatorCubit>();
+                    hasProvider = true;
+                  } catch (_) {}
+
+                  Widget cardContent(BuildContext bCtx) {
+                    return BlocBuilder<SimulatorCubit, SimulatorState>(
+                      builder: (context, state) {
+                        final isConnected = state.isSimulatorActive;
+                        return DeviceStatusCard(
+                          state: isConnected
+                              ? DeviceConnectionState.connected
+                              : DeviceConnectionState.disconnected,
+                          batteryLevel: isConnected ? 84 : 0,
+                          lastSyncText: isConnected ? "Last sync 7:02 AM" : "Not connected",
+                          onTap: onOpenMonitor,
+                        );
+                      },
+                    );
+                  }
+
+                  if (hasProvider) {
+                    return cardContent(ctx);
+                  } else {
+                    return BlocProvider<SimulatorCubit>(
+                      create: (_) => SimulatorCubit(),
+                      child: Builder(builder: (bCtx) => cardContent(bCtx)),
+                    );
+                  }
                 },
               ),
               const SizedBox(height: 12),
