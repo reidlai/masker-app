@@ -32,13 +32,14 @@ class MeasurementPage extends StatefulWidget {
 }
 
 class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingObserver {
-  late final IBLESensorDriver _bleDriver;
+  late IBLESensorDriver _bleDriver;
   late final BlePermissionService _permissionService;
   ApneaEvaluator? _apneaEvaluator;
   StreamSubscription<double>? _telemetrySub;
   StreamSubscription<ApneaState>? _evaluatorStateSub;
   StreamSubscription<int>? _countdownSub;
   StreamSubscription<SimulatorScenario>? _scenarioSub;
+  StreamSubscription<bool>? _simulatorSub;
 
   bool _isBleConnected = false;
   bool _isCalibrationComplete = false;
@@ -58,13 +59,7 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
     );
   }
 
-  // Bumped on every (re)connect so a reconnect remounts the wizard via its
-  // ValueKey — otherwise clearing _idleBand on the page leaves the wizard
-  // still showing "Calibration Complete" with no way to re-run.
   int _connectGeneration = 0;
-
-  /// The calibrated session IDLE Band emitted by the wizard (AD-04). Null
-  /// until the wear check passes; cleared on every (re)connect.
   IdleBand? _idleBand;
 
   bool _isCheckingPermission = true;
@@ -72,8 +67,7 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
   BlePermissionStatus? _permissionStatus;
 
   bool get _isDevMode =>
-      widget.developerEnabled ??
-      const bool.fromEnvironment('DEV_MODE', defaultValue: true);
+      widget.developerEnabled ?? BleSimulatorDriver().isSimulatorActive;
 
   @override
   void initState() {
@@ -83,6 +77,15 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
     // SOLID Dependency Injection: Inject real Bluetooth HW driver in production, simulator in dev mode
     _bleDriver = widget.sensorDriver ??
         (_isDevMode ? BleSimulatorDriver() : FlutterBlueSensorDriver());
+
+    _simulatorSub = BleSimulatorDriver().isSimulatorStream.listen((isSim) {
+      if (mounted && widget.sensorDriver == null) {
+        setState(() {
+          _bleDriver = isSim ? BleSimulatorDriver() : FlutterBlueSensorDriver();
+        });
+      }
+    });
+
     _checkPermissionThenConnect();
   }
 
@@ -258,6 +261,7 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _simulatorSub?.cancel();
     _scenarioSub?.cancel();
     _telemetrySub?.cancel();
     _evaluatorStateSub?.cancel();

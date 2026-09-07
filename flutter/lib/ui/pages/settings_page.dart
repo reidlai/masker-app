@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../core/ble/ble_simulator_driver.dart';
 import '../../core/theme/app_theme.dart';
 import '../molecules/settings_menu_row.dart';
 import '../molecules/settings_section_header.dart';
@@ -22,7 +23,7 @@ class SettingsPage extends StatelessWidget {
   bool get _debug => debuggingEnabled ?? kDebugMode;
   bool get _dev =>
       developerEnabled ?? const bool.fromEnvironment('DEV_MODE', defaultValue: false);
-  bool get _showAdvanced => _debug || _dev;
+  bool get _showDeveloper => _debug || _dev;
 
   @override
   Widget build(BuildContext context) {
@@ -108,20 +109,40 @@ class SettingsPage extends StatelessWidget {
                 ],
               ),
 
-              // 4 — Advanced Section (Conditional)
-              if (_showAdvanced) ...[
-                const SettingsSectionHeader(title: "Advanced"),
+              // 4 — Developer Section (Conditional)
+              if (_showDeveloper) ...[
+                const SettingsSectionHeader(title: "Developer"),
                 _buildMenuCard(
                   children: [
-                    if (_debug)
+                    StreamBuilder<bool>(
+                      stream: BleSimulatorDriver().isSimulatorStream,
+                      initialData: BleSimulatorDriver().isSimulatorActive,
+                      builder: (context, snapshot) {
+                        final isSimActive = snapshot.data ?? false;
+                        return SettingsMenuRow(
+                          leadingIcon: Icons.developer_board,
+                          label: "Simulator",
+                          showChevron: false,
+                          trailingWidget: Switch(
+                            value: isSimActive,
+                            activeThumbColor: AppColors.accentGreen,
+                            onChanged: (val) {
+                              BleSimulatorDriver().setSimulatorEnabled(val);
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                    if (_debug) ...[
+                      const Divider(height: 1, color: AppColors.cardBorder),
                       const SettingsMenuRow(
                         leadingIcon: Icons.bug_report_outlined,
                         label: "Debugging",
                         showChevron: false,
                       ),
-                    if (_debug && _dev)
+                    ],
+                    if (_dev) ...[
                       const Divider(height: 1, color: AppColors.cardBorder),
-                    if (_dev)
                       SettingsMenuRow(
                         leadingIcon: Icons.code,
                         label: "Developer",
@@ -133,6 +154,7 @@ class SettingsPage extends StatelessWidget {
                           );
                         },
                       ),
+                    ],
                   ],
                 ),
               ],

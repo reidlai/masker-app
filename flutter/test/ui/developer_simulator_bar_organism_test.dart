@@ -4,6 +4,10 @@ import 'package:masker_app/core/ble/ble_simulator_driver.dart';
 import 'package:masker_app/ui/organisms/developer_simulator_bar_organism.dart';
 
 void main() {
+  setUp(() {
+    BleSimulatorDriver().setSimulatorEnabled(true);
+  });
+
   tearDown(() {
     BleSimulatorDriver().resetForTest();
   });

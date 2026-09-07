@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:masker_app/core/ble/ble_simulator_driver.dart';
 import 'package:masker_app/ui/pages/settings_page.dart';
 
 void main() {
+  setUp(() {
+    BleSimulatorDriver().resetForTest();
+  });
+
   Future<void> pumpSettings(
     WidgetTester tester, {
     bool debuggingEnabled = false,
@@ -18,34 +23,55 @@ void main() {
     );
   }
 
-  testWidgets('both flags off: Account, Preferences, and Subscription groups visible, no Advanced section', (tester) async {
+  testWidgets('both flags off: Account, Preferences, and Subscription groups visible, no Developer section', (tester) async {
     await pumpSettings(tester);
 
     expect(find.text('Profile'), findsOneWidget);
     expect(find.text('Language & Region'), findsOneWidget);
     expect(find.text('Billing & subscription'), findsOneWidget);
     expect(find.text('Payment method'), findsOneWidget);
-    expect(find.text('ADVANCED'), findsNothing);
+    expect(find.text('DEVELOPER'), findsNothing);
+    expect(find.text('Simulator'), findsNothing);
     expect(find.text('Debugging'), findsNothing);
-    expect(find.text('Developer'), findsNothing);
   });
 
-  testWidgets('debugging on: Advanced header + Debugging row, no Developer row', (tester) async {
+  testWidgets('debugging on: DEVELOPER header + Simulator & Debugging rows, no Developer options row', (tester) async {
     await pumpSettings(tester, debuggingEnabled: true);
 
     expect(find.text('Profile'), findsOneWidget);
-    expect(find.text('ADVANCED'), findsOneWidget);
+    expect(find.text('DEVELOPER'), findsOneWidget);
+    expect(find.text('Simulator'), findsOneWidget);
     expect(find.text('Debugging'), findsOneWidget);
     expect(find.text('Developer'), findsNothing);
   });
 
-  testWidgets('developer on: Advanced header + Developer row, no Debugging row', (tester) async {
+  testWidgets('developer on: DEVELOPER header + Simulator & Developer options row, no Debugging row', (tester) async {
     await pumpSettings(tester, developerEnabled: true);
 
     expect(find.text('Profile'), findsOneWidget);
-    expect(find.text('ADVANCED'), findsOneWidget);
+    expect(find.text('DEVELOPER'), findsOneWidget);
+    expect(find.text('Simulator'), findsOneWidget);
     expect(find.text('Developer'), findsOneWidget);
     expect(find.text('Debugging'), findsNothing);
+  });
+
+  testWidgets('toggling Simulator switch turns simulator on and off', (tester) async {
+    await pumpSettings(tester, developerEnabled: true);
+
+    expect(BleSimulatorDriver().isSimulatorActive, isFalse);
+
+    final switchFinder = find.byType(Switch);
+    expect(switchFinder, findsOneWidget);
+
+    await tester.tap(switchFinder);
+    await tester.pumpAndSettle();
+
+    expect(BleSimulatorDriver().isSimulatorActive, isTrue);
+
+    await tester.tap(switchFinder);
+    await tester.pumpAndSettle();
+
+    expect(BleSimulatorDriver().isSimulatorActive, isFalse);
   });
 
   testWidgets('tapping Profile pushes ProfilePage; back returns to Settings', (tester) async {
@@ -84,11 +110,12 @@ void main() {
     expect(find.text('Medical Profile'), findsNothing);
   });
 
-  testWidgets('both flags on: Profile + Advanced with Debugging and Developer', (tester) async {
+  testWidgets('both flags on: Profile + DEVELOPER with Simulator, Debugging and Developer options', (tester) async {
     await pumpSettings(tester, debuggingEnabled: true, developerEnabled: true);
 
     expect(find.text('Profile'), findsOneWidget);
-    expect(find.text('ADVANCED'), findsOneWidget);
+    expect(find.text('DEVELOPER'), findsOneWidget);
+    expect(find.text('Simulator'), findsOneWidget);
     expect(find.text('Debugging'), findsOneWidget);
     expect(find.text('Developer'), findsOneWidget);
   });

@@ -24,7 +24,7 @@ class BleSimulatorDriver implements IBLESensorDriver {
   BleSimulatorDriver._internal();
 
   BehaviorSubject<double> _signalSubject = BehaviorSubject<double>.seeded(0.3);
-  BehaviorSubject<bool> _isSimulatorSubject = BehaviorSubject<bool>.seeded(true);
+  BehaviorSubject<bool> _isSimulatorSubject = BehaviorSubject<bool>.seeded(false);
   BehaviorSubject<SimulatorScenario> _scenarioSubject =
       BehaviorSubject<SimulatorScenario>.seeded(SimulatorScenario.none);
 
@@ -191,9 +191,9 @@ class BleSimulatorDriver implements IBLESensorDriver {
       _signalSubject.add(0.3);
     }
     if (_isSimulatorSubject.isClosed) {
-      _isSimulatorSubject = BehaviorSubject<bool>.seeded(true);
+      _isSimulatorSubject = BehaviorSubject<bool>.seeded(false);
     } else {
-      _isSimulatorSubject.add(true);
+      _isSimulatorSubject.add(false);
     }
     if (_scenarioSubject.isClosed) {
       _scenarioSubject =
