@@ -123,9 +123,6 @@ class SettingsPage extends StatelessWidget {
                           leadingIcon: Icons.developer_board,
                           label: "Simulator",
                           showChevron: false,
-                          onTap: () {
-                            BleSimulatorDriver().setSimulatorEnabled(!isSimActive);
-                          },
                           trailingWidget: Switch(
                             value: isSimActive,
                             activeThumbColor: AppColors.accentGreen,
