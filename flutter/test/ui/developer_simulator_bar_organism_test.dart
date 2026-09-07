@@ -18,14 +18,10 @@ void main() {
     );
 
     expect(find.text("⚡ DEV SIMULATOR TOOLBAR"), findsOneWidget);
-    expect(find.text("IDLE Band Sample"), findsOneWidget);
-    expect(find.text("Normal 16 bpm"), findsOneWidget);
-    expect(find.text("In-Band >10s"), findsOneWidget);
-    expect(find.text("Recovery 5s"), findsOneWidget);
-    // The retired 2-stage chip is gone.
-    expect(find.text("Active Baseline"), findsNothing);
+    expect(find.text("Stop Breathing during sleep"), findsOneWidget);
+    expect(find.text("Normal Breathing during sleep"), findsOneWidget);
 
-    await tester.tap(find.text("In-Band >10s"));
+    await tester.tap(find.text("Stop Breathing during sleep"));
     await tester.pump();
 
     expect(BleSimulatorDriver().currentScenario, equals(SimulatorScenario.inBandNoExcursion));

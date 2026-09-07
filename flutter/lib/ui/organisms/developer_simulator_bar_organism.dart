@@ -69,43 +69,25 @@ class DeveloperSimulatorBarOrganism extends StatelessWidget {
                   ),
                   if (isSimEnabled) ...[
                     const SizedBox(height: 10),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          _buildChip(
-                            context,
-                            label: "IDLE Band Sample",
-                            scenario: SimulatorScenario.idleBandSample,
-                            activeScenario: activeScenario,
-                            color: AppColors.primaryTeal,
-                          ),
-                          const SizedBox(width: 6),
-                          _buildChip(
-                            context,
-                            label: "Normal 16 bpm",
-                            scenario: SimulatorScenario.normalRespiration,
-                            activeScenario: activeScenario,
-                            color: AppColors.purpleAnalytics,
-                          ),
-                          const SizedBox(width: 6),
-                          _buildChip(
-                            context,
-                            label: "In-Band >10s",
-                            scenario: SimulatorScenario.inBandNoExcursion,
-                            activeScenario: activeScenario,
-                            color: AppColors.dangerRed,
-                          ),
-                          const SizedBox(width: 6),
-                          _buildChip(
-                            context,
-                            label: "Recovery 5s",
-                            scenario: SimulatorScenario.recovery,
-                            activeScenario: activeScenario,
-                            color: AppColors.accentGreen,
-                          ),
-                        ],
-                      ),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _buildChip(
+                          context,
+                          label: "Stop Breathing during sleep",
+                          scenario: SimulatorScenario.inBandNoExcursion,
+                          activeScenario: activeScenario,
+                          color: AppColors.dangerRed,
+                        ),
+                        _buildChip(
+                          context,
+                          label: "Normal Breathing during sleep",
+                          scenario: SimulatorScenario.normalRespiration,
+                          activeScenario: activeScenario,
+                          color: AppColors.accentGreen,
+                        ),
+                      ],
                     ),
                   ],
                 ],
