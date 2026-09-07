@@ -10,7 +10,7 @@ library;
 const Duration kIdleSampleWindow = Duration(seconds: 10);
 
 /// Wear-check window default (`[ASSUMPTION]`).
-const Duration kWearCheckWindow = Duration(seconds: 15);
+const Duration kWearCheckWindow = Duration(seconds: 25);
 
 /// Valid breath-excursion cycles the wear check must observe before
 /// "Start Sleep Monitoring" unlocks (AD-05).

@@ -219,10 +219,10 @@ void main() {
     await tester.pump(const Duration(seconds: 11));
     await tester.pump();
 
-    // Step 2 — wear check. The driver's own post-sampleIdleBand emission
-    // (band-spanning breathing wave) supplies the excursions; no manual
-    // scenario/chip switching.
+    // Step 2 — tap ready button for wear check
     expect(find.text("STEP 2 OF 3: WORN SAMPLING"), findsOneWidget);
+    await tester.tap(find.text("I'm Ready — Start Breathing Check"));
+    await tester.pump();
     await tester.pump(const Duration(seconds: 12));
     await tester.pump();
 
@@ -270,6 +270,8 @@ void main() {
     await tester.pump(const Duration(seconds: 11));
     await tester.pump();
 
+    await tester.tap(find.text("I'm Ready — Start Breathing Check"));
+    await tester.pump();
     await tester.pump(const Duration(seconds: 12));
     await tester.pump();
 

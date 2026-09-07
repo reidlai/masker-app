@@ -84,8 +84,8 @@ class _IdleBandCalibrationWizardState extends State<IdleBandCalibrationWizard> {
         _band = band;
         _sampling = false;
         _step = _WizardStep.wearCheck;
+        _wearCheckRunning = false;
       });
-      _runWearCheck();
     } catch (_) {
       // Catch *any* failure — a StateError (silent stream) or a real BLE
       // fault (PlatformException / disconnection) — so the spinner never
@@ -269,45 +269,79 @@ class _IdleBandCalibrationWizardState extends State<IdleBandCalibrationWizard> {
     return [
       _stepBadge("STEP 2 OF 3: WORN SAMPLING"),
       const SizedBox(height: 12),
-      const Text("Sensor Fit & Wear Check",
+      const Text("Sensor Fit & Breathing Check",
           style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary)),
       const SizedBox(height: 6),
       const Text(
-        "Now take a few normal breaths so we can check the fit.",
+        "Noise floor calibrated! When you are ready, tap below and take 2 full, deep breaths so we can verify sensor fit.",
         style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
       ),
       const SizedBox(height: 12),
       _bandReadout(_band),
-      const SizedBox(height: 6),
-      Text(
-        "Valid breath cycles: $_validCycles / $kRequiredValidCycles",
-        style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: AppColors.accentGreen),
-      ),
-      if (_wearCheckFailed) ...[
-        const SizedBox(height: 16),
+      const SizedBox(height: 16),
+      if (!_wearCheckRunning && !_wearCheckFailed) ...[
+        AppButton(
+          label: "I'm Ready — Start Breathing Check",
+          variant: AppButtonVariant.primary,
+          onPressed: _runWearCheck,
+        ),
+      ] else if (_wearCheckFailed) ...[
         const Text(
-          "Sensor not detecting breathing — check the fit.",
+          "Sensor not detecting breathing — check the fit and try again.",
           style: TextStyle(fontSize: 13, color: AppColors.dangerRed),
         ),
         const SizedBox(height: 12),
         AppButton(
-          label: "Retry",
+          label: "Retry Breathing Check",
           variant: AppButtonVariant.primary,
-          onPressed: _wearCheckRunning ? null : _runWearCheck,
+          onPressed: _runWearCheck,
         ),
       ] else if (_wearCheckRunning) ...[
-        const SizedBox(height: 12),
-        const SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(
-              strokeWidth: 2, color: AppColors.accentGreen),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.accentGreen.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.accentGreen.withValues(alpha: 0.4)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: const [
+                  Icon(Icons.air, color: AppColors.accentGreen, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "🫁 Inhale Deeply & Exhale Fully...",
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.accentGreen,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Valid breath cycles: $_validCycles / $kRequiredValidCycles",
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 10),
+              const LinearProgressIndicator(
+                color: AppColors.accentGreen,
+                backgroundColor: AppColors.cardBorder,
+              ),
+            ],
+          ),
         ),
       ],
     ];

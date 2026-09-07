@@ -68,7 +68,13 @@ void main() {
     await tester.pump(kIdleSampleWindow); // sampleIdleBand future resolves
     await tester.pump();
     expect(driver.sampleIdleBandCalls, 1);
-    expect(find.text('Sensor Fit & Wear Check'), findsOneWidget);
+    expect(find.text('Sensor Fit & Breathing Check'), findsOneWidget);
+
+    // Tap ready button to launch Step 2 breathing check
+    final readyBtn = find.text("I'm Ready — Start Breathing Check");
+    expect(readyBtn, findsOneWidget);
+    await tester.tap(readyBtn);
+    await tester.pump();
 
     // Step 2 — feed only in-band samples; no strict excursion is possible.
     for (var i = 0; i < 10; i++) {
@@ -81,14 +87,14 @@ void main() {
     // Window elapses -> gate held, failure copy + Retry surface.
     await tester.pump(kWearCheckWindow);
     await tester.pump();
-    expect(find.text('Sensor not detecting breathing — check the fit.'),
+    expect(find.text('Sensor not detecting breathing — check the fit and try again.'),
         findsAtLeastNWidgets(1));
-    expect(find.text('Retry'), findsOneWidget);
+    expect(find.text('Retry Breathing Check'), findsOneWidget);
     expect(completedBand, isNull,
         reason: 'a wear-check timeout must not complete calibration');
 
     // Retry re-runs the wear check only — the idle sample is not repeated.
-    await tester.tap(find.text('Retry'));
+    await tester.tap(find.text('Retry Breathing Check'));
     await tester.pump();
     expect(driver.sampleIdleBandCalls, 1,
         reason: 'Retry re-runs the wear check, not sampleIdleBand');
@@ -101,7 +107,7 @@ void main() {
     }
     await tester.pump(kWearCheckWindow);
     await tester.pump();
-    expect(find.text('Sensor not detecting breathing — check the fit.'),
+    expect(find.text('Sensor not detecting breathing — check the fit and try again.'),
         findsAtLeastNWidgets(1));
     expect(completedBand, isNull);
 
