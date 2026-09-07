@@ -335,40 +335,47 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
       return Scaffold(
         backgroundColor: AppColors.nightMode,
         body: SafeArea(
-          child: InkWell(
-            onLongPress: _stopSleepMonitoring,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 16,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.accentGreen,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.accentGreen.withValues(alpha: 0.6),
-                          blurRadius: 16,
-                          spreadRadius: 4,
+          child: Column(
+            children: [
+              if (_isDevMode) DeveloperSimulatorBarOrganism(),
+              Expanded(
+                child: InkWell(
+                  onLongPress: _stopSleepMonitoring,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 16,
+                          height: 16,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.accentGreen,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.accentGreen.withValues(alpha: 0.6),
+                                blurRadius: 16,
+                                spreadRadius: 4,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        const Text(
+                          "Night Mode Active (0-FPS)",
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          "Long-press anywhere to wake & finish session",
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 10),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    "Night Mode Active (0-FPS)",
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    "Long-press anywhere to wake & finish session",
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 10),
-                  ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       );
@@ -400,9 +407,6 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Contextual Developer Simulator Bar (when DEV_MODE=true)
-              if (_isDevMode) DeveloperSimulatorBarOrganism(),
-
               // BLE Status Organism
               BleSensorStatusOrganism(isConnected: _isBleConnected),
               const SizedBox(height: 24),

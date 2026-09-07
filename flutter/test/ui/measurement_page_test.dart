@@ -242,4 +242,47 @@ void main() {
     // Drain the still-live monitoring emitter so no timer leaks past the test.
     await tester.pump(const Duration(milliseconds: 300));
   });
+
+  testWidgets('renders DeveloperSimulatorBarOrganism during active monitoring when dev mode is enabled', (tester) async {
+    final driver = BLESensorDriver();
+    addTearDown(driver.disconnect);
+
+    await tester.pumpWidget(MaterialApp(
+      home: MeasurementPage(
+        developerEnabled: true,
+        sensorDriver: driver,
+        permissionService: _FakeBlePermissionService(
+          const BlePermissionStatus(BlePermissionResult.granted, []),
+        ),
+      ),
+    ));
+
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+
+    // In dev mode setup screen, simulator toolbar is not on setup screen.
+    expect(find.text("Sensor Baseline & Noise Envelope Calibration"), findsOneWidget);
+
+    // Complete wizard
+    await tester.tap(find.text("Start"));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 11));
+    await tester.pump();
+
+    await tester.pump(const Duration(seconds: 12));
+    await tester.pump();
+
+    expect(find.text("Calibration Complete — Ready for Sleep ✓"), findsOneWidget);
+
+    final startButton = find.widgetWithText(ElevatedButton, "Start Nocturnal Sleep Monitoring");
+    await tester.tap(startButton);
+    await tester.pump();
+
+    // Dev Simulator Toolbar renders on active monitoring view during dev mode!
+    expect(find.text("Night Mode Active (0-FPS)"), findsOneWidget);
+    expect(find.text("⚡ DEV SIMULATOR TOOLBAR"), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 300));
+  });
 }
