@@ -589,10 +589,10 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
               ),
               const SizedBox(height: 32),
 
-              // Sleep Launcher Button — disabled (null onPressed) until a
+              // Step 3: Sleep Launcher Button — disabled (null onPressed) until a
               // valid IDLE Band exists, not just a "calibration complete" flag.
               AppButton(
-                label: "Start Nocturnal Sleep Monitoring",
+                label: "Step 3: Start Nocturnal Sleep Monitoring",
                 variant: AppButtonVariant.primary,
                 icon: const Icon(Icons.nightlight_round, color: Colors.white),
                 onPressed: (_idleBand != null && _isCalibrationComplete)

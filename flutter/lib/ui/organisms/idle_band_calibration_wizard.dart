@@ -218,7 +218,7 @@ class _IdleBandCalibrationWizardState extends State<IdleBandCalibrationWizard> {
 
   List<Widget> _buildIdleSample() {
     return [
-      _stepBadge("STEP 1 OF 2"),
+      _stepBadge("STEP 1 OF 3: NOISE FLOOR SAMPLING"),
       const SizedBox(height: 12),
       const Text("Sensor Baseline & Noise Envelope",
           style: TextStyle(
@@ -257,7 +257,7 @@ class _IdleBandCalibrationWizardState extends State<IdleBandCalibrationWizard> {
         ),
       ] else ...[
         AppButton(
-          label: "Start",
+          label: "Start Noise Floor Sampling",
           variant: AppButtonVariant.primary,
           onPressed: _startIdleSample,
         ),
@@ -267,9 +267,9 @@ class _IdleBandCalibrationWizardState extends State<IdleBandCalibrationWizard> {
 
   List<Widget> _buildWearCheck() {
     return [
-      _stepBadge("STEP 2 OF 2"),
+      _stepBadge("STEP 2 OF 3: WORN SAMPLING"),
       const SizedBox(height: 12),
-      const Text("Wear check",
+      const Text("Sensor Fit & Wear Check",
           style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -315,10 +315,10 @@ class _IdleBandCalibrationWizardState extends State<IdleBandCalibrationWizard> {
 
   List<Widget> _buildComplete() {
     return [
-      _stepBadge("STEP 2 OF 2"),
+      _stepBadge("CALIBRATION COMPLETE ✓"),
       const SizedBox(height: 12),
       const Text(
-        "Calibration Complete — Ready for Sleep ✓",
+        "Baseline & Fit Verified — Ready for Step 3 ✓",
         style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,

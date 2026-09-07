@@ -63,12 +63,12 @@ void main() {
     ));
 
     // Step 1 — idle sample.
-    await tester.tap(find.text('Start'));
+    await tester.tap(find.text('Start Noise Floor Sampling'));
     await tester.pump();
     await tester.pump(kIdleSampleWindow); // sampleIdleBand future resolves
     await tester.pump();
     expect(driver.sampleIdleBandCalls, 1);
-    expect(find.text('Wear check'), findsOneWidget);
+    expect(find.text('Sensor Fit & Wear Check'), findsOneWidget);
 
     // Step 2 — feed only in-band samples; no strict excursion is possible.
     for (var i = 0; i < 10; i++) {

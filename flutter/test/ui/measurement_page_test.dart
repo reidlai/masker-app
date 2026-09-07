@@ -211,10 +211,10 @@ void main() {
     await tester.pump();
 
     expect(find.text("Sensor Baseline & Noise Envelope Calibration"), findsOneWidget);
-    expect(find.text("STEP 1 OF 2"), findsOneWidget);
+    expect(find.text("STEP 1 OF 3: NOISE FLOOR SAMPLING"), findsOneWidget);
 
     // Step 1 — idle sample (10 s window).
-    await tester.tap(find.text("Start"));
+    await tester.tap(find.text("Start Noise Floor Sampling"));
     await tester.pump();
     await tester.pump(const Duration(seconds: 11));
     await tester.pump();
@@ -222,14 +222,14 @@ void main() {
     // Step 2 — wear check. The driver's own post-sampleIdleBand emission
     // (band-spanning breathing wave) supplies the excursions; no manual
     // scenario/chip switching.
-    expect(find.text("STEP 2 OF 2"), findsOneWidget);
+    expect(find.text("STEP 2 OF 3: WORN SAMPLING"), findsOneWidget);
     await tester.pump(const Duration(seconds: 12));
     await tester.pump();
 
-    expect(find.text("Calibration Complete — Ready for Sleep ✓"), findsOneWidget);
+    expect(find.text("Baseline & Fit Verified — Ready for Step 3 ✓"), findsOneWidget);
 
     // Start Sleep Monitoring is now enabled.
-    final startButton = find.widgetWithText(ElevatedButton, "Start Nocturnal Sleep Monitoring");
+    final startButton = find.widgetWithText(ElevatedButton, "Step 3: Start Nocturnal Sleep Monitoring");
     expect(startButton, findsOneWidget);
     expect(tester.widget<ElevatedButton>(startButton).onPressed, isNotNull);
 
@@ -265,7 +265,7 @@ void main() {
     expect(find.text("Sensor Baseline & Noise Envelope Calibration"), findsOneWidget);
 
     // Complete wizard
-    await tester.tap(find.text("Start"));
+    await tester.tap(find.text("Start Noise Floor Sampling"));
     await tester.pump();
     await tester.pump(const Duration(seconds: 11));
     await tester.pump();
@@ -273,9 +273,9 @@ void main() {
     await tester.pump(const Duration(seconds: 12));
     await tester.pump();
 
-    expect(find.text("Calibration Complete — Ready for Sleep ✓"), findsOneWidget);
+    expect(find.text("Baseline & Fit Verified — Ready for Step 3 ✓"), findsOneWidget);
 
-    final startButton = find.widgetWithText(ElevatedButton, "Start Nocturnal Sleep Monitoring");
+    final startButton = find.widgetWithText(ElevatedButton, "Step 3: Start Nocturnal Sleep Monitoring");
     await tester.tap(startButton);
     await tester.pump();
 
