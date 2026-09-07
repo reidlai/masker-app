@@ -88,38 +88,41 @@ class _LanguageRegionPageState extends State<LanguageRegionPage> {
   }
 
   Widget _buildGroupedCard(List<String> options, String selectedValue, ValueChanged<String> onSelect) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.cardBorder, width: 1),
-      ),
-      child: Column(
-        children: List.generate(options.length, (index) {
-          final option = options[index];
-          final isSelected = option == selectedValue;
-          final isLast = index == options.length - 1;
+    return Material(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.cardBorder, width: 1),
+        ),
+        child: Column(
+          children: List.generate(options.length, (index) {
+            final option = options[index];
+            final isSelected = option == selectedValue;
+            final isLast = index == options.length - 1;
 
-          return Column(
-            children: [
-              ListTile(
-                title: Text(
-                  option,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            return Column(
+              children: [
+                ListTile(
+                  title: Text(
+                    option,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    ),
                   ),
+                  trailing: isSelected
+                      ? const Icon(Icons.check, color: AppColors.accentGreen, size: 20)
+                      : null,
+                  onTap: () => onSelect(option),
                 ),
-                trailing: isSelected
-                    ? const Icon(Icons.check, color: AppColors.accentGreen, size: 20)
-                    : null,
-                onTap: () => onSelect(option),
-              ),
-              if (!isLast) const Divider(height: 1, color: AppColors.cardBorder),
-            ],
-          );
-        }),
+                if (!isLast) const Divider(height: 1, color: AppColors.cardBorder),
+              ],
+            );
+          }),
+        ),
       ),
     );
   }

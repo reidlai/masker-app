@@ -7,10 +7,10 @@ stepsCompleted:
 status: complete
 inputDocuments:
   - _bmad-output/prd/prd.md  # v2.5.0
-  - _bmad-output/architecture/ARCHITECTURE-SPINE.md  # v20.0.0 (IDLE Band fold pending)
+  - _bmad-output/architecture/ARCHITECTURE-SPINE.md  # v21.0.0
   - _bmad-output/ux/ux-design-masker-app-2026-09-01/DESIGN.md  # v1.3.0
   - _bmad-output/ux/ux-design-masker-app-2026-09-01/EXPERIENCE.md  # v1.3.0
-revision: "2026-09-06 in-place reconciliation — Subscription/Billing round + IDLE Band signal-model round. Requirements Inventory + FR Coverage Map refreshed against PRD v2.5.0. Epic List and Detailed User Stories to be revised in step-02/03."
+revision: "2026-09-07 in-place reconciliation — Patient Identification (Name, Email, Phone) + Caregiver Contact (Name, Phone) added under HIPAA §164.312 & FDA SaMD compliance rules. Reconciled against PRD v2.5.0, EXPERIENCE.md/DESIGN.md v1.3.1, and ARCHITECTURE-SPINE.md v21.0.0."
 ---
 
 # Sleep Apnea Detection App (D-BAND Integrated Platform) - Epic Breakdown
@@ -25,14 +25,14 @@ This document provides the complete epic and story breakdown for Sleep Apnea Det
 
 ## Requirements Inventory
 
-> **Reconciled against PRD v2.5.0 + EXPERIENCE.md/DESIGN.md v1.3.0 + ARCHITECTURE-SPINE.md v21.0.0.** Two change rounds folded in since the prior epic breakdown: **(A) Subscription & Billing** (new FR-4.6, FR-5.7, FR-5.8, FR-6.1–6.10; FR-2.5 / FR-4.2 / FR-5.3 gated Premium; FR-3.5 deferred to MVP2; FR-4.3 split Free/Premium) and **(B) IDLE Band signal model** (FR-1.4–1.8 rewritten, FR-1.5 removed, "AHI" → "Apnea Index (AI)", waveform is raw-signal + band lines). All three artifacts are now consistent.
+> **Reconciled against PRD v2.5.0 + EXPERIENCE.md/DESIGN.md v1.3.0 + ARCHITECTURE-SPINE.md v21.0.0.** Two change rounds folded in since the prior epic breakdown: **(A) Subscription & Billing** (new FR-4.6, FR-5.7, FR-5.8, FR-6.1–6.10; FR-2.5 / FR-4.2 / FR-5.3 gated Premium; FR-3.5 deferred to MVP2; FR-4.3 split Free/Premium) and **(B) Sensor Baseline Drift & Noise Floor Envelope signal model** (FR-1.4–1.8 rewritten, FR-1.5 removed, "AHI" → "Apnea Index (AI)", waveform is raw-signal + envelope bounds). All three artifacts are now consistent.
 
 ### Functional Requirements
 
 - **FR-1.1:** The application shall automatically scan for, identify, and establish a low-energy Bluetooth (BLE 4.0, 4.1, 4.2, and 5.0+, AES-128 link security) connection with the D-BAND sensor array (`0x180D` service / `0x2A37` characteristic @ 10Hz).
 - **FR-1.2:** Upon successful BLE pairing, the application shall execute the Cloud Device Binding API (`POST /api/v1/devices/bind`), transmitting an encrypted payload containing `user_profile_id`, `device_hardware_id`, `ble_mac_address`, and `binding_timestamp`.
 - **FR-1.3:** If the device is paired without active internet connectivity, the application shall queue the device binding payload locally in an encrypted buffer and retry transmission upon network restoration.
-- **FR-1.4 (IDLE Band Calibration):** With the D-BAND worn and the patient still, the application shall sample the raw bio-signal for ~10 seconds (`[ASSUMPTION]` window, tunable 5–30 s), tracking the running **minimum** and **maximum** of the stream. Those two values are the session **IDLE Band** — `lower_bound` / `upper_bound` — the resting reference for all breath detection and apnea evaluation. Each sample only widens the band within the window; it is never narrowed.
+- **FR-1.4 (Sensor Baseline Drift & Noise Floor Envelope Calibration):** With the D-BAND worn and the patient still, the application shall sample the raw bio-signal for ~10 seconds (`[ASSUMPTION]` window, tunable 5–30 s), tracking the running **minimum** and **maximum** of the stream. Those two values are the session **Sensor Baseline Drift & Noise Floor Envelope** — `lower_bound` / `upper_bound` — the resting reference for all breath detection and apnea evaluation. Each sample only widens the envelope within the window; it is never narrowed.
 - **FR-1.5:** *Removed in PRD v2.5.0 — the former "Stage-2 Active Thermal Breath Training" step is eliminated (awake seated breathing is not a valid reference for sleep breathing). The IDLE Band (FR-1.4) is the only calibrated reference. ID retired, not reused.*
 - **FR-1.6 (Breath Excursion Definition):** A **valid breath** is a cycle in which the raw signal rises to/above `upper_bound` (inhale) **and** falls to/below `lower_bound` (exhale). A phase that fails to cross its bound is a **"stop-breathing" sample**. The app works in raw signal units — **no** thermal-to-volumetric (L/s) transformation, **no** `V_pp` peak-to-peak baseline.
 - **FR-1.7 (Apnea Condition Binding):** A sample is a **"stop-breathing"** sample whenever the signal lies within `[lower_bound, upper_bound]` (no excursion beyond either bound). No `0.10 × V_pp` threshold.
@@ -57,7 +57,7 @@ This document provides the complete epic and story breakdown for Sleep Apnea Det
 - **FR-4.5:** Big Data Platform & Clinical Research Export — a secure, de-identified big data export interface for clinical research. *(Platform-side; not a user-tier feature. Only Premium sessions, which stream to the cloud, contribute.)*
 - **FR-4.6 (Home Dashboard) — NEW:** A **read-only** Home dashboard as the post-onboarding landing surface: greeting + monitoring streak; a **last-night hero card** (`HomeSummaryCardOrganism` — AI + alarm-fired override, taps through to the Morning Sleep Summary); a **D-BAND device-status card** (`DeviceStatusCardOrganism` — nominal / actionable, reads AD-12 receiver-service state only); a **7-night Apnea Index trend** card (`WeeklyTrendCardOrganism` — 7-slot mini chart + descriptive, non-diagnostic delta line; <2 nights → "not enough data"). Pure consumer of already-computed state — reads the local last-N `SessionSummary` cache (AD-15) + the AD-12 receiver state; opens **no** BLE subscription and issues **no** network read on load.
 - **FR-5.1:** Passkey FIDO2/WebAuthn authentication — passwordless login via native OS biometrics (Face ID, Touch ID, Android BiometricPrompt) and hardware secure enclave tokens.
-- **FR-5.2:** Health Profile Management — Weight, Height, Age, Gender, computed BMI, Emergency Contacts. Weight/Height are captured, stored, and displayed in the units selected in FR-5.7 (kg/lb, cm/ft-in); a single canonical unit is persisted server-side and converted for display.
+- **FR-5.2:** Health Profile Management — Patient Full Name (`full_name`), Patient Email (`email`), Patient Phone Number (`phone_number`), Weight, Height, Age, Gender, computed BMI, Caregiver Name (`caregiver_name`), and Caregiver Emergency Phone Number (`caregiver_phone`). Weight/Height are captured, stored, and displayed in the units selected in FR-5.7 (kg/lb, cm/ft-in); a single canonical unit is persisted server-side and converted for display. Protected under HIPAA 45 CFR § 164.312 & FDA SaMD rules (AES-256 encryption at rest, TLS 1.3 in transit, Passkey access gate, and `PhiAuditLog` audit logging).
 - **FR-5.3 — `PREMIUM` · `[OPEN — legal sign-off, HIPAA § 164.524]`:** "Share Profile with Doctor" UI module + extensible JSON export engine formatted for future EHR/EMR physician integrations. Gated to Premium. **`bmad-build` must NOT ship the gate** until Privacy/Legal sign-off; standing fallback = a **free basic signed-FHIR/PDF export always available**, Premium gating only enhancements (trend analytics, date-range/bulk export, richer formatting).
 - **FR-5.4:** Mobile Device Lost & Remote Session Revocation — a WebAuthn-backed self-service Web Portal to report a lost phone; the cloud invalidates active JWT tokens, revokes refresh tokens, and issues a cryptographic remote wipe signal.
 - **FR-5.5:** Application Documentation & Developer Setup Guide — a comprehensive developer README (project summary, product background, quick start, developer mode, debugging mode, release build workflows). *(Epic-derived, not a PRD FR; retained.)*
@@ -188,7 +188,7 @@ This document provides the complete epic and story breakdown for Sleep Apnea Det
 > Renumbered this reconciliation so MVP1-active epics (1–5) lead, MVP2 follows (6), and the deferred epics (7–10) trail. Detailed User Stories below cover Epics 1–5.
 
 ### Epic 1: Mobile App Foundation, Settings & Biometric Passkey Onboarding (MVP1 - Active)
-Patients register passwordlessly with FIDO2 Passkey biometrics (Face ID / Touch ID / BiometricPrompt), set up a units-aware health baseline profile, navigate the `flutter_shadcn` dark glassmorphic shell and its four tabs, open a grouped **Settings** surface (Account / Preferences / Subscription / conditional Advanced), choose **Language & Region** and measurement units, and reach the Developer Options page. Includes the on-device sub-1-second cryptographic zeroization routine and the developer README.
+Patients register passwordlessly with FIDO2 Passkey biometrics (Face ID / Touch ID / BiometricPrompt), set up a units-aware health baseline profile with Patient Identification (Full Name, Email Address, Phone Number) and Caregiver Contact details (Caregiver Name & Phone) under HIPAA §164.312 & FDA SaMD compliance rules, navigate the `flutter_shadcn` dark glassmorphic shell and its four tabs, open a grouped **Settings** surface (Account / Preferences / Subscription / conditional Advanced), choose **Language & Region** and measurement units, and reach the Developer Options page. Includes the on-device sub-1-second cryptographic zeroization routine and the developer README.
 **FRs covered:** FR-5.1, FR-5.2, FR-5.5, FR-5.6, FR-5.7, FR-5.8, FR-5.4 *(on-device wipe execution only — portal → Epic 7)* | **NFRs:** NFR-4.1, NFR-4.3, NFR-4.4, NFR-4.5 | **UX-DRs:** UX-DR1, UX-DR8, UX-DR9, UX-DR14, UX-DR16
 **Standalone:** complete auth + shell + settings; enables every later epic, requires none.
 
@@ -262,17 +262,18 @@ So that my PHI is protected under HIPAA §164.312 without a vulnerable password.
 - **And** after 5 minutes of inactivity the session locks and re-authentication is required (NFR-4.1).
 - **And** the screen is composed of `BrandHeaderOrganism`, `PasskeyAuthCardOrganism`, `SecurityBadgeOrganism`.
 
-#### Story 1.2: Health Baseline & Demographics Setup (units-aware)
+#### Story 1.2: Health Baseline, Patient Identification & Caregiver Setup (units-aware & HIPAA/FDA compliant)
 As a patient,
-I want to enter and edit my Age, Weight, Height, Gender and caregiver emergency contact,
-So that the app can compute my BMI and hold the contact the MVP2 dispatch feature will use.
+I want to enter and edit my Full Name, Email Address, Phone Number, Age, Weight, Height, Gender, and Caregiver Contact details (Caregiver Name & Phone Number),
+So that attending physicians and emergency dispatchers can identify me and reach my designated caregiver during a nocturnal apnea emergency under HIPAA §164.312 & FDA SaMD compliance rules.
 
 **Acceptance Criteria:**
 - **Given** I am on `MOB_USER_PROFILE` (first-run setup or Settings edit mode),
-- **When** I enter Weight and Height,
-- **Then** the fields render in the units selected in Story 1.5 (kg/lb, cm/ft-in) and `HealthDemographicsOrganism` recomputes BMI live.
-- **And** the value is persisted server-side in a single canonical unit and converted for display; changing the unit preference never mutates the stored value.
-- **And** `EmergencyContactOrganism` captures and preserves the caregiver phone number.
+- **When** I enter Patient Identification details (Full Name, Email Address, Phone Number),
+- **Then** the fields are validated (RFC 5322 Email regex, formatted phone regex) and stored in `PatientUser` as Level 1 PHI (`encrypted_full_name`, `encrypted_email`, `encrypted_phone`).
+- **And** `HealthDemographicsOrganism` renders Weight and Height in the units selected in Story 1.5 (kg/lb, cm/ft-in) and recomputes BMI live.
+- **And** `EmergencyContactOrganism` captures and preserves the Caregiver Name (`Maria Chen`) and Caregiver Phone Number (`(555) 019-2244`) stored in `HealthBaseline` (`encrypted_caregiver_name`, `encrypted_caregiver_phone`).
+- **And** all profile data is protected under HIPAA 45 CFR § 164.312 technical safeguards (Passkey auth gate, AES-256 local SQLCipher & cloud KMS encryption at rest, TLS 1.3 in transit, non-blocking `PhiAuditLog` audit logging upon save).
 - **And** first-run "Save & Continue" advances the onboarding wizard; from Settings, "Save" persists and back returns to `MOB_SETTINGS`.
 
 #### Story 1.3: App Shell, 4-Tab Navigation & Nav Model
@@ -403,7 +404,7 @@ So that a weak signal at bedtime doesn't block me from monitoring.
 - **Then** the encrypted payload is queued in a local encrypted buffer and the UI proceeds (pairing is not blocked on the bind call).
 - **And** on network restoration the queued payload is transmitted and acknowledged, and a duplicate bind is idempotent.
 
-#### Story 2.5: IDLE Band Calibration & Wear Check
+#### Story 2.5: Sensor Baseline Drift & Noise Floor Envelope Calibration & Wear Check
 As a patient,
 I want a short calibration that learns my resting signal band and confirms the sensor is on me,
 So that the night's apnea detection has a valid per-session reference.
@@ -420,7 +421,7 @@ So that the night's apnea detection has a valid per-session reference.
 
 ---
 
-### Epic 3: Nocturnal IDLE-Band Monitoring & Tier-1 Local Alarm
+### Epic 3: Nocturnal Sensor Baseline Drift & Noise Floor Envelope Monitoring & Tier-1 Local Alarm
 
 #### Story 3.1: Pre-Session "Start Sleep Monitoring" State
 As a patient starting a night,
@@ -447,7 +448,7 @@ So that my breathing is watched all night without draining my phone.
 - **And** total consumption over an 8–10 h session stays < 8.0% phone battery; FFT/heavy math runs on background Dart Isolates (NFR-3.x).
 - **And** BLE auto-reconnects within 3.0 s of a drop (NFR-1.1).
 
-#### Story 3.3: 100 ms IDLE-Band Apnea Evaluator
+#### Story 3.3: 100 ms Noise Floor Envelope Apnea Evaluator
 As a patient,
 I want the app to test every 100 ms whether I'm actually taking breaths,
 So that a real breathing stop is caught within seconds.
@@ -470,7 +471,7 @@ So that I'm woken to breathe and not left with a blaring phone once I have.
 - **Then** it shows a full-screen high-contrast overlay, overrides volume to an escalating 40 dB → 75+ dB siren, pulses the haptic motor, and runs a 30 s countdown.
 - **And** the alarm priority follows IEC 60601-1-8: medium for 10–20 s, high for > 20 s (NFR-6.2).
 - **And** tapping the 64 dp "I'M SAFE" button silences the siren immediately and writes a local safety-tap event to the session trace.
-- **And** if valid IDLE-Band breath excursions resume continuously for 5 s with no tap, the alarm auto-silences (FR-3.4).
+- **And** if valid Noise Floor Envelope breath excursions resume continuously for 5 s with no tap, the alarm auto-silences (FR-3.4).
 - **And** `apnea_alarm_count` / `alarm_fired` for the session is incremented/set the first time `State_ApneaBreach` is reached.
 
 #### Story 3.5: Cloud Safety-Signal Log (Premium, log-only)
@@ -560,7 +561,7 @@ So that I can look closely at the apnea episodes.
 **Acceptance Criteria:**
 - **Given** I tap the Respiration Waveform card,
 - **When** `MOB_GRAPH_WAVEFORM` opens **with** a valid Premium claim,
-- **Then** it renders the raw bio-signal at 60 FPS (`fl_chart` / Skia) with the IDLE Band `lower_bound` / `upper_bound` as horizontal reference lines, pinch/zoom/pan, a 256-point FFT view (computed on the raw signal for BPM), and colour-coded apnea/safety markers; an apnea shows as a flat trace held between the band lines.
+- **Then** it renders the raw bio-signal at 60 FPS (`fl_chart` / Skia) with the Noise Floor Envelope `lower_bound` / `upper_bound` as horizontal reference lines, pinch/zoom/pan, a 256-point FFT view (computed on the raw signal for BPM), and colour-coded apnea/safety markers; an apnea shows as a flat trace held between the band lines.
 - **And** **without** a claim (Free), the card shows a non-interactive current-night thumbnail and the summary metrics only.
 - **And** the screen carries no litres-per-second axis anywhere.
 - **And** it is a pushed detail screen (‹ back, no bottom nav).

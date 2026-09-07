@@ -22,6 +22,14 @@ The **D-BAND Integrated Platform** captures continuous 10Hz respiratory thermal 
 - **RxDart `BehaviorSubject` Seeding**: The background BLE receiver service (`BleReceiverService`) initializes its central RxDart `BehaviorSubject<double>` queue with a seeded baseline of `5.0 L/s` (`BehaviorSubject.seeded(5.0)`). This guarantees immediate valid baseline data to UI rendering widgets (`LiveWaveformChart`, `MeasurementPage`) upon subscription prior to receiving the first raw 10Hz BLE telemetry packet, eliminating zero-division or visual layout jump artifacts.
 - **AASM Apnea Ratio ($0.10 \times V_{pp}$)**: Seeding `5.0 L/s` establishes an initial zero-airflow AASM Obstructive Apnea threshold at $0.10 \times 5.0 = \mathbf{0.5\text{ L/s}}$, providing a physically accurate threshold ratio ($0.5\text{ L/s} \ll 5.0\text{ L/s}$) during initial calibration.
 
+### 📡 BLE Telemetry & GATT Architecture (`0x180D` / `0x2A37`)
+- **Service UUID (`0x180D`)**: Standard Bluetooth SIG Heart Rate Service (HRS).
+- **Characteristic UUID (`0x2A37`)**: Standard Bluetooth SIG Heart Rate Measurement.
+- **iOS Background Scanning Priority**: Official 16-bit Bluetooth SIG UUIDs receive high-priority background BLE discovery and fast auto-reconnection in iOS `CoreBluetooth` during overnight sleep monitoring.
+- **Firmware Off-the-Shelf Stack**: Utilizes pre-baked GATT notification drivers on Nordic Semiconductor (nRF52) hardware.
+- **10Hz Bio-Signal Payload**: The 10Hz raw thermal inhale/exhale ADC signal is stream-multiplexed inside standard `0x2A37` notification payload packets.
+- **Device Filtering Safeguard**: Because `0x180D` is shared with consumer heart rate straps, `BleReceiverService` filters discovery using the device broadcast name prefix (`D-BAND-*`).
+
 ---
 
 ## 🛠️ Quick Start Guide

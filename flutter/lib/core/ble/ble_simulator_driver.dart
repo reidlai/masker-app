@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:rxdart/rxdart.dart';
-import '../monitoring/idle_band.dart';
+import '../monitoring/drift_and_noise_floor_envelope.dart';
 import 'i_ble_sensor_driver.dart';
 
 /// Developer / QA telemetry scenarios. Signal shapes are internally

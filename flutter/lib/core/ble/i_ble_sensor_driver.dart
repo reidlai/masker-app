@@ -1,4 +1,4 @@
-import '../monitoring/idle_band.dart';
+import '../monitoring/drift_and_noise_floor_envelope.dart';
 
 /// Explicit lifecycle stages of the sleep-apnea monitoring cycle.
 ///

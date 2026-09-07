@@ -1,9 +1,9 @@
 ---
 name: Sleep Apnea Detection App (D-BAND Integrated Platform)
 status: final
-version: 1.3.0
+version: 1.3.1
 created: 2026-09-01
-updated: 2026-09-06
+updated: 2026-09-07
 author: Sally (UX Designer) & Winston (System Architect)
 ---
 
@@ -26,6 +26,10 @@ author: Sally (UX Designer) & Winston (System Architect)
                         |
                         v
 [ User Medical Profile Setup (MOB_USER_PROFILE) ]
+   ├── Patient Identification (HIPAA Level 1 PHI): Patient Full Name, Email Address, Phone Number
+   ├── Health Demographics: Age (years), Weight (kg), Height (cm), Computed BMI
+   ├── Caregiver Contact: Caregiver Name, Caregiver Phone Number (Tier-2 Emergency SMS/Voice)
+   └── HIPAA/FDA Safeguards: Passkey auth gate (§164.312a), AES-256 encryption at rest (§164.312a2iv), TLS 1.3 in transit (§164.312e1), Minimum Necessary payload (§164.502b), non-blocking audit logging (§164.312b)
                         |
                         v
 [ Bluetooth Access Priming (MOB_BLE_PERMISSION_PRIMER) ]  ← first run only
@@ -34,9 +38,9 @@ author: Sally (UX Designer) & Winston (System Architect)
 [ BLE Sensor Discovery & Pairing (MOB_DEVICE_PAIRING) ]
                         |
                         v
-[ IDLE Band Calibration Wizard (MOB_CALIBRATION) ]
-   ├── Idle sample: worn + still ~10s → records running min/max = IDLE Band
-   └── Wear check: breathe normally → app confirms ≥2 valid band-excursion cycles
+[ Sensor Baseline Drift & Noise Floor Envelope Calibration Wizard (MOB_CALIBRATION) ]
+   ├── Idle sample: worn + still ~10s → records running min/max = Noise Floor Envelope
+   └── Wear check: breathe normally → app confirms ≥2 valid envelope-excursion cycles
                         |
                         v
 [ Nocturnal Sleep Monitoring - 0-FPS Night Mode (MOB_SLEEP_MONITOR) ]
@@ -55,7 +59,7 @@ author: Sally (UX Designer) & Winston (System Architect)
 **Clickable prototype:** every screen above, plus `MOB_HOME` and the Settings sub-screens (`MOB_SETTINGS`, `MOB_LANGUAGE_REGION`, `MOB_BILLING`, `MOB_PAYMENT_METHOD`), exists as a wired Penpot board. Two flows, each a single linear click-through (one forward tap per board):
 
 - **"Home (daily use)"** — the default; play opens here. `MOB_HOME` → `MOB_SLEEP_SUMMARY` → `MOB_GRAPH_WAVEFORM` → `MOB_HISTORY_FILTER` → `MOB_EXPORT_DOCTOR` → `MOB_SETTINGS` → `MOB_LANGUAGE_REGION` → `MOB_BILLING` → `MOB_PAYMENT_METHOD` ▪ end. This is the everyday path: land on the dashboard, review last night, dig into history/export, adjust settings.
-- **"First-run onboarding"** — from the flow picker. `MOB_PASSKEY_AUTH` → `MOB_USER_PROFILE` → `MOB_BLE_PERMISSION_PRIMER` → `MOB_DEVICE_PAIRING` → `MOB_CALIBRATION` → `MOB_SLEEP_MONITOR` → `MOB_TIER1_ALARM` → `MOB_HOME`. The `MOB_SLEEP_MONITOR` → `MOB_TIER1_ALARM` step stands in for a breathing-pause event during the night; `MOB_TIER1_ALARM`'s "I'm Safe" dismissal returns to monitoring, which ends the walkthrough on `MOB_HOME` (the morning after). *(Penpot board "06 - Calibration Stage 2" has been deleted; "05" is now "05 - IDLE Band Calibration" and links straight to the sleep monitor.)*
+- **"First-run onboarding"** — from the flow picker. `MOB_PASSKEY_AUTH` → `MOB_USER_PROFILE` → `MOB_BLE_PERMISSION_PRIMER` → `MOB_DEVICE_PAIRING` → `MOB_CALIBRATION` → `MOB_SLEEP_MONITOR` → `MOB_TIER1_ALARM` → `MOB_HOME`. The `MOB_SLEEP_MONITOR` → `MOB_TIER1_ALARM` step stands in for a breathing-pause event during the night; `MOB_TIER1_ALARM`'s "I'm Safe" dismissal returns to monitoring, which ends the walkthrough on `MOB_HOME` (the morning after). *(Penpot board "06 - Calibration Stage 2" has been deleted; "05" is now "05 - Sensor Baseline Drift & Noise Floor Envelope Calibration" and links straight to the sleep monitor.)*
 
 File: [`Sleep Apnea App — Mockup Flow`](http://localhost:9001/#/workspace?team-id=05a22000-b411-8052-8008-9712fb8b998e&file-id=aeeec736-5c79-81d3-8008-9719456b8880&page-id=aeeec736-5c79-81d3-8008-9719456b8881) in Reid's self-hosted Penpot instance (`docker compose up -d` in `_bmad-output/ux/penpot/` if it's not already running). Static reference: `mockups/*.html` in this folder.
 
@@ -104,7 +108,7 @@ Tab-1 destination and the app's default landing on every launch after onboarding
 * **3 — D-BAND device-status card** (`DeviceStatusCardOrganism`) — the "will tonight work" answer. Nominal state: a `{colors.accent_green}` dot + *"D-BAND connected"*, battery percentage, and *"Last sync 7:02 AM"*; not tappable, no chevron. **Actionable states**: sensor unreachable → `{colors.danger_red}` dot + *"D-BAND not found"* + a chevron; battery ≤ 15% → `{colors.warning_amber}` dot + *"Battery low — 12%"*; Bluetooth permission missing/revoked → `{colors.danger_red}` + *"Bluetooth access needed"*. In any actionable state the card becomes a tap target routing to `MOB_DEVICE_PAIRING`'s blocked/recovery state (or the Settings deep-link per the prior-denial check). This card reads its data from the AD-12 receiver service state, not a live scan.
 * **4 — 7-night Apnea Index trend card** (`WeeklyTrendCardOrganism`) — title *"Apnea Index — last 7 nights"*, a 7-bar mini chart (`fl_chart`, bars in `{colors.accent_green}`, the most recent night at full opacity and the rest at 60%, a missed night rendered as a hollow slot), and a plain-language delta line: *"3.4 average · down from 4.1 last week"* (`{colors.accent_green}` when improving, `{colors.text_secondary}` when flat, `{colors.warning_amber}` when worsening). Tap → `MOB_HISTORY_FILTER`. **Not a diagnosis** — the copy states the trend, never an interpretation ("your apnea is improving" is out of bounds; "your Apnea Index is trending down" is fine).
 * **No quick-links row.** History and Doctor Export are **not** surfaced on Home — History is reached from the `MOB_SLEEP_SUMMARY` header action and Export from the `MOB_SLEEP_SUMMARY` body, so Home would only duplicate them. The trend card's tap-through to `MOB_HISTORY_FILTER` is the one history affordance Home carries.
-* **No start control.** Starting a night's session lives on the **Monitor** tab, not Home — Home is something you read, not act from. `MOB_SLEEP_MONITOR` gains a pre-session **"Start Sleep Monitoring"** state distinct from its Night Mode lock; tapping it goes straight to active monitoring, with `IdleBandCalibrationWizardOrganism` re-running only on the first session or when the stored IDLE Band is stale/invalid. `[NOTE FOR UX]` `mob_sleep_monitor.html` still renders only the active Night Mode state; the pre-session Start state is specified but pending a mockup pass.
+* **No start control.** Starting a night's session lives on the **Monitor** tab, not Home — Home is something you read, not act from. `MOB_SLEEP_MONITOR` gains a pre-session **"Start Sleep Monitoring"** state distinct from its Night Mode lock; tapping it goes straight to active monitoring, with `NoiseFloorEnvelopeCalibrationWizardOrganism` re-running only on the first session or when the stored Noise Floor Envelope is stale/invalid. `[NOTE FOR UX]` `mob_sleep_monitor.html` still renders only the active Night Mode state; the pre-session Start state is specified but pending a mockup pass.
 * **Bottom nav** — `PrimaryNavBarOrganism`, tab 1 (Home) active in `{colors.accent_green}`.
 * **Empty variants** — see `State_HomeEmpty` (no finalized session yet) and `State_HomeNoDevice` (no sensor paired). Cards that have no data render their own quiet placeholder in place; the dashboard frame (greeting, card order) does not collapse.
 * **Accessibility** — each card exposes one composite label, not per-stat fragments ("Last night: Apnea Index 3.2, Normal, 7 hours 45 minutes, 2 apnea events. Opens full summary." / "D-BAND connected, battery 84 percent, last synced 7:02 AM." / "Apnea Index last 7 nights: 3.4 average, down from 4.1 last week. Opens history."). Any card in an actionable/alert state is announced with its role as a button and its alert text first. The trend chart carries a text alternative equal to the delta line — the bars are decorative.
@@ -199,7 +203,7 @@ The **Summary** tab root (nav tab 3) and also the screen shown right after a ses
 * **Session score card** — the same two-signal logic as `HomeSummaryCardOrganism` (Component Pattern #10): the badge normally reads the **Apnea Index (AI)** band (`{colors.accent_green}` "Normal range" / amber "Moderate" / red "Severe"), but when the session logged ≥ 1 Tier-1 apnea alarm it switches to the amber **alarm-fired** treatment — amber AI ring, `"N APNEA ALERT"` badge, and the AI band demoted to the clinical line (`"AI 3.2 · normal range"` + `"7h 45m monitoring · 1 'I'm Safe' tap"`). Home and Summary read consistently: if one shows the amber alert, so does the other.
 * **Apnea-only caveat line** — a `{typography.caption}` `{colors.text_secondary}` line directly under the score card, always present, in the exact wording defined in §Voice and Tone ("The nightly metric"). It is not an error or warning treatment — plain secondary text. The same sentence is carried into the doctor report (`MOB_EXPORT_DOCTOR`).
 * **Header History action** — a calendar-icon pill button top-right, beside the session date. Tap → `MOB_HISTORY_FILTER` (the calendar/date-range list of all past nights). This is the only route to History from the Summary tab — there is no History tab of its own. Back from `MOB_HISTORY_FILTER` returns here.
-* **Respiration Waveform card** — a mini plot of the night's **raw bio-signal** with the two **IDLE Band** bounds drawn as horizontal reference lines; breaths show as excursions past the lines, apneas as flat stretches held between them. It is a **single tap target** (trailing "View details ›" in `{colors.accent_green}`, whole card is the hit area) → `MOB_GRAPH_WAVEFORM` for the pinch/pan interactive timeline and FFT. No litres-per-second axis. The card footnote names the affordance so it doesn't read as a static image.
+* **Respiration Waveform card** — a mini plot of the night's **raw bio-signal** with the two **Noise Floor Envelope** bounds drawn as horizontal reference lines; breaths show as excursions past the lines, apneas as flat stretches held between them. It is a **single tap target** (trailing "View details ›" in `{colors.accent_green}`, whole card is the hit area) → `MOB_GRAPH_WAVEFORM` for the pinch/pan interactive timeline and FFT. No litres-per-second axis. The card footnote names the affordance so it doesn't read as a static image.
 * **Export button** → `MOB_EXPORT_DOCTOR` (unchanged). On the Free plan this is gated per `MOB_BILLING` (Premium feature) — the button shows a lock and routes to `MOB_BILLING`.
 * `MOB_GRAPH_WAVEFORM`, `MOB_HISTORY_FILTER`, and `MOB_EXPORT_DOCTOR` are **pushed detail screens** — `‹` back affordance, **no** bottom nav — each returning to this screen.
 * **Accessibility** — the score card is one composite label; the waveform card announces as a button ("Respiration waveform, apnea stop at 12 seconds. Opens interactive timeline."); the History pill announces as "History, opens all sessions".
@@ -229,13 +233,13 @@ The **Summary** tab root (nav tab 3) and also the screen shown right after a ses
 
 ### 1. `LiveSignalMonitorOrganism`
 *(was `LiveAirflowMonitorOrganism` — renamed v1.3.0; it renders the raw signal, not an airflow rate.)*
-* **Behavior:** Renders the continuous 10Hz **raw bio-signal** trace with the two **IDLE Band** bounds (`lower_bound`, `upper_bound`) drawn as horizontal reference lines. A valid breath reads visually as the trace rising above the upper line (inhale) and dipping below the lower line (exhale); an apnea reads as the trace held flat *between* the two lines. No litres-per-second conversion — the y-axis is the raw signal in sensor units. When display is active, animates smooth cubic-spline curves at 60 FPS. When app enters Night Mode, locks display to pure black `{colors.night_mode}` (`#000000`) with zero frame rendering, reducing power consumption. Even though nothing renders visually in Night Mode, the screen's root semantics node still carries a persistent accessible label — *"Sleep monitoring active — D-BAND connected"* — so a screen-reader user who opens the app mid-session gets immediate confirmation without needing to background the app and read the notification shade.
+* **Behavior:** Renders the continuous 10Hz **raw bio-signal** trace with the two **Noise Floor Envelope** bounds (`lower_bound`, `upper_bound`) drawn as horizontal reference lines. A valid breath reads visually as the trace rising above the upper line (inhale) and dipping below the lower line (exhale); an apnea reads as the trace held flat *between* the two lines. No litres-per-second conversion — the y-axis is the raw signal in sensor units. When display is active, animates smooth cubic-spline curves at 60 FPS. When app enters Night Mode, locks display to pure black `{colors.night_mode}` (`#000000`) with zero frame rendering, reducing power consumption. Even though nothing renders visually in Night Mode, the screen's root semantics node still carries a persistent accessible label — *"Sleep monitoring active — D-BAND connected"* — so a screen-reader user who opens the app mid-session gets immediate confirmation without needing to background the app and read the notification shade.
 
-### 2. `IdleBandCalibrationWizardOrganism`
+### 2. `NoiseFloorEnvelopeCalibrationWizardOrganism`
 * **Behavior:** A single screen (`MOB_CALIBRATION`) with two sequential steps:
-  1. **Idle sample (`State_CalibratingIdleBand`)** — the D-BAND is **worn**; the app asks the user to hold still and breathe gently for ~10s. It records the running **minimum and maximum** of the raw bio-signal over the window; the result is the **IDLE Band** `[lower_bound, upper_bound]`. A circular progress ring counts the window down; the live trace shows the band tightening.
-  2. **Wear check (`State_WearCheck`)** — the app asks the user to take a few normal breaths and must observe **≥ 2 valid band-excursion cycles** (the signal rising above `upper_bound` *and* falling below `lower_bound`) before **"Start Sleep Monitoring"** unlocks. If it sees fewer than two within the check window, it holds the gate and shows the toast *"Sensor not detecting breathing — check the fit."* with a **Retry** button.
-* Replaces the former two-stage wizard. There is no active-breath *training* step and no `V_pp` / volumetric baseline — the IDLE Band is the only calibrated reference, and the apnea condition is defined directly against it (signal held inside the band).
+  1. **Idle sample (`State_CalibratingNoiseFloorEnvelope`)** — the D-BAND is **worn**; the app asks the user to hold still and breathe gently for ~10s. It records the running **minimum and maximum** of the raw bio-signal over the window; the result is the **Sensor Baseline Drift & Noise Floor Envelope** `[lower_bound, upper_bound]`. A circular progress ring counts the window down; the live trace shows the envelope tightening.
+  2. **Wear check (`State_WearCheck`)** — the app asks the user to take a few normal breaths and must observe **≥ 2 valid envelope-excursion cycles** (the signal rising above `upper_bound` *and* falling below `lower_bound`) before **"Start Sleep Monitoring"** unlocks. If it sees fewer than two within the check window, it holds the gate and shows the toast *"Sensor not detecting breathing — check the fit."* with a **Retry** button.
+* Replaces the former two-stage wizard. There is no active-breath *training* step and no `V_pp` / volumetric baseline — the Sensor Baseline Drift & Noise Floor Envelope is the only calibrated reference, and the apnea condition is defined directly against it (signal held inside the envelope).
 * On success the screen shows *"Calibration Complete — Ready for Sleep ✓"* and the primary action becomes **"Start Sleep Monitoring"**.
 
 ### 3. `ApneaAlertBannerOrganism`
@@ -248,7 +252,7 @@ The **Summary** tab root (nav tab 3) and also the screen shown right after a ses
 * **Behavior:** Full-width tappable list row, minimum 48dp height (`{spacing.touch_target_min}`). **Navigable** rows (Profile) show a trailing right chevron and, on tap, push their destination with a light haptic. **Inert** rows (Debugging, Developer) render with no trailing chevron and a `{colors.text_secondary}` label; tap is a no-op. Conditional rows evaluate their build-flag gate at screen-build time — a flag flip takes effect on the next entry to `MOB_SETTINGS`, not live. The "Advanced" `SettingsSectionHeader` and its rows are omitted from the widget tree (not merely hidden) when both `debuggingMode` and `developerMode` are false.
 
 ### 6. `DeveloperSimulatorBarOrganism`
-* **Behavior:** Conditionally rendered at the top of `MeasurementPage` when compile-time flag `DEV_MODE=true` is enabled. Emits simulated background telemetry streams into global `BleTelemetryService` singleton upon tapping scenario chips (`IDLE Band Sample`, `Normal 16 bpm`, `In-Band (no excursion) >10s`, `Recovery 5s`). Enables developers to trigger the IDLE Band calibration, apnea alerts, and 0-FPS Night Mode alarms anywhere in the application.
+* **Behavior:** Conditionally rendered at the top of `MeasurementPage` when compile-time flag `DEV_MODE=true` is enabled. Emits simulated background telemetry streams into global `BleTelemetryService` singleton upon tapping scenario chips (`Noise Floor Envelope Sample`, `Normal 16 bpm`, `In-Band (no excursion) >10s`, `Recovery 5s`). Enables developers to trigger the Sensor Baseline Drift & Noise Floor Envelope calibration, apnea alerts, and 0-FPS Night Mode alarms anywhere in the application.
 
 ### 7. `BlePermissionPrimerOrganism`
 * **Behavior:** Gated on a permission-state check performed at boot (see §Onboarding above — a revoked permission re-triggers this flow, not just a local "seen it" flag). Single primary CTA ("Allow Bluetooth Access") triggers the native OS permission request directly. On grant, navigates forward to `MOB_DEVICE_PAIRING` and unblocks the AD-12 app-boot receiver Foreground Service for this and all future launches. On denial or partial grant, `MOB_DEVICE_PAIRING` renders `State_BlePermissionDenied` / `State_BlePermissionPartial` instead of its scan UI.
@@ -280,8 +284,8 @@ The **Summary** tab root (nav tab 3) and also the screen shown right after a ses
 ## State Patterns
 
 1. **`State_Idle`:** App launched, awaiting Passkey authentication or sensor connection.
-2. **`State_CalibratingIdleBand`:** D-BAND worn, user still; sampling ~10s to record the running min/max of the raw bio-signal → the IDLE Band `[lower_bound, upper_bound]`.
-3. **`State_WearCheck`:** User takes a few normal breaths; the app waits for ≥ 2 valid band-excursion cycles before unlocking "Start Sleep Monitoring". On failure: blocked with the *"Sensor not detecting breathing — check the fit."* toast + Retry.
+2. **`State_CalibratingNoiseFloorEnvelope`:** D-BAND worn, user still; sampling ~10s to record the running min/max of the raw bio-signal → the Sensor Baseline Drift & Noise Floor Envelope `[lower_bound, upper_bound]`.
+3. **`State_WearCheck`:** User takes a few normal breaths; the app waits for ≥ 2 valid envelope-excursion cycles before unlocking "Start Sleep Monitoring". On failure: blocked with the *"Sensor not detecting breathing — check the fit."* toast + Retry.
 4. **`State_MonitoringActive`:** 0-FPS Night Mode `#000000`, 10Hz background stream active into circular RAM buffer.
 5. **`State_ApneaBreach`:** Airflow dropped $\ge 90\%$ for $\ge 10\text{s}$. Escalating local mobile siren & haptics active.
 6. **`State_PatientSafe`:** Alarm acknowledged via "I'm Safe" tap or 5s breathing recovery. Siren silenced.
@@ -340,8 +344,8 @@ The **Summary** tab root (nav tab 3) and also the screen shown right after a ses
    On his very first night with the app, David sees one extra screen: *"To find your D-BAND sensor and keep monitoring active overnight, allow Bluetooth access."* He taps *"Allow Bluetooth Access"* and grants the native OS prompt that follows. On every future night, this step no longer appears.
 3. **10:25 PM — D-BAND Sensor Discovery (`MOB_DEVICE_PAIRING`):**  
    David powers on his ductless D-BAND sensor. The app auto-discovers and pairs via BLE (BLE 4.0, 4.1, 4.2, 5.0+), rendering a green checkmark badge (`{colors.accent_green}`).
-4. **10:30 PM — IDLE Band Calibration (`MOB_CALIBRATION`):**  
-   With the D-BAND on, David holds still for ~10s while the app learns its **IDLE Band** (the min/max of the resting signal). Then he takes a few normal breaths; the app confirms it can see them cross both band lines and the screen displays *"Calibration Complete — Ready for Sleep ✓"*. David taps *"Start Sleep Monitoring"*.
+4. **10:30 PM — Sensor Baseline Drift & Noise Floor Envelope Calibration (`MOB_CALIBRATION`):**  
+   With the D-BAND on, David holds still for ~10s while the app learns its **Sensor Baseline Drift & Noise Floor Envelope** (the min/max of the resting signal). Then he takes a few normal breaths; the app confirms it can see them cross both envelope lines and the screen displays *"Calibration Complete — Ready for Sleep ✓"*. David taps *"Start Sleep Monitoring"*.
 5. **10:31 PM — Night Mode Display Lock (`MOB_SLEEP_MONITOR`):**  
    The screen switches to 0-FPS pitch black `{colors.night_mode}` (`#000000`) with a dim pulsing green dot. In the notification shade, a quiet *"Sleep Monitoring Ready — D-BAND connection active"* notification confirms the receiver is running, without lighting up his screen.
 6. **02:15 AM — Apnea Breach & Emergency Siren (`MOB_TIER1_ALARM`):**  
@@ -349,7 +353,7 @@ The **Summary** tab root (nav tab 3) and also the screen shown right after a ses
 7. **02:15 AM — Safety Dismissal:**  
    Awakened by the alarm, David taps the large 64dp *"I'M SAFE"* button. The siren silences instantly, logging a safety event.
 8. **07:00 AM — Morning Sleep Summary (`MOB_SLEEP_SUMMARY`):**  
-   David taps *"End Sleep Session"*, viewing his morning Apnea Index (`AI 3.2 · Normal`), duration (7h 45m), and the raw-signal waveform with its IDLE Band lines. A caption notes it's an apnea-only screen.
+   David taps *"End Sleep Session"*, viewing his morning Apnea Index (`AI 3.2 · Normal`), duration (7h 45m), and the raw-signal waveform with its Noise Floor Envelope lines. A caption notes it's an apnea-only screen.
 9. **07:02 AM — Back to Home (`MOB_HOME`):**  
    He backs out to the Home tab — the dashboard he'll open every day now. *"Good morning · 12 nights monitored."* Below it: last night's card (**AI 3.2 · Normal**, 7h 45m, 2 events); then *"D-BAND connected · 84% · Last sync 7:02 AM"* in calm green — the sensor's already back on the charger and reporting; then the 7-night Apnea Index trend, *"3.4 average · down from 4.1 last week."* He reads it in four seconds, taps nothing, and puts the phone down. (Tonight he'll start the next session from the **Monitor** tab.)
 

@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'idle_band.dart';
+import 'drift_and_noise_floor_envelope.dart';
 
 enum ApneaState { normal, warning, breachAlert, patientSafe, caregiverEscalated }
 

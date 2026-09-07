@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:rxdart/rxdart.dart';
-import '../monitoring/idle_band.dart';
+import '../monitoring/drift_and_noise_floor_envelope.dart';
 import 'i_ble_sensor_driver.dart';
 import 'ble_simulator_driver.dart';
 import 'ble_sensor_driver.dart';

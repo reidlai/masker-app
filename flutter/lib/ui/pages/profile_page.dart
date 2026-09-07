@@ -13,10 +13,14 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  final TextEditingController _nameController = TextEditingController(text: "David Miller");
+  final TextEditingController _emailController = TextEditingController(text: "david.miller@example.com");
+  final TextEditingController _phoneController = TextEditingController(text: "(555) 019-8234");
   final TextEditingController _ageController = TextEditingController(text: "48");
   final TextEditingController _weightController = TextEditingController(text: "85");
   final TextEditingController _heightController = TextEditingController(text: "178");
-  final TextEditingController _emergencyPhoneController = TextEditingController(text: "+1 555-019-2834");
+  final TextEditingController _caregiverNameController = TextEditingController(text: "Maria Chen");
+  final TextEditingController _emergencyPhoneController = TextEditingController(text: "(555) 019-2244");
 
   double _computedBmi = 26.8;
 
@@ -67,8 +71,11 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               const SizedBox(height: 24),
 
-              // Health Demographics Organism
+              // Health Demographics Organism with Patient Identification
               HealthDemographicsOrganism(
+                nameController: _nameController,
+                emailController: _emailController,
+                phoneController: _phoneController,
                 ageController: _ageController,
                 weightController: _weightController,
                 heightController: _heightController,
@@ -79,6 +86,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
               // Emergency Contact Organism
               EmergencyContactOrganism(
+                nameController: _caregiverNameController,
                 phoneController: _emergencyPhoneController,
               ),
               const SizedBox(height: 32),

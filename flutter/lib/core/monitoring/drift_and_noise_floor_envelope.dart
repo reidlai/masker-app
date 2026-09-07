@@ -1,6 +1,6 @@
-/// Single-stage IDLE Band signal model (PRD v2.5.0 / AD-04).
+/// Single-stage Sensor Baseline Drift & Noise Floor Envelope signal model (PRD v2.5.0 / AD-04).
 ///
-/// Pure Dart — no Flutter imports. Reused by the IDLE Band calibration wizard,
+/// Pure Dart — no Flutter imports. Reused by the calibration wizard,
 /// the wear check, [ApneaEvaluator], the developer simulator, and (Epic 3) the
 /// deeper on-device evaluator rework, so the pieces never diverge on how the
 /// band is built or what counts as a breath.
@@ -16,7 +16,8 @@ const Duration kWearCheckWindow = Duration(seconds: 15);
 /// "Start Sleep Monitoring" unlocks (AD-05).
 const int kRequiredValidCycles = 2;
 
-/// Immutable session IDLE Band: the running `min`/`max` of a worn idle sample.
+/// Immutable session Sensor Baseline Drift & Noise Floor Envelope:
+/// the running `min`/`max` of a worn idle sample.
 ///
 /// Works in raw signal units end to end — there is no thermal-to-volumetric
 /// (L/s) transform, no `V_pp` peak-to-peak baseline, and no `0.10 × V_pp`
@@ -56,9 +57,33 @@ class IdleBand {
     return IdleBand(lower: lo, upper: hi);
   }
 
-  /// Band width; `0.0` for a degenerate band (`lower == upper`). Never used as
-  /// a divisor anywhere — a degenerate band must not blow up the wear check.
+  /// Band width / Noise Floor Amplitude ($V_{pp\_noise} = \text{upper} - \text{lower}$).
+  /// `0.0` for a degenerate band (`lower == upper`). Never used as a divisor anywhere.
   double get width => upper - lower;
+
+  /// Alias for [width] representing the peak-to-peak Noise Floor Amplitude ($V_{pp\_noise}$)
+  /// per PRD Section 3.7 (FR-7.1).
+  double get noiseFloor => width;
+
+  /// Build a band using percentile trimming to filter motion/glitch outliers.
+  ///
+  /// Filters non-finite values, sorts finite samples, and selects bounds at
+  /// `trimPercent` (default 5%, i.e. 5th and 95th percentiles).
+  factory IdleBand.fromSamplesTrimmed(Iterable<double> samples, {double trimPercent = 0.05}) {
+    final valid = samples.where((s) => s.isFinite).toList()..sort();
+    if (valid.isEmpty) {
+      throw ArgumentError.value(
+        samples,
+        'samples',
+        'IdleBand.fromSamplesTrimmed requires at least one finite sample',
+      );
+    }
+    final int lowIndex = (valid.length * trimPercent).floor().clamp(0, valid.length - 1);
+    final int highIndex = ((valid.length - 1) - (valid.length * trimPercent).floor()).clamp(lowIndex, valid.length - 1);
+    final double lo = valid[lowIndex];
+    final double hi = valid[highIndex];
+    return IdleBand(lower: lo, upper: hi);
+  }
 
   /// Inclusive of both bounds — the "stop-breathing" region.
   bool isInBand(double value) => value >= lower && value <= upper;
@@ -102,7 +127,7 @@ class IdleBandAccumulator {
   }
 }
 
-/// Detects valid IDLE-Band breath-excursion cycles (AD-04 / AD-05).
+/// Detects valid Sensor Baseline & Noise Envelope breath-excursion cycles (AD-04 / AD-05).
 ///
 /// A cycle completes when, since the last completion, the signal has gone
 /// **strictly above** [IdleBand.upper] (inhale) **and strictly below**

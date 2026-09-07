@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:masker_app/core/ble/i_ble_sensor_driver.dart';
-import 'package:masker_app/core/monitoring/idle_band.dart';
+import 'package:masker_app/core/monitoring/drift_and_noise_floor_envelope.dart';
 import 'package:masker_app/ui/organisms/idle_band_calibration_wizard.dart';
 
 /// Driver whose `signalStream` stays open and only ever emits values *inside*

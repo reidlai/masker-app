@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-import '../monitoring/idle_band.dart';
+import '../monitoring/drift_and_noise_floor_envelope.dart';
 import 'i_ble_sensor_driver.dart';
 
 /// Real Native Bluetooth Hardware Driver using flutter_blue_plus.

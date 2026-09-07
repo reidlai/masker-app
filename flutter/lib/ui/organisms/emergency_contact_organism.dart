@@ -3,11 +3,13 @@ import '../../core/theme/app_theme.dart';
 import '../atoms/app_input_field.dart';
 
 class EmergencyContactOrganism extends StatelessWidget {
+  final TextEditingController? nameController;
   final TextEditingController phoneController;
   final ValueChanged<String>? onChanged;
 
   const EmergencyContactOrganism({
     super.key,
+    this.nameController,
     required this.phoneController,
     this.onChanged,
   });
@@ -26,9 +28,18 @@ class EmergencyContactOrganism extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
+        if (nameController != null) ...[
+          AppInputField(
+            label: "Caregiver Name",
+            hint: "Maria Chen",
+            controller: nameController!,
+            onChanged: onChanged,
+          ),
+          const SizedBox(height: 12),
+        ],
         AppInputField(
           label: "Caregiver Phone Number",
-          hint: "+1 555-019-2834",
+          hint: "(555) 019-2244",
           controller: phoneController,
           onChanged: onChanged,
         ),

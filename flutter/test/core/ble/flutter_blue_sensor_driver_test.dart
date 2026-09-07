@@ -2,7 +2,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:masker_app/core/ble/flutter_blue_sensor_driver.dart';
 import 'package:masker_app/core/ble/i_ble_sensor_driver.dart';
-import 'package:masker_app/core/monitoring/idle_band.dart';
+import 'package:masker_app/core/monitoring/drift_and_noise_floor_envelope.dart';
 
 void main() {
   // No real GATT characteristic in a unit test, so sampleIdleBand takes the

@@ -5,7 +5,7 @@ import '../../core/ble/ble_simulator_driver.dart';
 import '../../core/ble/flutter_blue_sensor_driver.dart';
 import '../../core/ble/i_ble_sensor_driver.dart';
 import '../../core/monitoring/apnea_evaluator.dart';
-import '../../core/monitoring/idle_band.dart';
+import '../../core/monitoring/drift_and_noise_floor_envelope.dart';
 import '../../core/permissions/ble_permission_service.dart';
 import '../organisms/idle_band_calibration_wizard.dart';
 import '../organisms/apnea_alert_overlay.dart';
@@ -408,7 +408,7 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
               const SizedBox(height: 24),
 
               // Calibration Wizard
-              const Text("IDLE Band Calibration", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+              const Text("Sensor Baseline & Noise Envelope Calibration", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
               const SizedBox(height: 12),
 
               IdleBandCalibrationWizard(

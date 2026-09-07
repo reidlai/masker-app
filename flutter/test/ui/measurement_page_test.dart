@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:masker_app/core/ble/ble_sensor_driver.dart';
 import 'package:masker_app/core/ble/i_ble_sensor_driver.dart';
-import 'package:masker_app/core/monitoring/idle_band.dart';
+import 'package:masker_app/core/monitoring/drift_and_noise_floor_envelope.dart';
 import 'package:masker_app/core/permissions/ble_permission_service.dart';
 import 'package:masker_app/ui/pages/measurement_page.dart';
 
@@ -134,7 +134,7 @@ void main() {
     await tester.pump();
 
     expect(find.text("Bluetooth Permission Needed"), findsNothing);
-    expect(find.text("IDLE Band Calibration"), findsOneWidget);
+    expect(find.text("Sensor Baseline & Noise Envelope Calibration"), findsOneWidget);
     expect(fakeDriver.connectCalled, isTrue);
   });
 
@@ -210,7 +210,7 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
     await tester.pump();
 
-    expect(find.text("IDLE Band Calibration"), findsOneWidget);
+    expect(find.text("Sensor Baseline & Noise Envelope Calibration"), findsOneWidget);
     expect(find.text("STEP 1 OF 2"), findsOneWidget);
 
     // Step 1 — idle sample (10 s window).

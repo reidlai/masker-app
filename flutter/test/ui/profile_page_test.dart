@@ -19,10 +19,14 @@ void main() {
     expect(find.text("Medical Profile"), findsOneWidget);
     expect(find.text("David (Persona A)"), findsOneWidget);
 
-    // Verify Initial Demographics
+    // Verify Initial Demographics & Identity
+    expect(fieldWithValue("David Miller"), findsOneWidget); // Patient Name
+    expect(fieldWithValue("david.miller@example.com"), findsOneWidget); // Patient Email
+    expect(fieldWithValue("(555) 019-8234"), findsOneWidget); // Patient Phone
     expect(fieldWithValue("48"), findsOneWidget); // Age
     expect(fieldWithValue("85"), findsOneWidget); // Weight
     expect(fieldWithValue("178"), findsOneWidget); // Height
+    expect(fieldWithValue("Maria Chen"), findsOneWidget); // Caregiver Name
 
     // Verify Computed BMI (85 / (1.78 * 1.78) = 26.8)
     expect(find.text("26.8"), findsOneWidget);

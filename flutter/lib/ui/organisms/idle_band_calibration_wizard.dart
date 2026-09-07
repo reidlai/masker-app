@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/ble/i_ble_sensor_driver.dart';
-import '../../core/monitoring/idle_band.dart';
+import '../../core/monitoring/drift_and_noise_floor_envelope.dart';
 import '../../core/theme/app_theme.dart';
 import '../atoms/app_button.dart';
 
@@ -220,14 +220,14 @@ class _IdleBandCalibrationWizardState extends State<IdleBandCalibrationWizard> {
     return [
       _stepBadge("STEP 1 OF 2"),
       const SizedBox(height: 12),
-      const Text("IDLE Band",
+      const Text("Sensor Baseline & Noise Envelope",
           style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary)),
       const SizedBox(height: 6),
       const Text(
-        "Put on your D-BAND, sit still, and breathe gently for 10 seconds.",
+        "Put on your D-BAND, sit still, and breathe gently for 10 seconds to calibrate the sensor baseline drift & noise floor envelope.",
         style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
       ),
       const SizedBox(height: 16),

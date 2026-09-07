@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:math';
-import '../monitoring/idle_band.dart';
+import '../monitoring/drift_and_noise_floor_envelope.dart';
 import 'i_ble_sensor_driver.dart';
 
 enum BLEDeviceState { disconnected, scanning, connecting, connected }
