@@ -16,6 +16,7 @@ class ApneaEvaluator {
   ApneaState get state => _state;
 
   int _consecutiveStopBreathingTicks = 0; // 100ms ticks (10s = 100 ticks)
+  double get inBandDuration => _consecutiveStopBreathingTicks / 10.0;
   // Ticks accrued toward the ≥50-tick (5s) auto-silence since the last reset.
   // NOT strictly consecutive: a short between-breath in-band dip does not zero
   // it — only a sustained (≥ _stopStreakBeforeRecoveryReset) stop streak does.

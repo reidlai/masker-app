@@ -337,7 +337,49 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
         body: SafeArea(
           child: Column(
             children: [
-              if (_isDevMode) DeveloperSimulatorBarOrganism(),
+              if (_isDevMode) ...[
+                DeveloperSimulatorBarOrganism(),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.cardBorder),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "📊 DETECTION MECHANISM STAGE MONITOR",
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.accentGreen),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        "• Noise Floor Envelope: ${_idleBand != null ? "[${_idleBand!.lower.toStringAsFixed(3)}, ${_idleBand!.upper.toStringAsFixed(3)}]" : "Calibrated"}",
+                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _showAlertOverlay
+                            ? "• Stage 3: 🚨 Apnea Breach Alert (>10s Flatline) — Siren Countdown: ${_alertCountdown}s"
+                            : (_apneaEvaluator != null && _apneaEvaluator!.inBandDuration > 0.5)
+                                ? "• Stage 2: Stop Breathing Detected (In-Envelope: ${_apneaEvaluator!.inBandDuration.toStringAsFixed(1)}s / 10.0s threshold)"
+                                : "• Stage 1: Normal Breathing Active (Signal Excursions Detected)",
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: _showAlertOverlay
+                              ? AppColors.dangerRed
+                              : (_apneaEvaluator != null && _apneaEvaluator!.inBandDuration > 0.5)
+                                  ? AppColors.warningAmber
+                                  : AppColors.accentGreen,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               Expanded(
                 child: InkWell(
                   onLongPress: _stopSleepMonitoring,

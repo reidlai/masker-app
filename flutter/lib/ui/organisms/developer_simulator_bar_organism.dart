@@ -57,14 +57,6 @@ class DeveloperSimulatorBarOrganism extends StatelessWidget {
                           ),
                         ],
                       ),
-                      Switch(
-                        value: isSimEnabled,
-                        activeThumbColor: AppColors.accentGreen,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        onChanged: (val) {
-                          _telemetryService.setSimulatorEnabled(val);
-                        },
-                      ),
                     ],
                   ),
                   if (isSimEnabled) ...[
