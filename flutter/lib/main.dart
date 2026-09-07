@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'core/ble/ble_receiver_service.dart';
 import 'core/bloc/auth/auth_bloc.dart';
 import 'core/permissions/ble_permission_service.dart';
@@ -13,6 +14,9 @@ void main() {
   // Ensure the Flutter Engine C++ bridge and native platform channels (BLE/MethodChannels)
   // are fully initialized before running background services or async setup prior to runApp().
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Configure google_fonts configuration (can disable runtime network fetching if offline assets are bundled)
+  // GoogleFonts.config.allowRuntimeFetching = false;
 
   // Instantiate and boot the background BLE receiver service singleton on app launch.
   // This starts listening to physical BLE hardware / simulation drivers and exposes a central
