@@ -83,7 +83,9 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
         setState(() {
           _bleDriver = isSim ? BleSimulatorDriver() : FlutterBlueSensorDriver();
         });
-        _checkPermissionThenConnect();
+        if (isSim) {
+          _checkPermissionThenConnect();
+        }
       }
     });
 

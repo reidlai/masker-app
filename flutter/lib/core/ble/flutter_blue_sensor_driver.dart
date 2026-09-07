@@ -87,46 +87,52 @@ class FlutterBlueSensorDriver implements IBLESensorDriver {
   Future<bool> scanAndConnect() async {
     final Completer<bool> completer = Completer<bool>();
 
-    if (await FlutterBluePlus.isSupported == false) {
-      return false;
-    }
+    try {
+      if (await FlutterBluePlus.isSupported == false) {
+        return false;
+      }
 
-    await FlutterBluePlus.startScan(timeout: const Duration(seconds: 5));
+      await FlutterBluePlus.stopScan();
+      await FlutterBluePlus.startScan(timeout: const Duration(seconds: 4));
 
-    _scanSub = FlutterBluePlus.scanResults.listen((results) async {
-      for (ScanResult r in results) {
-        if (r.advertisementData.serviceUuids.contains(serviceUuid) ||
-            r.device.platformName.contains("D-BAND")) {
-          await FlutterBluePlus.stopScan();
-          await _scanSub?.cancel();
+      _scanSub?.cancel();
+      _scanSub = FlutterBluePlus.scanResults.listen((results) async {
+        for (ScanResult r in results) {
+          if (r.advertisementData.serviceUuids.contains(serviceUuid) ||
+              r.device.platformName.contains("D-BAND")) {
+            try {
+              await FlutterBluePlus.stopScan();
+              await _scanSub?.cancel();
 
-          _connectedDevice = r.device;
-          await _connectedDevice!.connect(timeout: const Duration(seconds: 5));
+              _connectedDevice = r.device;
+              await _connectedDevice!.connect(timeout: const Duration(seconds: 5));
 
-          List<BluetoothService> services = await _connectedDevice!.discoverServices();
-          for (BluetoothService service in services) {
-            if (service.uuid == serviceUuid) {
-              for (BluetoothCharacteristic characteristic in service.characteristics) {
-                if (characteristic.uuid == characteristicUuid) {
-                  _telemetryCharacteristic = characteristic;
-                  // AD-12: keep a persistent notify subscription piping raw
-                  // samples into signalStream for the whole session.
-                  await _startRealNotify();
-                  _updatePhase(SensorMonitoringPhase.idle);
-                  if (!completer.isCompleted) completer.complete(true);
-                  return;
+              List<BluetoothService> services = await _connectedDevice!.discoverServices();
+              for (BluetoothService service in services) {
+                if (service.uuid == serviceUuid) {
+                  for (BluetoothCharacteristic characteristic in service.characteristics) {
+                    if (characteristic.uuid == characteristicUuid) {
+                      _telemetryCharacteristic = characteristic;
+                      await _startRealNotify();
+                      _updatePhase(SensorMonitoringPhase.idle);
+                      if (!completer.isCompleted) completer.complete(true);
+                      return;
+                    }
+                  }
                 }
               }
-            }
+            } catch (_) {}
           }
         }
-      }
-    });
+      });
 
-    return completer.future.timeout(
-      const Duration(seconds: 6),
-      onTimeout: () => false,
-    );
+      return await completer.future.timeout(
+        const Duration(seconds: 4),
+        onTimeout: () => false,
+      );
+    } catch (_) {
+      return false;
+    }
   }
 
   // --- IDLE Band Calibration (AD-04) ---
