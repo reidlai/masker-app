@@ -98,7 +98,65 @@
   .device-frame.night-mode { background-color: var(--night-mode); }
   .device-frame.night-mode .home-indicator .bar { background: rgba(148,163,184,0.35); }
 
-  /* SCREEN-SPECIFIC — MOB_SLEEP_MONITOR (0-FPS Night Mode) */
+  /* SCREEN-SPECIFIC — MOB_SLEEP_MONITOR (0-FPS Night Mode with DEV SIMULATOR TOOLBAR) */
+  .dev-bar {
+    margin: 12px 16px 0 16px;
+    background: #1E293B;
+    border: 1px solid #F59E0B;
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 5;
+  }
+  .dev-bar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #F59E0B;
+    letter-spacing: 0.05em;
+  }
+  .toggle-switch {
+    width: 36px;
+    height: 20px;
+    background: #10B981;
+    border-radius: 10px;
+    position: relative;
+  }
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 16px;
+    height: 16px;
+    background: #FFF;
+    border-radius: 50%;
+  }
+  .dev-bar-chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+  .chip {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    background: #273449;
+    color: #94A3B8;
+    border: 1px solid #334155;
+  }
+  .chip.active {
+    background: #10B981;
+    color: #0F172A;
+    border-color: #10B981;
+  }
   .night-center {
     flex: 1 1 auto;
     display: flex;
@@ -142,9 +200,24 @@
       </span>
     </div>
     <div class="screen-content">
+      <!-- DEV SIMULATOR TOOLBAR (DEV_MODE=true) -->
+      <div class="dev-bar">
+        <div class="dev-bar-header">
+          <span>⚡ DEV SIMULATOR TOOLBAR</span>
+          <div class="toggle-switch"></div>
+        </div>
+        <div class="dev-bar-chips">
+          <span class="chip active">IDLE Band Sample</span>
+          <span class="chip">Normal 16 bpm</span>
+          <span class="chip">In-Band >10s</span>
+          <span class="chip">Apnea Breach >10s</span>
+          <span class="chip">Recovery 5s</span>
+        </div>
+      </div>
+
       <div class="night-center">
         <span class="heartbeat-dot"></span>
-        <span class="night-label">Sleep monitoring active — D-BAND connected</span>
+        <span class="night-label">Night Mode Active (0-FPS)<br><span style="font-size: 10px; opacity: 0.7;">Long-press anywhere to wake & finish session</span></span>
       </div>
     </div>
     <div class="home-indicator"><span class="bar"></span></div>
