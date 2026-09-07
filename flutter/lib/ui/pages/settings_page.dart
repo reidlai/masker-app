@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/ble/ble_simulator_driver.dart';
+import '../../core/bloc/simulator/simulator_cubit.dart';
 import '../../core/theme/app_theme.dart';
 import '../molecules/settings_menu_row.dart';
 import '../molecules/settings_section_header.dart';
@@ -114,26 +116,44 @@ class SettingsPage extends StatelessWidget {
                 const SettingsSectionHeader(title: "Developer"),
                 _buildMenuCard(
                   children: [
-                    StreamBuilder<bool>(
-                      stream: BleSimulatorDriver().isSimulatorStream,
-                      initialData: BleSimulatorDriver().isSimulatorActive,
-                      builder: (context, snapshot) {
-                        final isSimActive = snapshot.data ?? false;
-                        return SettingsMenuRow(
-                          leadingIcon: Icons.developer_board,
-                          label: "Simulator",
-                          showChevron: false,
-                          onTap: () {
-                            BleSimulatorDriver().setSimulatorEnabled(!isSimActive);
-                          },
-                          trailingWidget: Switch(
-                            value: isSimActive,
-                            activeThumbColor: AppColors.accentGreen,
-                            onChanged: (val) {
-                              BleSimulatorDriver().setSimulatorEnabled(val);
+                    Builder(
+                      builder: (context) {
+                        bool hasProvider = false;
+                        try {
+                          context.read<SimulatorCubit>();
+                          hasProvider = true;
+                        } catch (_) {}
+
+                        Widget rowContent(BuildContext ctx) {
+                          return BlocBuilder<SimulatorCubit, bool>(
+                            builder: (bContext, isSimActive) {
+                              return SettingsMenuRow(
+                                leadingIcon: Icons.developer_board,
+                                label: "Simulator",
+                                showChevron: false,
+                                onTap: () {
+                                  bContext.read<SimulatorCubit>().toggleSimulator();
+                                },
+                                trailingWidget: Switch(
+                                  value: isSimActive,
+                                  activeThumbColor: AppColors.accentGreen,
+                                  onChanged: (val) {
+                                    bContext.read<SimulatorCubit>().setSimulatorEnabled(val);
+                                  },
+                                ),
+                              );
                             },
-                          ),
-                        );
+                          );
+                        }
+
+                        if (hasProvider) {
+                          return rowContent(context);
+                        } else {
+                          return BlocProvider<SimulatorCubit>(
+                            create: (_) => SimulatorCubit(),
+                            child: Builder(builder: (bCtx) => rowContent(bCtx)),
+                          );
+                        }
                       },
                     ),
                     if (_debug) ...[

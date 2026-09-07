@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'core/ble/ble_receiver_service.dart';
 import 'core/bloc/auth/auth_bloc.dart';
+import 'core/bloc/simulator/simulator_cubit.dart';
 import 'core/permissions/ble_permission_service.dart';
 import 'core/theme/app_theme.dart';
 import 'ui/atoms/app_button.dart';
@@ -144,8 +145,11 @@ class _MaskerAppState extends State<MaskerApp> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<AuthBloc>(
-      create: (context) => AuthBloc(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<AuthBloc>(create: (_) => AuthBloc()),
+        BlocProvider<SimulatorCubit>(create: (_) => SimulatorCubit()),
+      ],
       child: MaterialApp(
         title: 'Sleep Apnea Detection App',
         debugShowCheckedModeBanner: false,
