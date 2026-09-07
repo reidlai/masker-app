@@ -38,6 +38,7 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
   StreamSubscription<double>? _telemetrySub;
   StreamSubscription<ApneaState>? _evaluatorStateSub;
   StreamSubscription<int>? _countdownSub;
+  StreamSubscription<SimulatorScenario>? _scenarioSub;
 
   bool _isBleConnected = false;
   bool _isCalibrationComplete = false;
@@ -193,6 +194,17 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
     _recentSignalBuffer.clear();
     _latestSignalValue = 0.0;
 
+    if (_bleDriver is BleSimulatorDriver) {
+      _scenarioSub = (_bleDriver as BleSimulatorDriver).scenarioStream.skip(1).listen((scenario) {
+        _apneaEvaluator?.reset();
+        if (mounted) {
+          setState(() {
+            _showAlertOverlay = false;
+          });
+        }
+      });
+    }
+
     // The one unified signalStream (AD-12) is the only source feeding the
     // evaluator — never a second live source (double-tick to evaluateSignal).
     _telemetrySub = _bleDriver.signalStream.listen((signal) {
@@ -216,6 +228,7 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
   }
 
   void _stopSleepMonitoring() {
+    _scenarioSub?.cancel();
     _telemetrySub?.cancel();
     _evaluatorStateSub?.cancel();
     _countdownSub?.cancel();
@@ -245,6 +258,7 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _scenarioSub?.cancel();
     _telemetrySub?.cancel();
     _evaluatorStateSub?.cancel();
     _countdownSub?.cancel();
@@ -357,7 +371,8 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
     }
 
     if (_isMonitoringActive) {
-      final bool isInEnvelope = _apneaEvaluator != null && _apneaEvaluator!.inBandDuration > 0.5;
+      final bool isStopBreathingDetected = _apneaEvaluator != null && _apneaEvaluator!.inBandDuration > 0.5;
+      final bool isSignalInNoiseFloor = _idleBand != null && _idleBand!.isInBand(_latestSignalValue);
 
       return Scaffold(
         backgroundColor: AppColors.nightMode,
@@ -391,7 +406,7 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
                         Text(
                           _showAlertOverlay
                               ? "• Stage 3: 🚨 Apnea Breach Alert (>10s Flatline) — Siren Countdown: ${_alertCountdown}s"
-                              : isInEnvelope
+                              : isStopBreathingDetected
                                   ? "• Stage 2: Stop Breathing Detected (In-Envelope: ${_apneaEvaluator!.inBandDuration.toStringAsFixed(1)}s / 10.0s threshold)"
                                   : "• Stage 1: Normal Breathing Active (Signal Excursions Detected)",
                           style: TextStyle(
@@ -399,7 +414,7 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
                             fontWeight: FontWeight.bold,
                             color: _showAlertOverlay
                                 ? AppColors.dangerRed
-                                : isInEnvelope
+                                : isStopBreathingDetected
                                     ? AppColors.warningAmber
                                     : AppColors.accentGreen,
                           ),
@@ -444,7 +459,7 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
                                 style: AppTheme.tabularTextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: isInEnvelope ? AppColors.warningAmber : AppColors.accentGreen,
+                                  color: isSignalInNoiseFloor ? AppColors.warningAmber : AppColors.accentGreen,
                                 ),
                               ),
                             ],
@@ -455,17 +470,17 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                             decoration: BoxDecoration(
-                              color: (isInEnvelope ? AppColors.warningAmber : AppColors.accentGreen).withValues(alpha: 0.15),
+                              color: (isSignalInNoiseFloor ? AppColors.warningAmber : AppColors.accentGreen).withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: isInEnvelope ? AppColors.warningAmber : AppColors.accentGreen, width: 1.0),
+                              border: Border.all(color: isSignalInNoiseFloor ? AppColors.warningAmber : AppColors.accentGreen, width: 1.0),
                             ),
                             child: Text(
-                              isInEnvelope ? "IN-NOISE-FLOOR" : "NORMAL RESPIRATION",
+                              isSignalInNoiseFloor ? "IN-NOISE-FLOOR" : "NORMAL EXCURSION",
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
-                                color: isInEnvelope ? AppColors.warningAmber : AppColors.accentGreen,
+                                color: isSignalInNoiseFloor ? AppColors.warningAmber : AppColors.accentGreen,
                               ),
                             ),
                           ),

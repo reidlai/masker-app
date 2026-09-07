@@ -151,9 +151,9 @@ class BleSimulatorDriver implements IBLESensorDriver {
           signal = 0.30 + 0.05 * sin(_step * 3);
           break;
         case SimulatorScenario.normalRespiration:
-          // 0.275 ± 0.2 → ~0.075–0.475: strictly crosses both bounds of a
-          // band learned from idleBandSample (~0.25–0.35).
-          signal = 0.275 + 0.2 * sin(_step * 1.6);
+          // Centered at 0.300 ± 0.18 → 0.120 to 0.480 V.
+          // Strictly crosses both bounds of a band learned from idleBandSample (~0.25–0.35).
+          signal = 0.300 + 0.18 * sin(_step * 1.5);
           break;
         case SimulatorScenario.inBandNoExcursion:
           // Flat, always inside the band — a stop-breathing stretch.
