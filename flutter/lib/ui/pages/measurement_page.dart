@@ -83,6 +83,7 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
         setState(() {
           _bleDriver = isSim ? BleSimulatorDriver() : FlutterBlueSensorDriver();
         });
+        _checkPermissionThenConnect();
       }
     });
 
@@ -106,6 +107,8 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
     if (_isDevMode) {
       setState(() {
         _isCheckingPermission = false;
+        _permissionCheckFailed = false;
+        _permissionStatus = const BlePermissionStatus(BlePermissionResult.granted, []);
       });
       _connectBle();
       return;
@@ -133,7 +136,12 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
   }
 
   Future<void> _recheckPermissionOnResume() async {
-    if (_isDevMode) return;
+    if (_isDevMode) {
+      if (!_isBleConnected) {
+        _connectBle();
+      }
+      return;
+    }
     final wasBlocked = _permissionStatus != null && !_permissionStatus!.isGranted;
     try {
       final status = await _permissionService.checkPermission();

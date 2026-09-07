@@ -124,8 +124,10 @@ class BleSimulatorDriver implements IBLESensorDriver {
       _isSimulatorSubject = BehaviorSubject<bool>.seeded(enabled);
     }
     _isSimulatorSubject.add(enabled);
-    if (!enabled) {
-      stopSimulation();
+    if (enabled) {
+      scanAndConnect();
+    } else {
+      disconnect();
     }
   }
 
