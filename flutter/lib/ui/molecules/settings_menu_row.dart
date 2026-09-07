@@ -23,7 +23,7 @@ class SettingsMenuRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isNavigable = showChevron && onTap != null;
+    final bool isNavigable = onTap != null;
 
     final content = Container(
       constraints: const BoxConstraints(minHeight: 56),
