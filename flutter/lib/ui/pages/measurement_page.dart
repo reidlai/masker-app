@@ -362,153 +362,165 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
       return Scaffold(
         backgroundColor: AppColors.nightMode,
         body: SafeArea(
-          child: Column(
-            children: [
-              if (_isDevMode) ...[
-                DeveloperSimulatorBarOrganism(),
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.cardBorder),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "📊 DETECTION MECHANISM STAGE MONITOR",
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.accentGreen),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        "• Noise Floor Envelope: ${_idleBand != null ? "[${_idleBand!.lower.toStringAsFixed(3)}, ${_idleBand!.upper.toStringAsFixed(3)}]" : "Calibrated"}",
-                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _showAlertOverlay
-                            ? "• Stage 3: 🚨 Apnea Breach Alert (>10s Flatline) — Siren Countdown: ${_alertCountdown}s"
-                            : isInEnvelope
-                                ? "• Stage 2: Stop Breathing Detected (In-Envelope: ${_apneaEvaluator!.inBandDuration.toStringAsFixed(1)}s / 10.0s threshold)"
-                                : "• Stage 1: Normal Breathing Active (Signal Excursions Detected)",
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: _showAlertOverlay
-                              ? AppColors.dangerRed
-                              : isInEnvelope
-                                  ? AppColors.warningAmber
-                                  : AppColors.accentGreen,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              // Live Telemetry Signal Level & Waveform Monitor Organism
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.cardBorder),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: const [
-                              Icon(Icons.sensors, size: 14, color: AppColors.accentGreen),
-                              SizedBox(width: 6),
-                              Text(
-                                "LIVE SIGNAL TELEMETRY LEVEL",
-                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "${_latestSignalValue.toStringAsFixed(3)} V",
-                            style: AppTheme.tabularTextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: isInEnvelope ? AppColors.warningAmber : AppColors.accentGreen,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: (isInEnvelope ? AppColors.warningAmber : AppColors.accentGreen).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: isInEnvelope ? AppColors.warningAmber : AppColors.accentGreen, width: 1.0),
-                        ),
-                        child: Text(
-                          isInEnvelope ? "IN-NOISE-FLOOR (FLATLINE)" : "NORMAL RESPIRATION EXCURSION",
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: isInEnvelope ? AppColors.warningAmber : AppColors.accentGreen,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: LiveWaveformChart(
-                  points: _liveFlSpots,
-                  showApneaMarkers: true,
-                ),
-              ),
-              Expanded(
-                child: InkWell(
-                  onLongPress: _stopSleepMonitoring,
-                  child: Center(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                if (_isDevMode) ...[
+                  DeveloperSimulatorBarOrganism(),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.cardBorder),
+                    ),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 14,
-                          height: 14,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.accentGreen,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.accentGreen.withValues(alpha: 0.6),
-                                blurRadius: 14,
-                                spreadRadius: 3,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
                         const Text(
-                          "Night Mode Active (0-FPS)",
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                          "📊 DETECTION MECHANISM STAGE MONITOR",
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.accentGreen),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          "• Noise Floor Envelope: ${_idleBand != null ? "[${_idleBand!.lower.toStringAsFixed(3)}, ${_idleBand!.upper.toStringAsFixed(3)}]" : "Calibrated"}",
+                          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          "Long-press anywhere to wake & finish session",
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 10),
+                        Text(
+                          _showAlertOverlay
+                              ? "• Stage 3: 🚨 Apnea Breach Alert (>10s Flatline) — Siren Countdown: ${_alertCountdown}s"
+                              : isInEnvelope
+                                  ? "• Stage 2: Stop Breathing Detected (In-Envelope: ${_apneaEvaluator!.inBandDuration.toStringAsFixed(1)}s / 10.0s threshold)"
+                                  : "• Stage 1: Normal Breathing Active (Signal Excursions Detected)",
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: _showAlertOverlay
+                                ? AppColors.dangerRed
+                                : isInEnvelope
+                                    ? AppColors.warningAmber
+                                    : AppColors.accentGreen,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                // Live Telemetry Signal Level & Waveform Monitor Organism
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.cardBorder),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: const [
+                                  Icon(Icons.sensors, size: 14, color: AppColors.accentGreen),
+                                  SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      "LIVE TELEMETRY LEVEL",
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "${_latestSignalValue.toStringAsFixed(3)} V",
+                                style: AppTheme.tabularTextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: isInEnvelope ? AppColors.warningAmber : AppColors.accentGreen,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: (isInEnvelope ? AppColors.warningAmber : AppColors.accentGreen).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: isInEnvelope ? AppColors.warningAmber : AppColors.accentGreen, width: 1.0),
+                            ),
+                            child: Text(
+                              isInEnvelope ? "IN-NOISE-FLOOR" : "NORMAL RESPIRATION",
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: isInEnvelope ? AppColors.warningAmber : AppColors.accentGreen,
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ),
-              ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: LiveWaveformChart(
+                    points: _liveFlSpots,
+                    showApneaMarkers: true,
+                  ),
+                ),
+                InkWell(
+                  onLongPress: _stopSleepMonitoring,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 14,
+                            height: 14,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.accentGreen,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.accentGreen.withValues(alpha: 0.6),
+                                  blurRadius: 14,
+                                  spreadRadius: 3,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            "Night Mode Active (0-FPS)",
+                            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            "Long-press anywhere to wake & finish session",
+                            style: TextStyle(color: AppColors.textSecondary, fontSize: 10),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
