@@ -55,7 +55,7 @@ class _MeasurementPageState extends State<MeasurementPage>
     try {
       return context.read<SimulatorBloc>().state.isSimulatorActive;
     } catch (_) {
-      final d = widget.sensorDriver;
+      final d = widget.sensorDriver ?? _injectedDriver();
       return d is BleReceiverService && d.isSimulatorActive;
     }
   }
@@ -75,6 +75,23 @@ class _MeasurementPageState extends State<MeasurementPage>
     }
   }
 
+  /// Fires on every developer/QA simulator on/off toggle — the bloc re-runs the
+  /// connect flow so the BLE status tracks the swapped driver. Null when a test
+  /// forces [MeasurementPage.developerEnabled] (that override wins, so the
+  /// stream must not fight it) or when no [SimulatorBloc] is in scope.
+  Stream<bool>? _simulatorActiveStream() {
+    if (widget.developerEnabled != null) return null;
+    try {
+      return context
+          .read<SimulatorBloc>()
+          .stream
+          .map((s) => s.isSimulatorActive)
+          .distinct();
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -89,6 +106,7 @@ class _MeasurementPageState extends State<MeasurementPage>
       permissionService: _permissionService,
       isDevMode: _isDevMode,
       scenarioResetStream: _scenarioResetStream(),
+      simulatorActiveStream: _simulatorActiveStream(),
     )..add(const SleepMonitoringStarted());
   }
 
@@ -217,6 +235,53 @@ class _MeasurementPageState extends State<MeasurementPage>
     );
   }
 
+  Widget _devStagePanel(SleepMonitoringState state, bool isStopBreathingDetected) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "📊 DETECTION MECHANISM STAGE MONITOR",
+            style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: AppColors.accentGreen),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            "• Noise Floor Envelope: ${state.idleBand != null ? "[${state.idleBand!.lower.toStringAsFixed(3)}, ${state.idleBand!.upper.toStringAsFixed(3)}]" : "Calibrated"}",
+            style: const TextStyle(
+                fontSize: 11, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            state.showAlertOverlay
+                ? "• Stage 3: 🚨 Apnea Breach Alert (>10s Flatline) — Siren Countdown: ${state.alertCountdown}s"
+                : isStopBreathingDetected
+                    ? "• Stage 2: Stop Breathing Detected (In-Envelope: ${state.inBandDuration.toStringAsFixed(1)}s / 10.0s threshold)"
+                    : "• Stage 1: Normal Breathing Active (Signal Excursions Detected)",
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: state.showAlertOverlay
+                  ? AppColors.dangerRed
+                  : isStopBreathingDetected
+                      ? AppColors.warningAmber
+                      : AppColors.accentGreen,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMonitoring(SleepMonitoringState state) {
     final bool isStopBreathingDetected = state.inBandDuration > 0.5;
     final bool isSignalInNoiseFloor = state.idleBand != null &&
@@ -228,54 +293,30 @@ class _MeasurementPageState extends State<MeasurementPage>
         child: SingleChildScrollView(
           child: Column(
             children: [
-              if (_isDevMode) ...[
-                DeveloperSimulatorBarOrganism(),
-                Container(
-                  margin:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.cardBorder),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "📊 DETECTION MECHANISM STAGE MONITOR",
-                        style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.accentGreen),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        "• Noise Floor Envelope: ${state.idleBand != null ? "[${state.idleBand!.lower.toStringAsFixed(3)}, ${state.idleBand!.upper.toStringAsFixed(3)}]" : "Calibrated"}",
-                        style: const TextStyle(
-                            fontSize: 11, color: AppColors.textSecondary),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        state.showAlertOverlay
-                            ? "• Stage 3: 🚨 Apnea Breach Alert (>10s Flatline) — Siren Countdown: ${state.alertCountdown}s"
-                            : isStopBreathingDetected
-                                ? "• Stage 2: Stop Breathing Detected (In-Envelope: ${state.inBandDuration.toStringAsFixed(1)}s / 10.0s threshold)"
-                                : "• Stage 1: Normal Breathing Active (Signal Excursions Detected)",
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: state.showAlertOverlay
-                              ? AppColors.dangerRed
-                              : isStopBreathingDetected
-                                  ? AppColors.warningAmber
-                                  : AppColors.accentGreen,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              // Developer-only: toolbar + stage panel, gated directly on
+              // SimulatorBloc so they hide/show the instant the simulator is
+              // toggled, independent of signal-tick rebuild cadence. Falls back
+              // to the _isDevMode getter when no SimulatorBloc is in scope.
+              Builder(builder: (context) {
+                bool active;
+                if (widget.developerEnabled != null) {
+                  active = widget.developerEnabled!;
+                } else {
+                  try {
+                    active = context.select<SimulatorBloc, bool>(
+                        (b) => b.state.isSimulatorActive);
+                  } catch (_) {
+                    active = _isDevMode;
+                  }
+                }
+                if (!active) return const SizedBox.shrink();
+                return Column(
+                  children: [
+                    DeveloperSimulatorBarOrganism(),
+                    _devStagePanel(state, isStopBreathingDetected),
+                  ],
+                );
+              }),
               // Live Telemetry Signal Level & Waveform Monitor Organism
               Padding(
                 padding:

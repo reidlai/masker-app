@@ -18,7 +18,11 @@ class SleepMonitoringBloc
     extends Bloc<SleepMonitoringEvent, SleepMonitoringState> {
   final IBLESensorDriver _driver;
   final BlePermissionService _permissionService;
-  final bool _isDevMode;
+
+  /// Mutable: flipped by [SleepMonitoringDevModeChanged] when the simulator is
+  /// toggled after construction. Governs the permission-gate bypass in
+  /// [_runStartFlow] / [_onAppResumed].
+  bool _isDevMode;
 
   /// Fires whenever the developer/QA simulator scenario changes — used to reset
   /// the evaluator mid-session so a stale alarm does not carry across.
@@ -29,6 +33,19 @@ class SleepMonitoringBloc
   StreamSubscription<ApneaState>? _evaluatorStateSub;
   StreamSubscription<int>? _countdownSub;
   StreamSubscription<void>? _scenarioSub;
+  StreamSubscription<bool>? _simulatorActiveSub;
+
+  /// Serialises the permission-gate / connect flow: a simulator toggle can race
+  /// an in-flight `_onStarted` / `_onAppResumed` (bloc processes different event
+  /// types concurrently). While one flow runs, a re-entry is deferred; the flow
+  /// re-runs once if `_isDevMode` changed under it, so it always converges on
+  /// the latest dev-mode without two overlapping `scanAndConnect` calls.
+  bool _startFlowInProgress = false;
+
+  /// Set when the simulator is toggled *during* an active session (the session
+  /// is kept — see [_onDevModeChanged]); consumed by [_onSessionStopped] to
+  /// reconcile the post-session setup screen with the now-current dev-mode.
+  bool _devModeChangedDuringSession = false;
 
   static const _devGrantedStub =
       BlePermissionStatus(BlePermissionResult.granted, []);
@@ -38,6 +55,7 @@ class SleepMonitoringBloc
     BlePermissionService permissionService = const BlePermissionService(),
     bool isDevMode = false,
     Stream<void>? scenarioResetStream,
+    Stream<bool>? simulatorActiveStream,
   })  : _driver = driver,
         _permissionService = permissionService,
         _isDevMode = isDevMode,
@@ -54,6 +72,17 @@ class SleepMonitoringBloc
     on<SleepMonitoringEvaluatorStateChanged>(_onEvaluatorStateChanged);
     on<SleepMonitoringCountdownChanged>(_onCountdownChanged);
     on<SleepMonitoringScenarioChanged>(_onScenarioChanged);
+    on<SleepMonitoringDevModeChanged>(_onDevModeChanged);
+
+    // The developer/QA simulator toggle (SimulatorBloc.isSimulatorActive). Not
+    // in a session → re-run the connect flow so the BLE status tracks the
+    // swapped driver; in a session → the session survives (see _onDevModeChanged).
+    _simulatorActiveSub = simulatorActiveStream?.listen(
+      (active) {
+        if (!isClosed) add(SleepMonitoringDevModeChanged(active));
+      },
+      onError: (_) {},
+    );
   }
 
   // --- permission gate + connect ------------------------------------------------
@@ -74,7 +103,45 @@ class SleepMonitoringBloc
     await _runStartFlow(emit);
   }
 
+  Future<void> _onDevModeChanged(
+    SleepMonitoringDevModeChanged event,
+    Emitter<SleepMonitoringState> emit,
+  ) async {
+    if (_isDevMode == event.active) return;
+    _isDevMode = event.active;
+
+    // An active session survives a mid-session toggle: it keeps consuming the
+    // one unified queue (identity stable across the driver swap), and the dev
+    // toolbar / stage panel hide via their own SimulatorBloc gate. Flag it so
+    // _onSessionStopped reconciles the post-session setup screen.
+    if (state.status == SleepMonitoringStatus.monitoring) {
+      _devModeChangedDuringSession = true;
+      return;
+    }
+
+    // No interim `checkingPermission` emit — the dev branch of _runStartFlow
+    // needs no permission check, so a spinner flash here is pure flicker on
+    // rapid toggles; _runStartFlow owns its own status transitions.
+    await _runStartFlow(emit);
+  }
+
   Future<void> _runStartFlow(Emitter<SleepMonitoringState> emit) async {
+    // A simulator toggle can arrive mid-flow (concurrent event processing).
+    // Serialise: defer a re-entry, then re-run once if _isDevMode moved under us.
+    if (_startFlowInProgress) return;
+    _startFlowInProgress = true;
+    try {
+      bool devAtEntry;
+      do {
+        devAtEntry = _isDevMode;
+        await _runStartFlowOnce(emit);
+      } while (!isClosed && _isDevMode != devAtEntry);
+    } finally {
+      _startFlowInProgress = false;
+    }
+  }
+
+  Future<void> _runStartFlowOnce(Emitter<SleepMonitoringState> emit) async {
     // The simulator never touches real Bluetooth hardware or OS permissions,
     // so DEV_MODE bypasses the live permission gate entirely.
     if (_isDevMode) {
@@ -170,6 +237,7 @@ class SleepMonitoringBloc
   ) {
     if (state.idleBand == null) return;
 
+    _devModeChangedDuringSession = false;
     _apneaEvaluator = ApneaEvaluator(idleBand: state.idleBand!);
 
     _evaluatorStateSub = _apneaEvaluator!.stateStream.listen((s) {
@@ -206,10 +274,13 @@ class SleepMonitoringBloc
     _driver.startMonitoringSession();
   }
 
-  void _onSessionStopped(
+  Future<void> _onSessionStopped(
     SleepMonitoringSessionStopped event,
     Emitter<SleepMonitoringState> emit,
-  ) {
+  ) async {
+    final reconcile = _devModeChangedDuringSession;
+    _devModeChangedDuringSession = false;
+
     _cancelMonitoringSubs();
     _apneaEvaluator?.dispose();
     _apneaEvaluator = null;
@@ -220,6 +291,12 @@ class SleepMonitoringBloc
       showAlertOverlay: false,
       inBandDuration: 0.0,
     ));
+
+    // The simulator was toggled during the session (the session was kept
+    // running). Now that it has ended, re-run the gate so the setup screen's
+    // BLE status / permission reflect the current dev-mode, not the stale
+    // session values.
+    if (reconcile) await _runStartFlow(emit);
   }
 
   void _onPatientSafeAcknowledged(
@@ -282,6 +359,7 @@ class SleepMonitoringBloc
 
   @override
   Future<void> close() {
+    _simulatorActiveSub?.cancel();
     _cancelMonitoringSubs();
     _apneaEvaluator?.dispose();
     // AD-12: `_driver` is the app-lifetime BleReceiverService — the receiver

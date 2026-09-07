@@ -5,7 +5,8 @@ import '../../monitoring/drift_and_noise_floor_envelope.dart';
 /// Events for [SleepMonitoringBloc]. Public events map 1:1 to the user actions
 /// and lifecycle callbacks the widget used to handle inline; the stream-fed
 /// events are pumped only from the bloc's own `StreamSubscription`s (evaluator
-/// state / countdown, the unified signal queue, the simulator scenario stream).
+/// state / countdown, the unified signal queue, the simulator scenario stream,
+/// and the simulator on/off toggle → [SleepMonitoringDevModeChanged]).
 abstract class SleepMonitoringEvent extends Equatable {
   const SleepMonitoringEvent();
 
@@ -81,4 +82,16 @@ class SleepMonitoringCountdownChanged extends SleepMonitoringEvent {
 
 class SleepMonitoringScenarioChanged extends SleepMonitoringEvent {
   const SleepMonitoringScenarioChanged();
+}
+
+/// The developer/QA simulator was toggled on or off (fed from
+/// `SimulatorBloc.isSimulatorActive`). Not in a session → re-run the
+/// start/connect flow so `isBleConnected` tracks the swapped driver; in a
+/// session → keep the session, just update the dev-mode flag.
+class SleepMonitoringDevModeChanged extends SleepMonitoringEvent {
+  final bool active;
+  const SleepMonitoringDevModeChanged(this.active);
+
+  @override
+  List<Object?> get props => [active];
 }

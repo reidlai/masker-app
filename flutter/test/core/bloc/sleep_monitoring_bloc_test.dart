@@ -78,6 +78,7 @@ void main() {
     BlePermissionService? perm,
     bool isDevMode = false,
     Stream<void>? scenarioReset,
+    Stream<bool>? simulatorActive,
   }) {
     driver = _FakeDriver();
     return SleepMonitoringBloc(
@@ -85,6 +86,7 @@ void main() {
       permissionService: perm ?? _FakePermission(_granted),
       isDevMode: isDevMode,
       scenarioResetStream: scenarioReset,
+      simulatorActiveStream: simulatorActive,
     );
   }
 
@@ -287,6 +289,160 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 20));
 
     expect(bloc.state.status, SleepMonitoringStatus.monitoring);
+
+    await bloc.close();
+    await driver.close();
+  });
+
+  // --- simulator toggle drives the BLE connection state (I/O Matrix) ---------
+
+  test('enabling the simulator while not in a session -> setup + isBleConnected '
+      'true, no permission prompt', () async {
+    final ctl = StreamController<bool>.broadcast();
+    addTearDown(ctl.close);
+    // Real gate denies — proves the toggle bypasses it, not that it was granted.
+    final bloc = build(perm: _FakePermission(_denied), simulatorActive: ctl.stream);
+    bloc.add(const SleepMonitoringStarted());
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(bloc.state.status, SleepMonitoringStatus.permissionBlocked);
+    expect(bloc.state.isBleConnected, isFalse);
+
+    ctl.add(true);
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+
+    expect(bloc.state.status, SleepMonitoringStatus.setup);
+    expect(bloc.state.isBleConnected, isTrue);
+    expect(bloc.state.permissionStatus?.isGranted, isTrue);
+
+    await bloc.close();
+    await driver.close();
+  });
+
+  test('disabling the simulator while not in a session -> real gate re-runs, '
+      'isBleConnected false', () async {
+    final ctl = StreamController<bool>.broadcast();
+    addTearDown(ctl.close);
+    final bloc = build(
+        perm: _FakePermission(_granted),
+        isDevMode: true,
+        simulatorActive: ctl.stream);
+    bloc.add(const SleepMonitoringStarted());
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(bloc.state.isBleConnected, isTrue);
+    driver.connectResult = false; // real driver: no hardware
+
+    ctl.add(false);
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+
+    expect(bloc.state.status, SleepMonitoringStatus.setup);
+    expect(bloc.state.isBleConnected, isFalse);
+
+    await bloc.close();
+    await driver.close();
+  });
+
+  test('a simulator toggle during an active session keeps the session running '
+      'and does not reset calibration', () async {
+    final ctl = StreamController<bool>.broadcast();
+    addTearDown(ctl.close);
+    final bloc = build(
+        perm: _FakePermission(_granted),
+        isDevMode: true,
+        simulatorActive: ctl.stream);
+    bloc.add(const SleepMonitoringStarted());
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    bloc.add(const SleepMonitoringCalibrationCompleted(
+        IdleBand(lower: 0.20, upper: 0.40)));
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+    bloc.add(const SleepMonitoringSessionStarted());
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+    expect(bloc.state.status, SleepMonitoringStatus.monitoring);
+    final gen = bloc.state.connectGeneration;
+
+    ctl.add(false);
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+
+    expect(bloc.state.status, SleepMonitoringStatus.monitoring);
+    expect(bloc.state.idleBand, const IdleBand(lower: 0.20, upper: 0.40));
+    expect(bloc.state.connectGeneration, gen);
+
+    await bloc.close();
+    await driver.close();
+  });
+
+  test('rapid on/off/on toggles each re-run the connect flow (calibration '
+      'resets, generation bumps each time)', () async {
+    final ctl = StreamController<bool>.broadcast();
+    addTearDown(ctl.close);
+    final bloc = build(perm: _FakePermission(_granted), simulatorActive: ctl.stream);
+    bloc.add(const SleepMonitoringStarted());
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    final gen0 = bloc.state.connectGeneration; // 1 from the initial connect
+
+    ctl.add(true);
+    await Future<void>.delayed(const Duration(milliseconds: 15));
+    ctl.add(false);
+    await Future<void>.delayed(const Duration(milliseconds: 15));
+    ctl.add(true);
+    await Future<void>.delayed(const Duration(milliseconds: 15));
+
+    expect(bloc.state.connectGeneration, gen0 + 3);
+    expect(bloc.state.idleBand, isNull);
+    expect(bloc.state.isCalibrationComplete, isFalse);
+
+    await bloc.close();
+    await driver.close();
+  });
+
+  test('a redundant same-value simulator emission is a no-op (no connect, no '
+      'generation bump)', () async {
+    final ctl = StreamController<bool>.broadcast();
+    addTearDown(ctl.close);
+    final bloc = build(perm: _FakePermission(_granted), simulatorActive: ctl.stream);
+    bloc.add(const SleepMonitoringStarted());
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    final gen = bloc.state.connectGeneration;
+
+    // Same value as the current (off) dev-mode.
+    ctl.add(false);
+    await Future<void>.delayed(const Duration(milliseconds: 15));
+
+    expect(bloc.state.connectGeneration, gen);
+    expect(bloc.state.status, SleepMonitoringStatus.setup);
+
+    await bloc.close();
+    await driver.close();
+  });
+
+  test('a simulator toggle-off during a session is reconciled when the session '
+      'ends: the setup screen reflects the real gate, not the dev stub', () async {
+    final ctl = StreamController<bool>.broadcast();
+    addTearDown(ctl.close);
+    final bloc =
+        build(perm: _FakePermission(_granted), isDevMode: true, simulatorActive: ctl.stream);
+    bloc.add(const SleepMonitoringStarted());
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    bloc.add(const SleepMonitoringCalibrationCompleted(
+        IdleBand(lower: 0.20, upper: 0.40)));
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+    bloc.add(const SleepMonitoringSessionStarted());
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+    expect(bloc.state.status, SleepMonitoringStatus.monitoring);
+    expect(bloc.state.isBleConnected, isTrue); // dev connect
+
+    // Simulator toggled OFF mid-session — the session is kept. The real driver
+    // now has no hardware to find.
+    driver.connectResult = false;
+    ctl.add(false);
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    expect(bloc.state.status, SleepMonitoringStatus.monitoring);
+
+    // End the session → reconcile against the now-off simulator's real gate.
+    bloc.add(const SleepMonitoringSessionStopped());
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+
+    expect(bloc.state.status, SleepMonitoringStatus.setup);
+    expect(bloc.state.isBleConnected, isFalse);
 
     await bloc.close();
     await driver.close();
