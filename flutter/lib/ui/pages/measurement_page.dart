@@ -7,10 +7,12 @@ import '../../core/ble/i_ble_sensor_driver.dart';
 import '../../core/monitoring/apnea_evaluator.dart';
 import '../../core/monitoring/drift_and_noise_floor_envelope.dart';
 import '../../core/permissions/ble_permission_service.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../organisms/idle_band_calibration_wizard.dart';
 import '../organisms/apnea_alert_overlay.dart';
 import '../organisms/ble_sensor_status_organism.dart';
 import '../organisms/developer_simulator_bar_organism.dart';
+import '../organisms/live_waveform_chart.dart';
 import '../atoms/app_button.dart';
 
 class MeasurementPage extends StatefulWidget {
@@ -42,6 +44,18 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
   bool _isMonitoringActive = false;
   bool _showAlertOverlay = false;
   int _alertCountdown = 30;
+  double _latestSignalValue = 0.0;
+  final List<double> _recentSignalBuffer = [];
+
+  List<FlSpot> get _liveFlSpots {
+    if (_recentSignalBuffer.isEmpty) {
+      return const [FlSpot(0, 0.3), FlSpot(1, 0.3)];
+    }
+    return List.generate(
+      _recentSignalBuffer.length,
+      (index) => FlSpot(index.toDouble(), _recentSignalBuffer[index]),
+    );
+  }
 
   // Bumped on every (re)connect so a reconnect remounts the wizard via its
   // ValueKey — otherwise clearing _idleBand on the page leaves the wizard
@@ -176,10 +190,22 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
       }
     });
 
+    _recentSignalBuffer.clear();
+    _latestSignalValue = 0.0;
+
     // The one unified signalStream (AD-12) is the only source feeding the
     // evaluator — never a second live source (double-tick to evaluateSignal).
     _telemetrySub = _bleDriver.signalStream.listen((signal) {
       _apneaEvaluator?.evaluateSignal(signal);
+      if (mounted) {
+        setState(() {
+          _latestSignalValue = signal;
+          _recentSignalBuffer.add(signal);
+          if (_recentSignalBuffer.length > 20) {
+            _recentSignalBuffer.removeAt(0);
+          }
+        });
+      }
     });
 
     setState(() {
@@ -331,7 +357,8 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
     }
 
     if (_isMonitoringActive) {
-      // 0-FPS Night Mode Display Lock (#000000)
+      final bool isInEnvelope = _apneaEvaluator != null && _apneaEvaluator!.inBandDuration > 0.5;
+
       return Scaffold(
         backgroundColor: AppColors.nightMode,
         body: SafeArea(
@@ -363,7 +390,7 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
                       Text(
                         _showAlertOverlay
                             ? "• Stage 3: 🚨 Apnea Breach Alert (>10s Flatline) — Siren Countdown: ${_alertCountdown}s"
-                            : (_apneaEvaluator != null && _apneaEvaluator!.inBandDuration > 0.5)
+                            : isInEnvelope
                                 ? "• Stage 2: Stop Breathing Detected (In-Envelope: ${_apneaEvaluator!.inBandDuration.toStringAsFixed(1)}s / 10.0s threshold)"
                                 : "• Stage 1: Normal Breathing Active (Signal Excursions Detected)",
                         style: TextStyle(
@@ -371,7 +398,7 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
                           fontWeight: FontWeight.bold,
                           color: _showAlertOverlay
                               ? AppColors.dangerRed
-                              : (_apneaEvaluator != null && _apneaEvaluator!.inBandDuration > 0.5)
+                              : isInEnvelope
                                   ? AppColors.warningAmber
                                   : AppColors.accentGreen,
                         ),
@@ -380,6 +407,70 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
                   ),
                 ),
               ],
+              // Live Telemetry Signal Level & Waveform Monitor Organism
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.cardBorder),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: const [
+                              Icon(Icons.sensors, size: 14, color: AppColors.accentGreen),
+                              SizedBox(width: 6),
+                              Text(
+                                "LIVE SIGNAL TELEMETRY LEVEL",
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "${_latestSignalValue.toStringAsFixed(3)} V",
+                            style: AppTheme.tabularTextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: isInEnvelope ? AppColors.warningAmber : AppColors.accentGreen,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: (isInEnvelope ? AppColors.warningAmber : AppColors.accentGreen).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: isInEnvelope ? AppColors.warningAmber : AppColors.accentGreen, width: 1.0),
+                        ),
+                        child: Text(
+                          isInEnvelope ? "IN-NOISE-FLOOR (FLATLINE)" : "NORMAL RESPIRATION EXCURSION",
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: isInEnvelope ? AppColors.warningAmber : AppColors.accentGreen,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: LiveWaveformChart(
+                  points: _liveFlSpots,
+                  showApneaMarkers: true,
+                ),
+              ),
               Expanded(
                 child: InkWell(
                   onLongPress: _stopSleepMonitoring,
@@ -388,26 +479,26 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          width: 16,
-                          height: 16,
+                          width: 14,
+                          height: 14,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: AppColors.accentGreen,
                             boxShadow: [
                               BoxShadow(
                                 color: AppColors.accentGreen.withValues(alpha: 0.6),
-                                blurRadius: 16,
-                                spreadRadius: 4,
+                                blurRadius: 14,
+                                spreadRadius: 3,
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 12),
                         const Text(
                           "Night Mode Active (0-FPS)",
                           style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 4),
                         const Text(
                           "Long-press anywhere to wake & finish session",
                           style: TextStyle(color: AppColors.textSecondary, fontSize: 10),

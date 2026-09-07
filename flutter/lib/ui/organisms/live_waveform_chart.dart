@@ -69,7 +69,7 @@ class LiveWaveformChart extends StatelessWidget {
                 titlesData: const FlTitlesData(show: false),
                 borderData: FlBorderData(show: false),
                 minX: 0,
-                maxX: 10,
+                maxX: (displayPoints.length > 1) ? (displayPoints.length - 1).toDouble() : 10.0,
                 minY: -1.5,
                 maxY: 2.5,
                 lineBarsData: [
