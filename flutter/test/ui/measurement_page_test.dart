@@ -236,7 +236,7 @@ void main() {
     await tester.tap(startButton);
     await tester.pump();
 
-    expect(find.text("Night Mode Active (0-FPS)"), findsOneWidget);
+    expect(find.text("Night Mode Active (Battery Saver)"), findsOneWidget);
     expect(driver.currentPhase, equals(SensorMonitoringPhase.monitoring));
 
     // Drain the still-live monitoring emitter so no timer leaks past the test.
@@ -280,7 +280,7 @@ void main() {
     await tester.pump();
 
     // Dev Simulator Toolbar renders on active monitoring view during dev mode!
-    expect(find.text("Night Mode Active (0-FPS)"), findsOneWidget);
+    expect(find.text("Night Mode Active (Battery Saver)"), findsOneWidget);
     expect(find.text("⚡ DEV SIMULATOR TOOLBAR"), findsOneWidget);
 
     await tester.pump(const Duration(milliseconds: 300));

@@ -521,7 +521,7 @@ class _MeasurementPageState extends State<MeasurementPage> with WidgetsBindingOb
                           ),
                           const SizedBox(height: 12),
                           const Text(
-                            "Night Mode Active (0-FPS)",
+                            "Night Mode Active (Battery Saver)",
                             style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
                           ),
                           const SizedBox(height: 4),
