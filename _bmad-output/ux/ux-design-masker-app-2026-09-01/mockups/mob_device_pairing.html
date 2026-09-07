@@ -1,0 +1,317 @@
+<!-- SHARED TEMPLATE — iPhone 17 Pro Max standard artboard (440x956 pt logical resolution).
+     Do not alter the chrome markup/CSS below (.device-frame, .status-bar, .dynamic-island, .home-indicator).
+     Every mockup embeds this verbatim so the set reads as one consistent iPhone. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D-BAND Sensor Discovery &amp; Pairing — Sleep Apnea Detection App</title>
+<style>
+  /* Illustrates: EXPERIENCE.md IA flow map (BLE Sensor Discovery & Pairing,
+     MOB_DEVICE_PAIRING); Key Flows step 3 (10:25 PM D-BAND Sensor Discovery -
+     auto-discover/pair, green checkmark badge); State Patterns #11
+     State_BlePermissionDenied and #12 State_BlePermissionPartial (blocked state,
+     "Open Settings" recovery CTA naming the missing permission - the load-bearing
+     alternate state, rendered as a second column here); Voice and Tone
+     "Not-Protected Notification" copy bucket reused for the blocked headline;
+     DESIGN.md ShadCard / ShadBadge (accent_green checkmark pill) / ShadButton.
+     Redrawn on the iPhone 17 Pro Max 440x956 artboard, two full frames side by
+     side as before: each frame's body content (scan row + device card, or
+     blocked icon + copy) is now wrapped in a flex-centered group filling the
+     space below the header, instead of sitting top-heavy with a large empty
+     gap before the bottom of the taller frame. */
+  :root {
+    --bg-primary: #0F172A;
+    --surface: #1E293B;
+    --surface-border: #334155;
+    --accent-green: #10B981;
+    --warning-amber: #F59E0B;
+    --danger-red: #EF4444;
+    --purple-analytics: #6D28D9;
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --night-mode: #000000;
+    --pressed-surface: #273449;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); }
+  body {
+    background-color: #020617;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    gap: 48px;
+    padding: 40px;
+  }
+
+  /* IPHONE 17 PRO MAX DEVICE CHROME — 440x956pt logical resolution, shared across all mockups */
+  .device-frame {
+    width: 440px;
+    height: 956px;
+    background-color: var(--bg-primary);
+    border-radius: 55px;
+    border: 8px solid #0B1220;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    color: var(--text-primary);
+  }
+  .status-bar {
+    flex: 0 0 auto;
+    height: 59px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 28px 10px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    position: relative;
+    z-index: 2;
+  }
+  .dynamic-island {
+    position: absolute;
+    top: 11px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 37px;
+    border-radius: 19px;
+    background: #000;
+    z-index: 3;
+  }
+  .status-bar .clock { letter-spacing: 0.01em; }
+  .status-bar .icons { display: flex; align-items: center; gap: 6px; }
+  .status-bar .icons svg { display: block; }
+  .screen-content {
+    flex: 1 1 auto;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .home-indicator {
+    flex: 0 0 auto;
+    height: 34px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2;
+  }
+  .home-indicator .bar {
+    width: 148px;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(248,250,252,0.7);
+  }
+  .device-frame.night-mode { background-color: var(--night-mode); }
+  .device-frame.night-mode .home-indicator .bar { background: rgba(148,163,184,0.35); }
+
+  /* ---- Screen-specific: Device Pairing (two states, side by side) ---- */
+  .col { display: flex; flex-direction: column; align-items: center; }
+  .col-caption {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+  .col-caption.state-blocked { color: var(--danger-red); }
+
+  .dp-wrap {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    padding: 28px 24px 24px;
+  }
+  .dp-wrap h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+  .dp-wrap p.dp-sub { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+
+  /* Canonical: scanning / paired */
+  .dp-center {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 20px;
+  }
+  .dp-scan-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+  .dp-scan-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--warning-amber);
+  }
+  .dp-device-card {
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    padding: 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .dp-device-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    background: rgba(16,185,129,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+  }
+  .dp-device-info { flex: 1 1 auto; }
+  .dp-device-name { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+  .dp-device-meta { font-size: 12px; color: var(--text-secondary); }
+  .dp-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(16,185,129,0.12);
+    color: var(--accent-green);
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 9999px;
+    padding: 4px 10px;
+    flex: 0 0 auto;
+  }
+  .dp-progress-note {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  /* Blocked: permission denied / partial */
+  .dp-blocked-icon {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    background: rgba(239,68,68,0.1);
+    border: 2px solid var(--danger-red);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+  }
+  .dp-blocked-headline {
+    font-size: 20px;
+    font-weight: 600;
+    text-align: center;
+  }
+  .dp-blocked-body {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    text-align: center;
+  }
+  .btn-primary {
+    width: 100%;
+    min-height: 48px;
+    background-color: var(--accent-green);
+    color: var(--bg-primary);
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+</style>
+</head>
+<body>
+
+  <div class="col">
+    <div class="col-caption">Canonical — Scanning &amp; Paired</div>
+    <div class="device-frame">
+      <div class="status-bar">
+        <div class="dynamic-island"></div>
+        <span class="clock">10:25</span>
+        <span class="icons">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="0.5"/><rect x="5" y="5" width="3" height="7" rx="0.5"/><rect x="10" y="2" width="3" height="10" rx="0.5"/><rect x="15" y="0" width="3" height="12" rx="0.5"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 10.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM4.2 6.3a5.4 5.4 0 017.6 0l-1.4 1.4a3.4 3.4 0 00-4.8 0L4.2 6.3zM1.4 3.5a9.4 9.4 0 0113.2 0L13.2 5A7.4 7.4 0 008 3a7.4 7.4 0 00-5.2 2L1.4 3.5z"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="18" height="8" rx="2" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.5"/></svg>
+        </span>
+      </div>
+      <div class="screen-content">
+        <div class="dp-wrap">
+          <h1>Pairing Your D-BAND</h1>
+          <p class="dp-sub">Power on your D-BAND sensor to begin pairing.</p>
+
+          <div class="dp-center">
+            <div class="dp-scan-row">
+              <span class="dp-scan-dot"></span>
+              Searching for nearby sensors&hellip;
+            </div>
+
+            <div class="dp-device-card">
+              <div class="dp-device-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M7 7l10 10-5 5V2l5 5L7 17"/>
+                </svg>
+              </div>
+              <div class="dp-device-info">
+                <div class="dp-device-name">D-BAND-4F2A</div>
+                <div class="dp-device-meta">BLE 5.0 &middot; Signal strong</div>
+              </div>
+              <span class="dp-badge">&#10003; Connected</span>
+            </div>
+
+            <div class="dp-progress-note">Continuing to calibration&hellip;</div>
+          </div>
+        </div>
+      </div>
+      <div class="home-indicator"><span class="bar"></span></div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="col-caption state-blocked">Blocked — Bluetooth Permission Denied</div>
+    <div class="device-frame">
+      <div class="status-bar">
+        <div class="dynamic-island"></div>
+        <span class="clock">10:25</span>
+        <span class="icons">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="0.5"/><rect x="5" y="5" width="3" height="7" rx="0.5"/><rect x="10" y="2" width="3" height="10" rx="0.5"/><rect x="15" y="0" width="3" height="12" rx="0.5"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 10.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM4.2 6.3a5.4 5.4 0 017.6 0l-1.4 1.4a3.4 3.4 0 00-4.8 0L4.2 6.3zM1.4 3.5a9.4 9.4 0 0113.2 0L13.2 5A7.4 7.4 0 008 3a7.4 7.4 0 00-5.2 2L1.4 3.5z"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="18" height="8" rx="2" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.5"/></svg>
+        </span>
+      </div>
+      <div class="screen-content">
+        <div class="dp-wrap">
+          <h1>Pairing Your D-BAND</h1>
+          <p class="dp-sub">Sensor discovery is blocked until Bluetooth access is granted.</p>
+
+          <div class="dp-center">
+            <div class="dp-blocked-icon" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7 7l10 10-5 5V2l5 5L7 17"/>
+                <line x1="3" y1="3" x2="21" y2="21"/>
+              </svg>
+            </div>
+            <div class="dp-blocked-headline">Bluetooth Permission Needed</div>
+            <p class="dp-blocked-body">Bluetooth Connect access was denied, so the app can&rsquo;t discover your D-BAND sensor. Grant access in Settings to continue.</p>
+          </div>
+
+          <button class="btn-primary">Open Settings</button>
+        </div>
+      </div>
+      <div class="home-indicator"><span class="bar"></span></div>
+    </div>
+  </div>
+
+</body>
+</html>

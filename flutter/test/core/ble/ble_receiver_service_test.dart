@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:masker_app/core/ble/ble_receiver_service.dart';
 import 'package:masker_app/core/ble/ble_sensor_driver.dart';
@@ -18,7 +17,7 @@ void main() {
     });
 
     test('App Boot Service Launch seeds initial reactive stream value', () async {
-      expect(receiverService.reactiveStream.value, equals(5.0));
+      expect(receiverService.reactiveStream.value, equals(0.3));
       expect(receiverService.activeDriver, isA<BleSimulatorDriver>());
     });
 
@@ -59,11 +58,12 @@ void main() {
       receiverService.setActiveDriver(hardwareDriver);
 
       expect(receiverService.activeDriver, equals(hardwareDriver));
-      expect(receiverService.signalThreshold, equals(hardwareDriver.signalThreshold));
 
       bool connected = await receiverService.scanAndConnect();
       expect(connected, isTrue);
       expect(hardwareDriver.state, equals(BLEDeviceState.connected));
+
+      hardwareDriver.disconnect();
     });
   });
 }

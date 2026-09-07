@@ -33,10 +33,10 @@ class DeveloperOptionsPage extends StatelessWidget {
 
               // BleSimulatorOrganism
               BleSimulatorOrganism(
-                onSimulateApneaAlert: () {
+                onSimulateInBandNoExcursion: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text("Simulating Obstructive Apnea Breach Event (>10s drop)"),
+                      content: Text("Simulating In-Band (no excursion) stretch — apnea breach after >10s"),
                       backgroundColor: Colors.redAccent,
                     ),
                   );

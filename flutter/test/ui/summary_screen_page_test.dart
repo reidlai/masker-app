@@ -31,11 +31,10 @@ void main() {
     await tester.ensureVisible(exportBtn);
     await tester.pumpAndSettle();
 
-    // Tap Export button
+    // Tap Export button pushes ExportDoctorPage
     await tester.tap(exportBtn);
-    await tester.pump();
+    await tester.pumpAndSettle();
 
-    // Verify SnackBar toast
-    expect(find.text("Exporting Signed FHIR JSON / PDF Clinical Report..."), findsOneWidget);
+    expect(find.text("Export Physician Report"), findsOneWidget);
   });
 }

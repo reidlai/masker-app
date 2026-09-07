@@ -1,0 +1,249 @@
+<!-- SHARED TEMPLATE — iPhone 17 Pro Max standard artboard (440x956 pt logical resolution).
+     Do not alter the chrome markup/CSS below (.device-frame, .status-bar, .dynamic-island, .home-indicator).
+     Every mockup embeds this verbatim so the set reads as one consistent iPhone. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IDLE Band Calibration — Sleep Apnea Detection App</title>
+<style>
+  /* Illustrates: EXPERIENCE.md IA flow map (IDLE Band Calibration Wizard,
+     MOB_CALIBRATION); Component Pattern #2 IdleBandCalibrationWizardOrganism;
+     State Pattern #2 State_CalibratingIdleBand (D-BAND worn, user still, ~10s
+     sampling the running min/max of the raw bio-signal -> the IDLE Band); Voice
+     and Tone "Calibration Instructions" quote; DESIGN.md Component #2
+     CalibrationStepHeader (step pill, title, instruction body, progress bar).
+     This screen shows STEP 1 of 2 (idle sample). STEP 2 is the wear check
+     (breathe normally; the app confirms >=2 valid band-excursion cycles before
+     "Start Sleep Monitoring" unlocks) — noted in the footer. */
+  :root {
+    --bg-primary: #0F172A;
+    --surface: #1E293B;
+    --surface-border: #334155;
+    --accent-green: #10B981;
+    --warning-amber: #F59E0B;
+    --danger-red: #EF4444;
+    --purple-analytics: #6D28D9;
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --night-mode: #000000;
+    --pressed-surface: #273449;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); }
+  body {
+    background-color: #020617;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  /* IPHONE 17 PRO MAX DEVICE CHROME — 440x956pt logical resolution, shared across all mockups */
+  .device-frame {
+    width: 440px;
+    height: 956px;
+    background-color: var(--bg-primary);
+    border-radius: 55px;
+    border: 8px solid #0B1220;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    color: var(--text-primary);
+  }
+  .status-bar {
+    flex: 0 0 auto;
+    height: 59px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 28px 10px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    position: relative;
+    z-index: 2;
+  }
+  .dynamic-island {
+    position: absolute;
+    top: 11px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 37px;
+    border-radius: 19px;
+    background: #000;
+    z-index: 3;
+  }
+  .status-bar .clock { letter-spacing: 0.01em; }
+  .status-bar .icons { display: flex; align-items: center; gap: 6px; }
+  .status-bar .icons svg { display: block; }
+  .screen-content {
+    flex: 1 1 auto;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .home-indicator {
+    flex: 0 0 auto;
+    height: 34px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2;
+  }
+  .home-indicator .bar {
+    width: 148px;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(248,250,252,0.7);
+  }
+  .device-frame.night-mode { background-color: var(--night-mode); }
+  .device-frame.night-mode .home-indicator .bar { background: rgba(148,163,184,0.35); }
+
+  /* ---- Screen-specific: Calibration Stage 1 ---- */
+  .cal-wrap {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    padding: 28px 28px 28px;
+  }
+
+  /* CalibrationStepHeader molecule */
+  .csh-pill {
+    display: inline-block;
+    align-self: flex-start;
+    background: rgba(16,185,129,0.12);
+    color: var(--accent-green);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    border-radius: 9999px;
+    padding: 6px 14px;
+    margin-bottom: 16px;
+  }
+  .csh-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+  .csh-instruction { font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 22px; }
+  .csh-progress-track {
+    width: 100%;
+    height: 8px;
+    border-radius: 9999px;
+    background: var(--surface-border);
+    overflow: hidden;
+  }
+  .csh-progress-fill {
+    height: 100%;
+    width: 60%;
+    border-radius: 9999px;
+    background: var(--accent-green);
+  }
+
+  .cal-center {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .cal-sample-card {
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    padding: 36px 24px;
+    text-align: center;
+  }
+  .cal-timer {
+    font-size: 44px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+  }
+  .cal-timer-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+  .cal-waveform {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 5px;
+    height: 44px;
+  }
+  .cal-waveform span {
+    width: 4px;
+    border-radius: 2px;
+    background: var(--warning-amber);
+  }
+  .cal-band {
+    margin-top: 22px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-secondary);
+  }
+  .cal-band b { color: var(--text-primary); font-weight: 600; }
+  .cal-foot {
+    margin-top: 20px;
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+  <div class="device-frame">
+    <div class="status-bar">
+      <div class="dynamic-island"></div>
+      <span class="clock">10:30</span>
+      <span class="icons">
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="0.5"/><rect x="5" y="5" width="3" height="7" rx="0.5"/><rect x="10" y="2" width="3" height="10" rx="0.5"/><rect x="15" y="0" width="3" height="12" rx="0.5"/></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 10.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM4.2 6.3a5.4 5.4 0 017.6 0l-1.4 1.4a3.4 3.4 0 00-4.8 0L4.2 6.3zM1.4 3.5a9.4 9.4 0 0113.2 0L13.2 5A7.4 7.4 0 008 3a7.4 7.4 0 00-5.2 2L1.4 3.5z"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="18" height="8" rx="2" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.5"/></svg>
+      </span>
+    </div>
+    <div class="screen-content">
+      <div class="cal-wrap">
+        <span class="csh-pill">STEP 1 OF 2 · IDLE SAMPLE</span>
+        <div class="csh-title">Learning your IDLE Band</div>
+        <p class="csh-instruction">Put on your D-BAND, sit still, and breathe gently for 10 seconds.</p>
+        <div class="csh-progress-track"><div class="csh-progress-fill"></div></div>
+
+        <div class="cal-center">
+          <div class="cal-sample-card">
+            <div class="cal-timer">00:04</div>
+            <div class="cal-timer-label">Sampling resting signal&hellip;</div>
+            <div class="cal-waveform" aria-hidden="true">
+              <span style="height: 12px;"></span>
+              <span style="height: 22px;"></span>
+              <span style="height: 10px;"></span>
+              <span style="height: 27px;"></span>
+              <span style="height: 15px;"></span>
+              <span style="height: 24px;"></span>
+              <span style="height: 11px;"></span>
+              <span style="height: 19px;"></span>
+              <span style="height: 13px;"></span>
+            </div>
+            <div class="cal-band">
+              <span>IDLE Band lower&nbsp;<b>35</b></span>
+              <span>upper&nbsp;<b>240</b></span>
+            </div>
+          </div>
+        </div>
+
+        <p class="cal-foot">Next: take a few normal breaths so we can check the fit — the signal has to cross both band lines before you can start.</p>
+      </div>
+    </div>
+    <div class="home-indicator"><span class="bar"></span></div>
+  </div>
+</body>
+</html>

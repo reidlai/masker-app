@@ -18,11 +18,14 @@ void main() {
     );
   }
 
-  testWidgets('both flags off: only the Profile row, no Advanced section', (tester) async {
+  testWidgets('both flags off: Account, Preferences, and Subscription groups visible, no Advanced section', (tester) async {
     await pumpSettings(tester);
 
     expect(find.text('Profile'), findsOneWidget);
-    expect(find.text('Advanced'), findsNothing);
+    expect(find.text('Language & Region'), findsOneWidget);
+    expect(find.text('Billing & subscription'), findsOneWidget);
+    expect(find.text('Payment method'), findsOneWidget);
+    expect(find.text('ADVANCED'), findsNothing);
     expect(find.text('Debugging'), findsNothing);
     expect(find.text('Developer'), findsNothing);
   });
@@ -31,7 +34,7 @@ void main() {
     await pumpSettings(tester, debuggingEnabled: true);
 
     expect(find.text('Profile'), findsOneWidget);
-    expect(find.text('Advanced'), findsOneWidget);
+    expect(find.text('ADVANCED'), findsOneWidget);
     expect(find.text('Debugging'), findsOneWidget);
     expect(find.text('Developer'), findsNothing);
   });
@@ -40,7 +43,7 @@ void main() {
     await pumpSettings(tester, developerEnabled: true);
 
     expect(find.text('Profile'), findsOneWidget);
-    expect(find.text('Advanced'), findsOneWidget);
+    expect(find.text('ADVANCED'), findsOneWidget);
     expect(find.text('Developer'), findsOneWidget);
     expect(find.text('Debugging'), findsNothing);
   });
@@ -85,7 +88,7 @@ void main() {
     await pumpSettings(tester, debuggingEnabled: true, developerEnabled: true);
 
     expect(find.text('Profile'), findsOneWidget);
-    expect(find.text('Advanced'), findsOneWidget);
+    expect(find.text('ADVANCED'), findsOneWidget);
     expect(find.text('Debugging'), findsOneWidget);
     expect(find.text('Developer'), findsOneWidget);
   });
@@ -93,6 +96,6 @@ void main() {
   testWidgets('navigable rows show trailing chevrons', (tester) async {
     await pumpSettings(tester, debuggingEnabled: true, developerEnabled: true);
 
-    expect(find.byIcon(Icons.chevron_right), findsNWidgets(2));
+    expect(find.byIcon(Icons.chevron_right), findsNWidgets(5));
   });
 }

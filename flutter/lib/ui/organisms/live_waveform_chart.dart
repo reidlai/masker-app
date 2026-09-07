@@ -94,7 +94,7 @@ class LiveWaveformChart extends StatelessWidget {
                     ),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: AppColors.accentGreen.withOpacity(0.12),
+                      color: AppColors.accentGreen.withValues(alpha: 0.12),
                     ),
                   ),
                 ],

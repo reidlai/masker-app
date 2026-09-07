@@ -8,7 +8,7 @@ void main() {
     BleSimulatorDriver().resetForTest();
   });
 
-  testWidgets('DeveloperSimulatorBarOrganism renders developer toolbar and scenario chips', (WidgetTester tester) async {
+  testWidgets('DeveloperSimulatorBarOrganism renders the IDLE Band scenario chips', (WidgetTester tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -18,17 +18,17 @@ void main() {
     );
 
     expect(find.text("⚡ DEV SIMULATOR TOOLBAR"), findsOneWidget);
-    expect(find.text("Idle Noise"), findsOneWidget);
-    expect(find.text("Active Baseline"), findsOneWidget);
-    expect(find.text("Normal (16 bpm)"), findsOneWidget);
-    expect(find.text("Apnea Drop (>10s)"), findsOneWidget);
-    expect(find.text("Recovery (5s)"), findsOneWidget);
+    expect(find.text("IDLE Band Sample"), findsOneWidget);
+    expect(find.text("Normal 16 bpm"), findsOneWidget);
+    expect(find.text("In-Band >10s"), findsOneWidget);
+    expect(find.text("Recovery 5s"), findsOneWidget);
+    // The retired 2-stage chip is gone.
+    expect(find.text("Active Baseline"), findsNothing);
 
-    final apneaChip = find.text("Apnea Drop (>10s)");
-    await tester.tap(apneaChip);
+    await tester.tap(find.text("In-Band >10s"));
     await tester.pump();
 
-    expect(BleSimulatorDriver().currentScenario, equals(SimulatorScenario.apneaAlert));
+    expect(BleSimulatorDriver().currentScenario, equals(SimulatorScenario.inBandNoExcursion));
 
     BleSimulatorDriver().resetForTest();
   });

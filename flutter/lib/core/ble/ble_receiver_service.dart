@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:rxdart/rxdart.dart';
+import '../monitoring/idle_band.dart';
 import 'i_ble_sensor_driver.dart';
 import 'ble_simulator_driver.dart';
 import 'ble_sensor_driver.dart';
@@ -16,12 +17,11 @@ class BleReceiverService implements IBLESensorDriver {
   factory BleReceiverService() => _instance;
 
   IBLESensorDriver _activeDriver;
-  // Physiological & Hardware Baseline Rationale (5.0 L/s):
-  // Respiratory Physiology: Normal adult resting tidal volume airflow peak deviation (V_pp)
-  // averages ~4.0 to 6.0 L/s (centered at 5.0 L/s). Seeding BehaviorSubject with 5.0 ensures
-  // immediate valid baseline signal output to UI charts (LiveWaveformChart, MeasurementPage)
-  // before the first raw 10Hz BLE telemetry packet arrives, avoiding 0.0 division/render artifacts.
-  BehaviorSubject<double> _thermalSubject = BehaviorSubject<double>.seeded(5.0);
+  // Neutral resting seed (raw signal units). The queue must expose *some*
+  // value to a late subscriber before the first real 10 Hz sample arrives; a
+  // small positive resting value keeps the waveform renderer well-defined
+  // without implying any calibrated reference.
+  BehaviorSubject<double> _thermalSubject = BehaviorSubject<double>.seeded(0.3);
   StreamSubscription<double>? _driverSubscription;
 
   static const bool _isDevMode = bool.fromEnvironment('DEV_MODE', defaultValue: false);
@@ -52,7 +52,7 @@ class BleReceiverService implements IBLESensorDriver {
   void _initializeStream() {
     _driverSubscription?.cancel();
     if (_thermalSubject.isClosed) {
-      _thermalSubject = BehaviorSubject<double>.seeded(5.0);
+      _thermalSubject = BehaviorSubject<double>.seeded(0.3);
     }
     _driverSubscription = _activeDriver.signalStream.listen(
       (double val) {
@@ -90,46 +90,17 @@ class BleReceiverService implements IBLESensorDriver {
   Stream<SensorMonitoringPhase> get phaseStream => _activeDriver.phaseStream;
 
   @override
-  double get signalThreshold => _activeDriver.signalThreshold;
-
-  @override
   Future<bool> scanAndConnect() async {
     return await _activeDriver.scanAndConnect();
   }
 
-  // --- Stage 1 Calibration Lifecycle ---
+  // --- IDLE Band Calibration (AD-04) ---
   @override
-  Future<void> startIdleCalibration() async {
-    await _activeDriver.startIdleCalibration();
+  Future<IdleBand> sampleIdleBand({Duration window = kIdleSampleWindow}) {
+    return _activeDriver.sampleIdleBand(window: window);
   }
 
-  @override
-  Future<double> stopIdleCalibration() async {
-    return await _activeDriver.stopIdleCalibration();
-  }
-
-  @override
-  Future<double> calibrateStage1NoiseFloor() async {
-    return await _activeDriver.calibrateStage1NoiseFloor();
-  }
-
-  @override
-  Future<double> calibrateStage1NoiseCeiling() async {
-    return await _activeDriver.calibrateStage1NoiseCeiling();
-  }
-
-  // --- Stage 2 Training Calibration Lifecycle ---
-  @override
-  Future<void> startTrainingCalibration() async {
-    await _activeDriver.startTrainingCalibration();
-  }
-
-  @override
-  Future<double> stopTrainingCalibration() async {
-    return await _activeDriver.stopTrainingCalibration();
-  }
-
-  // --- Stage 3 Monitoring Lifecycle ---
+  // --- Nocturnal Monitoring Lifecycle ---
   @override
   void startMonitoringSession() {
     _activeDriver.startMonitoringSession();
@@ -150,7 +121,7 @@ class BleReceiverService implements IBLESensorDriver {
     if (!_thermalSubject.isClosed) {
       _thermalSubject.close();
     }
-    _thermalSubject = BehaviorSubject<double>.seeded(5.0);
+    _thermalSubject = BehaviorSubject<double>.seeded(0.3);
     _activeDriver = BleSimulatorDriver();
     BleSimulatorDriver().resetForTest();
     _initializeStream();

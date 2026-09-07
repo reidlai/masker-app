@@ -1,8 +1,14 @@
 import 'dart:async';
 import 'dart:math';
+import '../monitoring/idle_band.dart';
 import 'i_ble_sensor_driver.dart';
 
 enum BLEDeviceState { disconnected, scanning, connecting, connected }
+
+/// Shape of the continuous synthetic emitter. `scanAndConnect` starts it in
+/// [resting]; `sampleIdleBand` learns the band from [resting] then re-shapes
+/// to [breathing] before returning so the wear check sees strict excursions.
+enum _EmitShape { resting, breathing }
 
 class BLESensorDriver implements IBLESensorDriver {
   static const String serviceUuid = "0x180D";
@@ -34,16 +40,33 @@ class BLESensorDriver implements IBLESensorDriver {
     return _signalStreamController!.stream;
   }
 
-  Timer? _telemetryTimer;
-  double _ambientNoiseFloor = 0.5; // N_idle
-  double _breathBaselineVpp = 5.0; // V_pp
-  double _signalThreshold = 0.5;    // 0.10 * V_pp
+  // --- Continuous ~10 Hz synthetic emitter (AD-12) ---
+  // Started on scanAndConnect, stopped only on disconnect. sampleIdleBand and
+  // startMonitoringSession re-shape it; they never start/stop it.
+  Timer? _emitTimer;
+  double _step = 0.0;
+  _EmitShape _shape = _EmitShape.resting;
 
-  double get ambientNoiseFloor => _ambientNoiseFloor;
-  double get breathBaselineVpp => _breathBaselineVpp;
-
-  @override
-  double get signalThreshold => _signalThreshold;
+  void _startEmitter() {
+    _emitTimer?.cancel();
+    _step = 0.0;
+    _emitTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+      _step += 0.1;
+      final double signal;
+      switch (_shape) {
+        case _EmitShape.resting:
+          // Narrow resting signal around ~0.30 (tiny jitter only).
+          signal = 0.30 + 0.02 * sin(_step * 3);
+          break;
+        case _EmitShape.breathing:
+          // Band-spanning breathing wave: 0.30 ± 0.25 strictly overshoots a
+          // band learned from the resting shape (~[0.28, 0.32]) on both sides.
+          signal = 0.30 + 0.25 * sin(_step * 1.6);
+          break;
+      }
+      _signalStreamController?.add(signal);
+    });
+  }
 
   @override
   Future<bool> scanAndConnect() async {
@@ -53,83 +76,56 @@ class BLESensorDriver implements IBLESensorDriver {
     await Future.delayed(const Duration(milliseconds: 600));
     _state = BLEDeviceState.connected;
     _updatePhase(SensorMonitoringPhase.idle);
+    _shape = _EmitShape.resting;
+    _startEmitter();
     return true;
   }
 
-  // --- Stage 1 Calibration Lifecycle ---
   @override
-  Future<void> startIdleCalibration() async {
-    _updatePhase(SensorMonitoringPhase.calibratingIdle);
-  }
+  Future<IdleBand> sampleIdleBand({Duration window = kIdleSampleWindow}) async {
+    _updatePhase(SensorMonitoringPhase.calibratingIdleBand);
+    _shape = _EmitShape.resting;
 
-  @override
-  Future<double> stopIdleCalibration() async {
-    double noiseSum = 0.0;
-    final Random rnd = Random();
-    for (int i = 0; i < 10; i++) {
-      await Future.delayed(const Duration(milliseconds: 300));
-      noiseSum += 0.3 + (rnd.nextDouble() * 0.2); // ~0.4°C noise
+    final acc = IdleBandAccumulator();
+    final sub = signalStream.listen(acc.add);
+    await Future.delayed(window);
+    unawaited(sub.cancel());
+
+    final band = acc.band;
+    if (band == null) {
+      _updatePhase(SensorMonitoringPhase.idle);
+      throw StateError(
+        'sampleIdleBand: no samples arrived on signalStream within $window',
+      );
     }
-    _ambientNoiseFloor = noiseSum / 10.0;
+
+    // Re-shape the still-live emitter to the band-spanning breathing wave so
+    // wizard step 2 observes strict excursions against the returned band. The
+    // band is frozen at window close; widening the emission now does not
+    // change it.
+    _shape = _EmitShape.breathing;
     _updatePhase(SensorMonitoringPhase.idle);
-    return _ambientNoiseFloor;
+    return band;
   }
 
-  @override
-  Future<double> calibrateStage1NoiseFloor() async {
-    await startIdleCalibration();
-    return await stopIdleCalibration();
-  }
-
-  @override
-  Future<double> calibrateStage1NoiseCeiling() async {
-    return await calibrateStage1NoiseFloor();
-  }
-
-  // --- Stage 2 Calibration Lifecycle ---
-  @override
-  Future<void> startTrainingCalibration() async {
-    _updatePhase(SensorMonitoringPhase.calibratingTraining);
-  }
-
-  @override
-  Future<double> stopTrainingCalibration() async {
-    double maxBreath = 0.0;
-    final Random rnd = Random();
-    for (int i = 0; i < 15; i++) {
-      await Future.delayed(const Duration(milliseconds: 300));
-      double sample = 4.5 + (rnd.nextDouble() * 1.5); // ~5.0°C active breath
-      if (sample > maxBreath) maxBreath = sample;
-    }
-    _breathBaselineVpp = maxBreath;
-    _signalThreshold = 0.10 * _breathBaselineVpp;
-    _updatePhase(SensorMonitoringPhase.idle);
-    return _signalThreshold;
-  }
-
-  // --- Stage 3 Monitoring Lifecycle ---
   @override
   void startMonitoringSession() {
-    _telemetryTimer?.cancel();
     _updatePhase(SensorMonitoringPhase.monitoring);
-    double step = 0.0;
-    _telemetryTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      step += 0.1;
-      // 10Hz sine wave simulating thermal breath stream
-      double signal = (_breathBaselineVpp / 2) * (1 + sin(step)) + _ambientNoiseFloor;
-      _signalStreamController?.add(signal);
-    });
+    _shape = _EmitShape.breathing;
+    if (_emitTimer == null) _startEmitter();
   }
 
   @override
   void stopMonitoringSession() {
-    _telemetryTimer?.cancel();
+    // AD-12: the emitter runs until disconnect(); only re-shape it to resting.
+    _shape = _EmitShape.resting;
     _updatePhase(SensorMonitoringPhase.idle);
   }
 
   @override
   void disconnect() {
-    stopMonitoringSession();
+    _emitTimer?.cancel();
+    _emitTimer = null;
     _signalStreamController?.close();
     _signalStreamController = null;
     _state = BLEDeviceState.disconnected;

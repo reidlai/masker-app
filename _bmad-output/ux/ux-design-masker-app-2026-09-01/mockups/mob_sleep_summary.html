@@ -1,183 +1,325 @@
+<!-- SHARED TEMPLATE — iPhone 17 Pro Max standard artboard (440x956 pt logical resolution).
+     Do not alter the chrome markup/CSS below (.device-frame, .status-bar, .dynamic-island, .home-indicator).
+     Every mockup embeds this verbatim so the set reads as one consistent iPhone. -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Morning Sleep Summary — Sleep Apnea App</title>
-  <style>
-    :root {
-      --bg-primary: #0F172A;
-      --surface: #1E293B;
-      --border: #334155;
-      --accent-green: #10B981;
-      --purple: #6D28D9;
-      --text-primary: #F8FAFC;
-      --text-secondary: #94A3B8;
-      --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); }
-    body {
-      background-color: #020617;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      color: var(--text-primary);
-    }
-    .phone-frame {
-      width: 390px;
-      height: 844px;
-      background-color: var(--bg-primary);
-      border-radius: 48px;
-      border: 12px solid #1E293B;
-      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      padding: 24px;
-    }
-    .status-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-secondary);
-      margin-bottom: 20px;
-    }
-    .page-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
-    
-    .score-card {
-      background: linear-gradient(135deg, #1E1B4B 0%, #311042 100%);
-      border: 1px solid #4C1D95;
-      border-radius: 20px;
-      padding: 20px;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-    .score-ring {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      border: 6px solid var(--accent-green);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-    }
-    .score-num { font-size: 24px; font-weight: 800; }
-    .score-label { font-size: 9px; text-transform: uppercase; color: var(--text-secondary); }
-    .score-info h3 { font-size: 16px; margin-bottom: 4px; }
-    .score-info p { font-size: 13px; color: var(--text-secondary); }
-    
-    .badge-normal {
-      display: inline-block;
-      padding: 4px 10px;
-      background: rgba(16,185,129,0.2);
-      color: var(--accent-green);
-      border: 1px solid var(--accent-green);
-      border-radius: 9999px;
-      font-size: 11px;
-      font-weight: 700;
-      margin-top: 6px;
-    }
-    
-    .chart-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 16px;
-      margin-bottom: 16px;
-    }
-    .chart-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; }
-    .waveform-svg { width: 100%; height: 120px; }
-    
-    .metrics-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-    .metric-item {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 14px;
-    }
-    .metric-item label { font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px; }
-    .metric-item val { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
-    
-    .btn-export {
-      width: 100%;
-      height: 52px;
-      background: var(--purple);
-      color: white;
-      border: none;
-      border-radius: 16px;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Morning Sleep Summary — Sleep Apnea Detection App</title>
+<style>
+  /* Illustrates: EXPERIENCE.md State Pattern #7 State_MorningSummary; Key Flow step 8; DESIGN.md Components #1 MetricStatCard, Colors token purple_analytics; Voice and Tone "Sleep Monitoring" (calming, clinical). */
+  :root {
+    --bg-primary: #0F172A;
+    --surface: #1E293B;
+    --surface-border: #334155;
+    --accent-green: #10B981;
+    --warning-amber: #F59E0B;
+    --danger-red: #EF4444;
+    --purple-analytics: #6D28D9;
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --night-mode: #000000;
+    --pressed-surface: #273449;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); }
+  body {
+    background-color: #020617;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  /* IPHONE 17 PRO MAX DEVICE CHROME — 440x956pt logical resolution, shared across all mockups */
+  .device-frame {
+    width: 440px;
+    height: 956px;
+    background-color: var(--bg-primary);
+    border-radius: 55px;
+    border: 8px solid #0B1220;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    color: var(--text-primary);
+  }
+  .status-bar {
+    flex: 0 0 auto;
+    height: 59px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 28px 10px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    position: relative;
+    z-index: 2;
+  }
+  .dynamic-island {
+    position: absolute;
+    top: 11px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 37px;
+    border-radius: 19px;
+    background: #000;
+    z-index: 3;
+  }
+  .status-bar .clock { letter-spacing: 0.01em; }
+  .status-bar .icons { display: flex; align-items: center; gap: 6px; }
+  .status-bar .icons svg { display: block; }
+  .screen-content {
+    flex: 1 1 auto;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .home-indicator {
+    flex: 0 0 auto;
+    height: 34px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2;
+  }
+  .home-indicator .bar {
+    width: 148px;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(248,250,252,0.7);
+  }
+  /* Night Mode variant: pure-black screen, chrome stays low-contrast against #000 */
+  .device-frame.night-mode { background-color: var(--night-mode); }
+  .device-frame.night-mode .home-indicator .bar { background: rgba(148,163,184,0.35); }
+
+  /* SCREEN-SPECIFIC — MOB_SLEEP_SUMMARY */
+  .summary-wrap { flex: 1 1 auto; overflow-y: auto; padding: 24px 28px 32px; }
+  .page-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .page-title .pt-right { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; }
+  .page-title .date { font-size: 12px; font-weight: 400; color: var(--text-secondary); }
+  /* Header action -> MOB_HISTORY_FILTER */
+  .history-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--surface-border);
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .history-btn svg { width: 14px; height: 14px; color: var(--text-secondary); }
+
+  .score-card {
+    background: linear-gradient(135deg, #1E1B4B 0%, #2E1065 100%);
+    border: 1px solid var(--purple-analytics);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+  .score-ring {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    border: 6px solid var(--warning-amber);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex: 0 0 auto;
+  }
+  .score-num { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .score-label { font-size: 9px; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.04em; }
+  .score-info h3 { font-size: 16px; margin-bottom: 6px; }
+  .score-info p { font-size: 13px; color: var(--text-secondary); }
+  .apnea-only-caveat { margin: 10px 2px 0; font-size: 11px; line-height: 1.45; color: var(--text-secondary); }
+  /* Alert badge: shown when >=1 Tier-1 apnea alarm fired, replacing the AI-severity badge */
+  .badge-alert {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 11px;
+    background: rgba(245,158,11,0.2);
+    color: var(--warning-amber);
+    border: 1px solid var(--warning-amber);
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-top: 8px;
+  }
+  .badge-alert svg { width: 12px; height: 12px; }
+
+  /* Tappable -> MOB_GRAPH_WAVEFORM */
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .chart-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+  .chart-title .card-cta { display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--accent-green); }
+  .chart-title .card-cta svg { width: 14px; height: 14px; }
+  .waveform-svg { width: 100%; height: 120px; }
+  .chart-foot { margin-top: 10px; font-size: 11px; color: var(--text-secondary); }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .metric-item {
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .metric-item label { font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 6px; }
+  .metric-item .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  .btn-export {
+    width: 100%;
+    min-height: 48px;
+    background: var(--purple-analytics);
+    color: var(--text-primary);
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* PrimaryNavBarOrganism — Summary tab active (this screen is the Summary tab root) */
+  .primary-nav-bar {
+    flex: 0 0 auto;
+    display: flex;
+    background: var(--surface);
+    border-top: 1px solid var(--surface-border);
+    padding: 12px 0 8px;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    color: var(--text-secondary);
+  }
+  .nav-item.active { color: var(--accent-green); }
+  .nav-item svg { width: 24px; height: 24px; }
+  .nav-item span { font-size: 12px; font-weight: 500; }
+</style>
 </head>
 <body>
-  <div class="phone-frame">
+  <div class="device-frame">
     <div class="status-bar">
-      <span>07:00 AM</span>
-      <span>D-BAND Unpaired ✓</span>
+      <div class="dynamic-island"></div>
+      <span class="clock">10:15</span>
+      <span class="icons">
+        <!-- signal (iOS-style dots ascending) -->
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="0.5"/><rect x="5" y="5" width="3" height="7" rx="0.5"/><rect x="10" y="2" width="3" height="10" rx="0.5"/><rect x="15" y="0" width="3" height="12" rx="0.5"/></svg>
+        <!-- wifi -->
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 10.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM4.2 6.3a5.4 5.4 0 017.6 0l-1.4 1.4a3.4 3.4 0 00-4.8 0L4.2 6.3zM1.4 3.5a9.4 9.4 0 0113.2 0L13.2 5A7.4 7.4 0 008 3a7.4 7.4 0 00-5.2 2L1.4 3.5z"/></svg>
+        <!-- battery (iOS-style rounded pill) -->
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="18" height="8" rx="2" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.5"/></svg>
+      </span>
     </div>
+    <div class="screen-content">
+      <div class="summary-wrap">
+        <div class="page-title">
+          <span>Morning Sleep Summary</span>
+          <span class="pt-right">
+            <span class="date">Sep 1, 2026</span>
+            <span class="history-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
+              History
+            </span>
+          </span>
+        </div>
 
-    <div class="page-title">
-      Morning Sleep Summary
-      <span style="font-size: 12px; font-weight: 400; color: var(--text-secondary);">Sep 1, 2026</span>
+        <div class="score-card">
+          <div class="score-ring">
+            <span class="score-num">3.2</span>
+            <span class="score-label">AI</span>
+          </div>
+          <div class="score-info">
+            <h3>AI 3.2 &middot; normal range</h3>
+            <p>7h 45m monitoring · 1 &ldquo;I&rsquo;m Safe&rdquo; tap</p>
+            <span class="badge-alert">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+              1 APNEA ALERT
+            </span>
+          </div>
+        </div>
+
+        <p class="apnea-only-caveat">This is an apnea-only screen. A full sleep study also counts shallow-breathing (hypopnea) events and may score higher.</p>
+
+        <div class="chart-card">
+          <div class="chart-title">
+            <span>Respiration Waveform</span>
+            <span class="card-cta">View details
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </span>
+          </div>
+          <svg class="waveform-svg" viewBox="0 0 300 100">
+            <path d="M 0 50 Q 15 18 30 50 T 60 50 T 90 50 T 120 50 T 150 50 T 180 50 T 210 18 T 240 50 T 270 50 T 300 50" stroke="#10B981" stroke-width="2.5" fill="none"/>
+            <line x1="0" y1="30" x2="300" y2="30" stroke="#334155" stroke-dasharray="4 4"/>
+            <line x1="0" y1="70" x2="300" y2="70" stroke="#334155" stroke-dasharray="4 4"/>
+            <text x="4" y="26" fill="#94A3B8" font-size="8">upper bound</text>
+            <text x="4" y="82" fill="#94A3B8" font-size="8">lower bound</text>
+            <rect x="120" y="30" width="60" height="40" fill="#EF4444" fill-opacity="0.12"/>
+            <text x="150" y="90" fill="#EF4444" font-size="9" text-anchor="middle">Apnea — signal held inside the IDLE Band (12s)</text>
+          </svg>
+          <div class="chart-foot">Raw 10 Hz signal with the IDLE Band bounds · pinch &amp; pan the full timeline on the details screen</div>
+        </div>
+
+        <div class="metrics-grid">
+          <div class="metric-item">
+            <label>Total Apnea Stops</label>
+            <span class="val">1 Event</span>
+          </div>
+          <div class="metric-item">
+            <label>Safety Taps</label>
+            <span class="val">1 Tap ("I'm Safe")</span>
+          </div>
+        </div>
+
+        <button class="btn-export">📄 Export Signed Report for Physician</button>
+      </div>
+      <nav class="primary-nav-bar">
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10"/></svg>
+          <span>Home</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 119.5 4a7 7 0 1010.5 10.5z"/></svg>
+          <span>Monitor</span>
+        </div>
+        <div class="nav-item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/></svg>
+          <span>Summary</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          <span>Settings</span>
+        </div>
+      </nav>
     </div>
-
-    <div class="score-card">
-      <div class="score-ring">
-        <span class="score-num">92</span>
-        <span class="score-label">Score</span>
-      </div>
-      <div class="score-info">
-        <h3>AHI 3.2 (Normal)</h3>
-        <p>7 Hours 45 Mins Monitoring</p>
-        <span class="badge-normal">NORMAL RESPIRATION</span>
-      </div>
-    </div>
-
-    <div class="chart-card">
-      <div class="chart-title">
-        <span>Respiration Waveform (Skia 60 FPS)</span>
-        <span style="color: var(--accent-green); font-size: 11px;">10Hz Stream</span>
-      </div>
-      <svg class="waveform-svg" viewBox="0 0 300 100">
-        <path d="M 0 50 Q 15 20 30 50 T 60 50 T 90 50 T 120 50 T 150 90 T 180 50 T 210 20 T 240 50 T 270 50 T 300 50" stroke="#10B981" stroke-width="2.5" fill="none"/>
-        <line x1="0" y1="50" x2="300" y2="50" stroke="#334155" stroke-dasharray="4 4"/>
-        <circle cx="150" cy="90" r="5" fill="#EF4444"/>
-        <text x="150" y="70" fill="#EF4444" font-size="9" text-anchor="middle">Apnea Stop (12s)</text>
-      </svg>
-    </div>
-
-    <div class="metrics-grid">
-      <div class="metric-item">
-        <label>Total Apnea Stops</label>
-        <val>2 Events</val>
-      </div>
-      <div class="metric-item">
-        <label>Safety Taps</label>
-        <val>1 Tap ("I'm Safe")</val>
-      </div>
-    </div>
-
-    <button class="btn-export" onclick="alert('Exporting Signed FHIR JSON / PDF Clinical Report for Physician...')">
-      📄 Export Signed Report for Physician
-    </button>
+    <div class="home-indicator"><span class="bar"></span></div>
   </div>
 </body>
 </html>

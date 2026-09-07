@@ -1,0 +1,280 @@
+<!-- SHARED TEMPLATE — iPhone 17 Pro Max standard artboard (440x956 pt logical resolution).
+     Do not alter the chrome markup/CSS below (.device-frame, .status-bar, .dynamic-island, .home-indicator).
+     Every mockup embeds this verbatim so the set reads as one consistent iPhone. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home — Sleep Apnea Detection App</title>
+<style>
+  /*
+    MOB_HOME illustrates (see EXPERIENCE.md "Home Screen (MOB_HOME)", Component Patterns
+    #10 HomeSummaryCardOrganism / #10a DeviceStatusCardOrganism / #10b WeeklyTrendCardOrganism,
+    State Patterns #14 State_HomeDefault, DESIGN.md Components #1a-#1d):
+    - Tab-1 destination and the app's default landing on every launch after onboarding.
+    - A READ-ONLY dashboard -- a vertical stack of status cards, no controls that start or
+      stop anything (the nightly Start action lives on the Monitor tab).
+    - Canonical State_HomeDefault, top to bottom:
+      1. Greeting ("Good morning") + monitoring-streak line ("12 nights monitored").
+      2. Last-night summary hero card -> MOB_SLEEP_SUMMARY.
+      3. D-BAND device-status card (nominal: green dot, connected, battery %, last sync).
+      4. 7-night Apnea Index trend card (7-bar mini chart + descriptive delta) -> MOB_HISTORY_FILTER.
+    - PrimaryNavBarOrganism with the Home tab active in accent_green.
+    - iPhone 17 Pro Max 440x956 artboard; canonical content fits without scrolling.
+  */
+  :root {
+    --bg-primary: #0F172A;
+    --surface: #1E293B;
+    --surface-border: #334155;
+    --accent-green: #10B981;
+    --warning-amber: #F59E0B;
+    --danger-red: #EF4444;
+    --purple-analytics: #6D28D9;
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --night-mode: #000000;
+    --pressed-surface: #273449;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); }
+  body {
+    background-color: #020617;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  /* IPHONE 17 PRO MAX DEVICE CHROME — 440x956pt logical resolution, shared across all mockups */
+  .device-frame {
+    width: 440px;
+    height: 956px;
+    background-color: var(--bg-primary);
+    border-radius: 55px;
+    border: 8px solid #0B1220;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    color: var(--text-primary);
+  }
+  .status-bar {
+    flex: 0 0 auto;
+    height: 59px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 28px 10px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    position: relative;
+    z-index: 2;
+  }
+  .dynamic-island {
+    position: absolute;
+    top: 11px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 37px;
+    border-radius: 19px;
+    background: #000;
+    z-index: 3;
+  }
+  .status-bar .clock { letter-spacing: 0.01em; }
+  .status-bar .icons { display: flex; align-items: center; gap: 6px; }
+  .status-bar .icons svg { display: block; }
+  .screen-content {
+    flex: 1 1 auto;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .home-indicator {
+    flex: 0 0 auto;
+    height: 34px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2;
+  }
+  .home-indicator .bar {
+    width: 148px;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(248,250,252,0.7);
+  }
+  .device-frame.night-mode { background-color: var(--night-mode); }
+  .device-frame.night-mode .home-indicator .bar { background: rgba(148,163,184,0.35); }
+
+  /* ---- Screen-specific CSS (MOB_HOME dashboard) ---- */
+  .app-bar {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 18px 20px 10px;
+  }
+  .app-bar .greeting { font-size: 24px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; }
+  .app-bar .streak { font-size: 12px; color: var(--text-secondary); }
+
+  .app-content {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 6px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+  }
+
+  /* 2 — HomeSummaryCard */
+  .summary-card { padding: 18px; display: flex; align-items: center; gap: 14px; }
+  .summary-card .sc-body { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+  .sc-label-row { display: flex; align-items: baseline; justify-content: space-between; }
+  .sc-label-row .sc-label { font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-secondary); }
+  .sc-label-row .sc-date { font-size: 12px; color: var(--text-secondary); }
+  .sc-hero-row { display: flex; align-items: center; gap: 10px; }
+  .sc-hero-row .sc-ahi { font-size: 30px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; line-height: 1; }
+  .sc-hero-row .sc-ahi-unit { font-size: 12px; font-weight: 600; color: var(--text-secondary); align-self: flex-end; padding-bottom: 3px; }
+  /* Alert pill: shown when >=1 Tier-1 apnea alarm fired last night, replacing the AI-severity pill */
+  .sc-hero-row .sc-pill { margin-left: auto; display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; border-radius: 9999px; padding: 4px 11px; color: var(--warning-amber); background: rgba(245,158,11,0.14); }
+  .sc-hero-row .sc-pill svg { width: 12px; height: 12px; }
+  .sc-clinical { font-size: 12px; color: var(--text-secondary); }
+  .sc-stats-row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .sc-stats-row .v.alert { color: var(--warning-amber); }
+  .sc-stats-row .k { color: var(--text-secondary); }
+  .sc-stats-row .v { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .sc-stats-row .sc-dot { color: var(--surface-border); }
+  .summary-card .sc-chev { width: 18px; height: 18px; color: var(--text-secondary); flex: 0 0 auto; }
+
+  /* 3 — DeviceStatusCard (nominal) */
+  .device-card { padding: 15px 18px; display: flex; align-items: center; gap: 12px; }
+  .device-card .status-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--accent-green); flex: 0 0 auto; }
+  .device-card .dc-body { display: flex; flex-direction: column; gap: 2px; }
+  .device-card .dc-primary { font-size: 14px; color: var(--text-primary); }
+  .device-card .dc-detail { font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+  /* 4 — WeeklyTrendCard */
+  .trend-card { padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+  .trend-head { display: flex; align-items: center; justify-content: space-between; }
+  .trend-head .th-title { font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-secondary); }
+  .trend-head svg { width: 16px; height: 16px; color: var(--text-secondary); }
+  .trend-bars { display: flex; align-items: flex-end; gap: 10px; height: 56px; }
+  .trend-bars .bar { flex: 1; background: var(--accent-green); border-radius: 3px; opacity: 0.6; }
+  .trend-bars .bar.latest { opacity: 1; }
+  .trend-delta { font-size: 14px; }
+  .trend-delta .v { color: var(--text-primary); }
+  .trend-delta .dir { color: var(--accent-green); }
+
+  /* PrimaryNavBarOrganism */
+  .primary-nav-bar { flex: 0 0 auto; display: flex; background: var(--surface); border-top: 1px solid var(--surface-border); padding: 12px 0 8px; }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; color: var(--text-secondary); }
+  .nav-item.active { color: var(--accent-green); }
+  .nav-item svg { width: 24px; height: 24px; }
+  .nav-item span { font-size: 12px; font-weight: 500; }
+</style>
+</head>
+<body>
+  <div class="device-frame">
+    <div class="status-bar">
+      <div class="dynamic-island"></div>
+      <span class="clock">07:02</span>
+      <span class="icons">
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="0.5"/><rect x="5" y="5" width="3" height="7" rx="0.5"/><rect x="10" y="2" width="3" height="10" rx="0.5"/><rect x="15" y="0" width="3" height="12" rx="0.5"/></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 10.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM4.2 6.3a5.4 5.4 0 017.6 0l-1.4 1.4a3.4 3.4 0 00-4.8 0L4.2 6.3zM1.4 3.5a9.4 9.4 0 0113.2 0L13.2 5A7.4 7.4 0 008 3a7.4 7.4 0 00-5.2 2L1.4 3.5z"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="18" height="8" rx="2" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.5"/></svg>
+      </span>
+    </div>
+    <div class="screen-content">
+      <div class="app-bar">
+        <span class="greeting">Good morning</span>
+        <span class="streak">12 nights monitored</span>
+      </div>
+
+      <div class="app-content">
+        <!-- 2 — Last-night summary hero -->
+        <div class="card summary-card" role="button" aria-label="Last night: 1 apnea alert. You tapped I'm Safe once. AI 3.2, normal range. 7 hours 45 minutes. Opens full summary.">
+          <div class="sc-body">
+            <div class="sc-label-row">
+              <span class="sc-label">Last night</span>
+              <span class="sc-date">Wed, Sep 3</span>
+            </div>
+            <div class="sc-hero-row">
+              <span class="sc-ahi">3.2</span>
+              <span class="sc-ahi-unit">AI</span>
+              <span class="sc-pill">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                1 apnea alert
+              </span>
+            </div>
+            <div class="sc-clinical">AI 3.2 &middot; normal range · you tapped "I'm Safe" once</div>
+            <div class="sc-stats-row">
+              <span><span class="k">Duration</span> <span class="v">7h 45m</span></span>
+              <span class="sc-dot">&middot;</span>
+              <span><span class="k">Apnea events</span> <span class="v alert">1</span></span>
+            </div>
+          </div>
+          <svg class="sc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+
+        <!-- 3 — D-BAND device status (nominal) -->
+        <div class="card device-card" aria-label="D-BAND connected, battery 84 percent, last synced 7:02 AM.">
+          <span class="status-dot"></span>
+          <div class="dc-body">
+            <span class="dc-primary">D-BAND connected</span>
+            <span class="dc-detail">84% &middot; Last sync 7:02 AM</span>
+          </div>
+        </div>
+
+        <!-- 4 — 7-night Apnea Index trend -->
+        <div class="card trend-card" role="button" aria-label="AI last 7 nights: 3.4 average, down from 4.1 last week. Opens history.">
+          <div class="trend-head">
+            <span class="th-title">Apnea Index &mdash; last 7 nights</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="trend-bars">
+            <span class="bar" style="height:74%"></span>
+            <span class="bar" style="height:60%"></span>
+            <span class="bar" style="height:82%"></span>
+            <span class="bar" style="height:52%"></span>
+            <span class="bar" style="height:66%"></span>
+            <span class="bar" style="height:44%"></span>
+            <span class="bar latest" style="height:50%"></span>
+          </div>
+          <div class="trend-delta"><span class="v">3.4 average</span> <span class="dir">&middot; down from 4.1 last week</span></div>
+        </div>
+      </div>
+
+      <nav class="primary-nav-bar">
+        <div class="nav-item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10"/></svg>
+          <span>Home</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 119.5 4a7 7 0 1010.5 10.5z"/></svg>
+          <span>Monitor</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/></svg>
+          <span>Summary</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          <span>Settings</span>
+        </div>
+      </nav>
+    </div>
+    <div class="home-indicator"><span class="bar"></span></div>
+  </div>
+</body>
+</html>

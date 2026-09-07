@@ -126,8 +126,24 @@ flutter build appbundle --release
 
 ---
 
-## 💡 Troubleshooting: Windows Flutter Font Lock Workaround
+## 💡 Troubleshooting & Platform Setup
 
+### 1. Android Virtual Device (AVD) Graphics Acceleration
+When running on Android Emulators, set the AVD **Graphics Acceleration** to **Software - GLES 2.0** (Software rendering) in Android Studio's AVD Device Manager. Hardware acceleration on certain host GPUs can cause viewport initialization delays, zero-width bounds errors (`Width is zero`), or skipped frames.
+
+### 2. Google Fonts Loading Failure & Network Permission
+If `google_fonts` throws dynamic font loading exceptions (`SocketException: Failed host lookup: 'fonts.gstatic.com'`):
+- **Root Cause**: The main Android manifest is missing the network permission required to fetch Google Fonts at runtime.
+- **Fix**: Ensure `<uses-permission android:name="android.permission.INTERNET" />` is declared in `android/app/src/main/AndroidManifest.xml`:
+  ```xml
+  <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+      <uses-permission android:name="android.permission.INTERNET" />
+      ...
+  </manifest>
+  ```
+- **Offline Fonts (Optional)**: For offline environments, set `GoogleFonts.config.allowRuntimeFetching = false;` in `lib/main.dart` (in Dart code inside `main()`, not in `pubspec.yaml`) and bundle the TTF font files directly in your `pubspec.yaml` assets.
+
+### 3. Windows Flutter Font Lock Workaround
 On Windows systems, if running `flutter run` or `flutter build apk` fails with a file lock error copying `MaterialIcons-Regular.otf`:
 
 ```text

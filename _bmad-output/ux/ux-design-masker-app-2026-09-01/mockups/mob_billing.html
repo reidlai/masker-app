@@ -1,0 +1,251 @@
+<!-- SHARED TEMPLATE — iPhone 17 Pro Max standard artboard (440x956 pt logical resolution).
+     Do not alter the chrome markup/CSS below (.device-frame, .status-bar, .dynamic-island, .home-indicator).
+     Every mockup embeds this verbatim so the set reads as one consistent iPhone. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Billing &amp; Subscription — Sleep Apnea Detection App</title>
+<style>
+  /*
+    MOB_BILLING illustrates (see EXPERIENCE.md "Billing & Subscription (MOB_BILLING)",
+    Component Pattern #11 SubscriptionPlanCardOrganism, State Patterns #17
+    State_SubscriptionPremium, DESIGN.md Components #6a SubscriptionPlanCard):
+    - Pushed detail screen from Settings > Subscription. App bar: ‹ back + "Billing & Subscription".
+    - Direct billing (Stripe-style); app owns and renders plan state in full.
+    - Canonical State_SubscriptionPremium: plan card (Premium + "Active" pill, $12.99/month
+      [ASSUMPTION placeholder price], "Renews 6 Oct 2026"), "What Premium includes" checklist,
+      Payment method summary row (value variant -> MOB_PAYMENT_METHOD, amber dot = card
+      nearing expiry), "View invoices" row, and a plainly-labelled danger-red "Cancel
+      subscription" text button (never hidden in a menu; confirm dialog names the paid-through
+      date).
+    - No bottom nav (detail screen). Back -> MOB_SETTINGS.
+  */
+  :root {
+    --bg-primary: #0F172A;
+    --surface: #1E293B;
+    --surface-border: #334155;
+    --accent-green: #10B981;
+    --warning-amber: #F59E0B;
+    --danger-red: #EF4444;
+    --purple-analytics: #6D28D9;
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --night-mode: #000000;
+    --pressed-surface: #273449;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); }
+  body {
+    background-color: #020617;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  /* IPHONE 17 PRO MAX DEVICE CHROME — 440x956pt logical resolution, shared across all mockups */
+  .device-frame {
+    width: 440px;
+    height: 956px;
+    background-color: var(--bg-primary);
+    border-radius: 55px;
+    border: 8px solid #0B1220;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    color: var(--text-primary);
+  }
+  .status-bar {
+    flex: 0 0 auto;
+    height: 59px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 28px 10px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    position: relative;
+    z-index: 2;
+  }
+  .dynamic-island {
+    position: absolute;
+    top: 11px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 37px;
+    border-radius: 19px;
+    background: #000;
+    z-index: 3;
+  }
+  .status-bar .clock { letter-spacing: 0.01em; }
+  .status-bar .icons { display: flex; align-items: center; gap: 6px; }
+  .status-bar .icons svg { display: block; }
+  .screen-content {
+    flex: 1 1 auto;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .home-indicator {
+    flex: 0 0 auto;
+    height: 34px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2;
+  }
+  .home-indicator .bar {
+    width: 148px;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(248,250,252,0.7);
+  }
+  .device-frame.night-mode { background-color: var(--night-mode); }
+  .device-frame.night-mode .home-indicator .bar { background: rgba(148,163,184,0.35); }
+
+  /* ---- Screen-specific CSS (MOB_BILLING) ---- */
+  .app-bar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 22px 20px 12px;
+  }
+  .app-bar .back { font-size: 26px; line-height: 1; color: var(--text-primary); width: 22px; }
+  .app-bar .title { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+  .app-content {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 8px 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  /* SubscriptionPlanCard (DESIGN.md Components #6a) */
+  .plan-card {
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .plan-head { display: flex; align-items: center; gap: 10px; }
+  .plan-head .plan-name { font-size: 24px; font-weight: 600; color: var(--text-primary); }
+  .plan-head .plan-pill {
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 9999px;
+    padding: 4px 12px;
+    color: var(--accent-green);
+    background: rgba(16,185,129,0.12);
+  }
+  .plan-price { font-size: 16px; color: var(--text-primary); }
+  .plan-price .cycle { color: var(--text-secondary); font-weight: 400; }
+  .plan-renews { font-size: 12px; color: var(--text-secondary); }
+
+  .includes { display: flex; flex-direction: column; gap: 10px; }
+  .includes .includes-title {
+    font-size: 12px; font-weight: 500; letter-spacing: 0.04em;
+    text-transform: uppercase; color: var(--text-secondary);
+  }
+  .includes .inc-row { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text-primary); }
+  .includes .inc-row svg { width: 16px; height: 16px; color: var(--accent-green); flex: 0 0 auto; }
+
+  .menu-card {
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .settings-menu-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 56px;
+    padding: 0 18px;
+  }
+  .settings-menu-row + .settings-menu-row { border-top: 1px solid var(--surface-border); }
+  .settings-menu-row .row-icon { width: 22px; height: 22px; color: var(--text-primary); flex: 0 0 auto; }
+  .settings-menu-row .row-label { flex: 1; font-size: 14px; color: var(--text-primary); }
+  .settings-menu-row .row-value { font-size: 14px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .settings-menu-row .status-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--warning-amber); flex: 0 0 auto; }
+  .settings-menu-row .row-chev { width: 18px; height: 18px; color: var(--text-secondary); flex: 0 0 auto; }
+
+  .cancel-btn {
+    align-self: flex-start;
+    margin-top: 4px;
+    background: none;
+    border: none;
+    padding: 8px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--danger-red);
+  }
+</style>
+</head>
+<body>
+  <div class="device-frame">
+    <div class="status-bar">
+      <div class="dynamic-island"></div>
+      <span class="clock">21:41</span>
+      <span class="icons">
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="0.5"/><rect x="5" y="5" width="3" height="7" rx="0.5"/><rect x="10" y="2" width="3" height="10" rx="0.5"/><rect x="15" y="0" width="3" height="12" rx="0.5"/></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 10.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM4.2 6.3a5.4 5.4 0 017.6 0l-1.4 1.4a3.4 3.4 0 00-4.8 0L4.2 6.3zM1.4 3.5a9.4 9.4 0 0113.2 0L13.2 5A7.4 7.4 0 008 3a7.4 7.4 0 00-5.2 2L1.4 3.5z"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="18" height="8" rx="2" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.5"/></svg>
+      </span>
+    </div>
+    <div class="screen-content">
+      <div class="app-bar">
+        <span class="back">‹</span>
+        <span class="title">Billing &amp; Subscription</span>
+      </div>
+
+      <div class="app-content">
+        <div class="plan-card">
+          <div class="plan-head">
+            <span class="plan-name">Premium</span>
+            <span class="plan-pill">Active</span>
+          </div>
+          <div class="plan-price">$12.99 <span class="cycle">/ month</span></div>
+          <div class="plan-renews">Renews 6 Oct 2026</div>
+        </div>
+
+        <div class="includes">
+          <span class="includes-title">What Premium includes</span>
+          <div class="inc-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Doctor report export</div>
+          <div class="inc-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Full night-by-night history</div>
+          <div class="inc-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Trend analytics</div>
+        </div>
+
+        <div class="menu-card">
+          <div class="settings-menu-row">
+            <svg class="row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+            <span class="row-label">Payment method</span>
+            <span class="status-dot" title="Card expiring soon"></span>
+            <span class="row-value">Visa &middot;&middot; 4242</span>
+            <svg class="row-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="settings-menu-row">
+            <svg class="row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h8"/></svg>
+            <span class="row-label">View invoices</span>
+            <svg class="row-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+
+        <button class="cancel-btn">Cancel subscription</button>
+      </div>
+    </div>
+    <div class="home-indicator"><span class="bar"></span></div>
+  </div>
+</body>
+</html>
