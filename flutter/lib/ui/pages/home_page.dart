@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/ble/ble_simulator_driver.dart';
 import '../../core/theme/app_theme.dart';
 import '../molecules/device_status_card.dart';
 import '../molecules/home_summary_card.dart';
@@ -7,11 +8,13 @@ import 'history_filter_page.dart';
 
 class HomePage extends StatelessWidget {
   final VoidCallback? onOpenSummary;
+  final VoidCallback? onOpenMonitor;
   final VoidCallback? onOpenHistory;
 
   const HomePage({
     super.key,
     this.onOpenSummary,
+    this.onOpenMonitor,
     this.onOpenHistory,
   });
 
@@ -62,12 +65,21 @@ class HomePage extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // 3 — D-BAND Device Status Card
-              DeviceStatusCard(
-                state: DeviceConnectionState.connected,
-                batteryLevel: 84,
-                lastSyncText: "Last sync 7:02 AM",
-                onTap: () {},
+              // 3 — D-BAND Device Status Card (Reactive Stream)
+              StreamBuilder<bool>(
+                stream: BleSimulatorDriver().isSimulatorStream,
+                initialData: BleSimulatorDriver().isSimulatorActive,
+                builder: (context, snapshot) {
+                  final isConnected = snapshot.data ?? false;
+                  return DeviceStatusCard(
+                    state: isConnected
+                        ? DeviceConnectionState.connected
+                        : DeviceConnectionState.disconnected,
+                    batteryLevel: isConnected ? 84 : 0,
+                    lastSyncText: isConnected ? "Last sync 7:02 AM" : "Not connected",
+                    onTap: onOpenMonitor,
+                  );
+                },
               ),
               const SizedBox(height: 12),
 
