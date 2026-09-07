@@ -23,6 +23,12 @@ class BleSimulatorDriver implements IBLESensorDriver {
   factory BleSimulatorDriver() => _instance;
   BleSimulatorDriver._internal();
 
+  /// The process-wide singleton. Lets the composition root and [SimulatorBloc]
+  /// reference the one simulator instance without a `BleSimulatorDriver()`
+  /// construction call site (AD-11: construction stays in the composition root
+  /// and [BleReceiverService]).
+  static BleSimulatorDriver get instance => _instance;
+
   BehaviorSubject<double> _signalSubject = BehaviorSubject<double>.seeded(0.3);
   BehaviorSubject<bool> _isSimulatorSubject = BehaviorSubject<bool>.seeded(false);
   BehaviorSubject<SimulatorScenario> _scenarioSubject =

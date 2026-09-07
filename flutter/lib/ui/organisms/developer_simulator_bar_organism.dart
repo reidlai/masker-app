@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/ble/ble_simulator_driver.dart';
-import '../../core/bloc/simulator/simulator_cubit.dart';
+import '../../core/bloc/simulator/simulator_bloc.dart';
+import '../../core/bloc/simulator/simulator_event.dart';
 import '../../core/bloc/simulator/simulator_state.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -14,12 +15,12 @@ class DeveloperSimulatorBarOrganism extends StatelessWidget {
       builder: (ctx) {
         bool hasProvider = false;
         try {
-          ctx.read<SimulatorCubit>();
+          ctx.read<SimulatorBloc>();
           hasProvider = true;
         } catch (_) {}
 
         Widget barContent(BuildContext bCtx) {
-          return BlocBuilder<SimulatorCubit, SimulatorState>(
+          return BlocBuilder<SimulatorBloc, SimulatorState>(
             builder: (context, state) {
               final isSimEnabled = state.isSimulatorActive;
               final activeScenario = state.currentScenario;
@@ -95,8 +96,8 @@ class DeveloperSimulatorBarOrganism extends StatelessWidget {
         if (hasProvider) {
           return barContent(ctx);
         } else {
-          return BlocProvider<SimulatorCubit>(
-            create: (_) => SimulatorCubit(),
+          return BlocProvider<SimulatorBloc>(
+            create: (_) => SimulatorBloc(),
             child: Builder(builder: (bCtx) => barContent(bCtx)),
           );
         }
@@ -128,9 +129,9 @@ class DeveloperSimulatorBarOrganism extends StatelessWidget {
       ),
       onPressed: () {
         if (isSelected) {
-          context.read<SimulatorCubit>().stopSimulation();
+          context.read<SimulatorBloc>().add(const SimulatorStopped());
         } else {
-          context.read<SimulatorCubit>().startSimulationScenario(scenario);
+          context.read<SimulatorBloc>().add(SimulatorScenarioStarted(scenario));
         }
       },
     );

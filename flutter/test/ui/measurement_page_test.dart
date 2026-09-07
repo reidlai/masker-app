@@ -239,7 +239,10 @@ void main() {
     expect(find.text("Night Mode Active (Battery Saver)"), findsOneWidget);
     expect(driver.currentPhase, equals(SensorMonitoringPhase.monitoring));
 
-    // Drain the still-live monitoring emitter so no timer leaks past the test.
+    // The page-scoped bloc no longer disconnects its injected driver on close
+    // (AD-12: in production that driver is the app-lifetime BleReceiverService),
+    // so this test owns the teardown of the driver it constructed.
+    driver.disconnect();
     await tester.pump(const Duration(milliseconds: 300));
   });
 
@@ -285,6 +288,9 @@ void main() {
     expect(find.text("Night Mode Active (Battery Saver)"), findsOneWidget);
     expect(find.text("⚡ DEV SIMULATOR TOOLBAR"), findsOneWidget);
 
+    // The page-scoped bloc no longer disconnects its injected driver on close
+    // (AD-12), so this test owns the teardown of the driver it constructed.
+    driver.disconnect();
     await tester.pump(const Duration(milliseconds: 300));
   });
 }

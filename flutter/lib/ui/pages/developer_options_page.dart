@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../core/bloc/simulator/simulator_cubit.dart';
+import '../../core/bloc/simulator/simulator_bloc.dart';
+import '../../core/bloc/simulator/simulator_event.dart';
 import '../../core/bloc/simulator/simulator_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../organisms/ble_simulator_organism.dart';
@@ -34,7 +35,7 @@ class DeveloperOptionsPage extends StatelessWidget {
               const SizedBox(height: 20),
 
               // Master Telemetry Simulator Toggle Card
-              BlocBuilder<SimulatorCubit, SimulatorState>(
+              BlocBuilder<SimulatorBloc, SimulatorState>(
                 builder: (context, state) {
                   final isSimActive = state.isSimulatorActive;
                   return Container(
@@ -74,7 +75,7 @@ class DeveloperOptionsPage extends StatelessWidget {
                           value: isSimActive,
                           activeThumbColor: AppColors.accentGreen,
                           onChanged: (val) {
-                            context.read<SimulatorCubit>().setSimulatorEnabled(val);
+                            context.read<SimulatorBloc>().add(SimulatorEnabledSet(val));
                           },
                         ),
                       ],
@@ -130,11 +131,11 @@ class DeveloperOptionsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     try {
-      context.read<SimulatorCubit>();
+      context.read<SimulatorBloc>();
       return _buildContent(context);
     } catch (_) {
       return BlocProvider(
-        create: (_) => SimulatorCubit(),
+        create: (_) => SimulatorBloc(),
         child: Builder(builder: (bCtx) => _buildContent(bCtx)),
       );
     }

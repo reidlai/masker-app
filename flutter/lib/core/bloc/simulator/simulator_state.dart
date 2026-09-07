@@ -1,6 +1,7 @@
+import 'package:equatable/equatable.dart';
 import '../../ble/ble_simulator_driver.dart';
 
-class SimulatorState {
+class SimulatorState extends Equatable {
   final bool isSimulatorActive;
   final SimulatorScenario currentScenario;
 
@@ -20,13 +21,5 @@ class SimulatorState {
   }
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is SimulatorState &&
-          runtimeType == other.runtimeType &&
-          isSimulatorActive == other.isSimulatorActive &&
-          currentScenario == other.currentScenario;
-
-  @override
-  int get hashCode => isSimulatorActive.hashCode ^ currentScenario.hashCode;
+  List<Object?> get props => [isSimulatorActive, currentScenario];
 }

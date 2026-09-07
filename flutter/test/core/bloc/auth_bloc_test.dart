@@ -38,5 +38,25 @@ void main() {
       authBloc.add(const AuthLogoutRequested());
       await expectLater(authBloc.stream, emits(isA<AuthInitial>()));
     });
+
+    test(
+        'throttleTime(300ms) collapses a rapid burst of AuthPasskeySubmitted into one auth cycle',
+        () async {
+      final emitted = <AuthState>[];
+      final sub = authBloc.stream.listen(emitted.add);
+
+      authBloc.add(const AuthPasskeySubmitted());
+      authBloc.add(const AuthPasskeySubmitted());
+      authBloc.add(const AuthPasskeySubmitted());
+
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      // Only the leading event ran; the two within the 300ms window were dropped.
+      expect(
+        emitted,
+        equals([isA<AuthInProgress>(), isA<AuthAuthenticated>()]),
+      );
+      await sub.cancel();
+    });
   });
 }

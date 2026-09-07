@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/ble/ble_simulator_driver.dart';
-import '../../core/bloc/simulator/simulator_cubit.dart';
+import '../../core/bloc/simulator/simulator_bloc.dart';
+import '../../core/bloc/simulator/simulator_event.dart';
 import '../../core/bloc/simulator/simulator_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../atoms/app_button.dart';
@@ -38,7 +39,7 @@ class BleSimulatorOrganism extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context) {
-    return BlocBuilder<SimulatorCubit, SimulatorState>(
+    return BlocBuilder<SimulatorBloc, SimulatorState>(
       builder: (context, state) {
         final isEnabled = state.isSimulatorActive;
         final activeScenario = state.currentScenario;
@@ -75,7 +76,7 @@ class BleSimulatorOrganism extends StatelessWidget {
                     value: isEnabled,
                     activeThumbColor: AppColors.accentGreen,
                     onChanged: (val) {
-                      context.read<SimulatorCubit>().setSimulatorEnabled(val);
+                      context.read<SimulatorBloc>().add(SimulatorEnabledSet(val));
                       onSimulatorToggled?.call(val);
                     },
                   ),
@@ -106,7 +107,7 @@ class BleSimulatorOrganism extends StatelessWidget {
                       variant: activeScenario == SimulatorScenario.idleBandSample ? AppButtonVariant.primary : AppButtonVariant.secondary,
                       onPressed: isEnabled
                           ? () {
-                              context.read<SimulatorCubit>().startSimulationScenario(SimulatorScenario.idleBandSample);
+                              context.read<SimulatorBloc>().add(SimulatorScenarioStarted(SimulatorScenario.idleBandSample));
                               onSimulateIdleBandSample?.call();
                             }
                           : null,
@@ -130,7 +131,7 @@ class BleSimulatorOrganism extends StatelessWidget {
                       variant: activeScenario == SimulatorScenario.normalRespiration ? AppButtonVariant.primary : AppButtonVariant.secondary,
                       onPressed: isEnabled
                           ? () {
-                              context.read<SimulatorCubit>().startSimulationScenario(SimulatorScenario.normalRespiration);
+                              context.read<SimulatorBloc>().add(SimulatorScenarioStarted(SimulatorScenario.normalRespiration));
                               onSimulateNormalBreathing?.call();
                             }
                           : null,
@@ -147,7 +148,7 @@ class BleSimulatorOrganism extends StatelessWidget {
                       variant: AppButtonVariant.danger,
                       onPressed: isEnabled
                           ? () {
-                              context.read<SimulatorCubit>().startSimulationScenario(SimulatorScenario.inBandNoExcursion);
+                              context.read<SimulatorBloc>().add(SimulatorScenarioStarted(SimulatorScenario.inBandNoExcursion));
                               onSimulateInBandNoExcursion?.call();
                             }
                           : null,
@@ -164,7 +165,7 @@ class BleSimulatorOrganism extends StatelessWidget {
                       variant: activeScenario == SimulatorScenario.recovery ? AppButtonVariant.primary : AppButtonVariant.secondary,
                       onPressed: isEnabled
                           ? () {
-                              context.read<SimulatorCubit>().startSimulationScenario(SimulatorScenario.recovery);
+                              context.read<SimulatorBloc>().add(SimulatorScenarioStarted(SimulatorScenario.recovery));
                               onSimulateRecovery?.call();
                             }
                           : null,
@@ -182,11 +183,11 @@ class BleSimulatorOrganism extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     try {
-      context.read<SimulatorCubit>();
+      context.read<SimulatorBloc>();
       return _buildContent(context);
     } catch (_) {
       return BlocProvider(
-        create: (_) => SimulatorCubit(),
+        create: (_) => SimulatorBloc(),
         child: _buildContent(context),
       );
     }

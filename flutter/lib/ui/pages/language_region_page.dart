@@ -1,74 +1,71 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../core/bloc/language_region/language_region_bloc.dart';
+import '../../core/bloc/language_region/language_region_event.dart';
+import '../../core/bloc/language_region/language_region_state.dart';
 import '../../core/theme/app_theme.dart';
 
-class LanguageRegionPage extends StatefulWidget {
+class LanguageRegionPage extends StatelessWidget {
   const LanguageRegionPage({super.key});
 
   @override
-  State<LanguageRegionPage> createState() => _LanguageRegionPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider<LanguageRegionBloc>(
+      create: (_) => LanguageRegionBloc(),
+      child: const _LanguageRegionView(),
+    );
+  }
 }
 
-class _LanguageRegionPageState extends State<LanguageRegionPage> {
-  String _selectedLanguage = "English (US)";
-  String _selectedRegion = "United States";
-  String _selectedUnits = "Metric (kg, cm)";
-
-  final List<String> _languages = const [
-    "English (US)",
-    "English (UK)",
-    "Spanish (Español)",
-    "German (Deutsch)",
-    "French (Français)",
-  ];
-
-  final List<String> _regions = const [
-    "United States",
-    "United Kingdom",
-    "European Union",
-    "Canada",
-    "Australia",
-  ];
-
-  final List<String> _units = const [
-    "Metric (kg, cm)",
-    "Imperial (lb, in)",
-  ];
+class _LanguageRegionView extends StatelessWidget {
+  const _LanguageRegionView();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text("Language & Region"),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildSectionTitle("APPLICATION LANGUAGE"),
-              _buildGroupedCard(_languages, _selectedLanguage, (val) {
-                setState(() => _selectedLanguage = val);
-              }),
-              const SizedBox(height: 24),
-              _buildSectionTitle("REGION & LOCALIZATION"),
-              _buildGroupedCard(_regions, _selectedRegion, (val) {
-                setState(() => _selectedRegion = val);
-              }),
-              const SizedBox(height: 24),
-              _buildSectionTitle("MEASUREMENT UNITS"),
-              _buildGroupedCard(_units, _selectedUnits, (val) {
-                setState(() => _selectedUnits = val);
-              }),
-            ],
+    return BlocBuilder<LanguageRegionBloc, LanguageRegionState>(
+      builder: (context, state) {
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: AppBar(
+            title: const Text("Language & Region"),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
           ),
-        ),
-      ),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionTitle("APPLICATION LANGUAGE"),
+                  _buildGroupedCard(
+                      state.languages, state.selectedLanguage, (val) {
+                    context
+                        .read<LanguageRegionBloc>()
+                        .add(LanguageRegionLanguageSelected(val));
+                  }),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle("REGION & LOCALIZATION"),
+                  _buildGroupedCard(state.regions, state.selectedRegion, (val) {
+                    context
+                        .read<LanguageRegionBloc>()
+                        .add(LanguageRegionRegionSelected(val));
+                  }),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle("MEASUREMENT UNITS"),
+                  _buildGroupedCard(state.units, state.selectedUnits, (val) {
+                    context
+                        .read<LanguageRegionBloc>()
+                        .add(LanguageRegionUnitsSelected(val));
+                  }),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -87,7 +84,8 @@ class _LanguageRegionPageState extends State<LanguageRegionPage> {
     );
   }
 
-  Widget _buildGroupedCard(List<String> options, String selectedValue, ValueChanged<String> onSelect) {
+  Widget _buildGroupedCard(List<String> options, String selectedValue,
+      ValueChanged<String> onSelect) {
     return Material(
       color: AppColors.surface,
       borderRadius: BorderRadius.circular(8),
@@ -109,16 +107,21 @@ class _LanguageRegionPageState extends State<LanguageRegionPage> {
                     option,
                     style: TextStyle(
                       fontSize: 14,
-                      color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                      color: isSelected
+                          ? AppColors.textPrimary
+                          : AppColors.textSecondary,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),
                   trailing: isSelected
-                      ? const Icon(Icons.check, color: AppColors.accentGreen, size: 20)
+                      ? const Icon(Icons.check,
+                          color: AppColors.accentGreen, size: 20)
                       : null,
                   onTap: () => onSelect(option),
                 ),
-                if (!isLast) const Divider(height: 1, color: AppColors.cardBorder),
+                if (!isLast)
+                  const Divider(height: 1, color: AppColors.cardBorder),
               ],
             );
           }),

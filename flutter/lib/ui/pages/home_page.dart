@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../core/bloc/simulator/simulator_cubit.dart';
+import '../../core/bloc/simulator/simulator_bloc.dart';
 import '../../core/bloc/simulator/simulator_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../molecules/device_status_card.dart';
@@ -72,12 +72,12 @@ class HomePage extends StatelessWidget {
                 builder: (ctx) {
                   bool hasProvider = false;
                   try {
-                    ctx.read<SimulatorCubit>();
+                    ctx.read<SimulatorBloc>();
                     hasProvider = true;
                   } catch (_) {}
 
                   Widget cardContent(BuildContext bCtx) {
-                    return BlocBuilder<SimulatorCubit, SimulatorState>(
+                    return BlocBuilder<SimulatorBloc, SimulatorState>(
                       builder: (context, state) {
                         final isConnected = state.isSimulatorActive;
                         return DeviceStatusCard(
@@ -95,8 +95,8 @@ class HomePage extends StatelessWidget {
                   if (hasProvider) {
                     return cardContent(ctx);
                   } else {
-                    return BlocProvider<SimulatorCubit>(
-                      create: (_) => SimulatorCubit(),
+                    return BlocProvider<SimulatorBloc>(
+                      create: (_) => SimulatorBloc(),
                       child: Builder(builder: (bCtx) => cardContent(bCtx)),
                     );
                   }

@@ -2,7 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/ble/ble_simulator_driver.dart';
-import '../../core/bloc/simulator/simulator_cubit.dart';
+import '../../core/bloc/simulator/simulator_bloc.dart';
+import '../../core/bloc/simulator/simulator_event.dart';
 import '../../core/bloc/simulator/simulator_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../molecules/settings_menu_row.dart';
@@ -121,12 +122,12 @@ class SettingsPage extends StatelessWidget {
                       builder: (context) {
                         bool hasProvider = false;
                         try {
-                          context.read<SimulatorCubit>();
+                          context.read<SimulatorBloc>();
                           hasProvider = true;
                         } catch (_) {}
 
                         Widget rowContent(BuildContext ctx) {
-                          return BlocBuilder<SimulatorCubit, SimulatorState>(
+                          return BlocBuilder<SimulatorBloc, SimulatorState>(
                             builder: (bContext, state) {
                               final isSimActive = state.isSimulatorActive;
                               return SettingsMenuRow(
@@ -134,13 +135,13 @@ class SettingsPage extends StatelessWidget {
                                 label: "Simulator",
                                 showChevron: false,
                                 onTap: () {
-                                  bContext.read<SimulatorCubit>().toggleSimulator();
+                                  bContext.read<SimulatorBloc>().add(const SimulatorToggled());
                                 },
                                 trailingWidget: Switch(
                                   value: isSimActive,
                                   activeThumbColor: AppColors.accentGreen,
                                   onChanged: (val) {
-                                    bContext.read<SimulatorCubit>().setSimulatorEnabled(val);
+                                    bContext.read<SimulatorBloc>().add(SimulatorEnabledSet(val));
                                   },
                                 ),
                               );
@@ -151,8 +152,8 @@ class SettingsPage extends StatelessWidget {
                         if (hasProvider) {
                           return rowContent(context);
                         } else {
-                          return BlocProvider<SimulatorCubit>(
-                            create: (_) => SimulatorCubit(),
+                          return BlocProvider<SimulatorBloc>(
+                            create: (_) => SimulatorBloc(),
                             child: Builder(builder: (bCtx) => rowContent(bCtx)),
                           );
                         }

@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'core/ble/ble_receiver_service.dart';
+import 'core/ble/i_ble_sensor_driver.dart';
+import 'core/bloc/app_flow/app_flow_bloc.dart';
+import 'core/bloc/app_flow/app_flow_event.dart';
+import 'core/bloc/app_flow/app_flow_state.dart';
 import 'core/bloc/auth/auth_bloc.dart';
-import 'core/bloc/simulator/simulator_cubit.dart';
+import 'core/bloc/ble/ble_bloc.dart';
+import 'core/bloc/simulator/simulator_bloc.dart';
 import 'core/permissions/ble_permission_service.dart';
 import 'core/theme/app_theme.dart';
 import 'ui/atoms/app_button.dart';
@@ -27,13 +32,6 @@ void main() {
   runApp(const MaskerApp());
 }
 
-/// The post-login flow gate: a login success does not jump straight to the
-/// tab shell — it first checks live Bluetooth permission status and, if not
-/// yet granted, routes through the one-time priming screen. Gating is always
-/// a live status check, never a persisted "seen it" flag, so a later
-/// revocation is caught on the next login.
-enum _AppFlowState { loggedOut, checkingPermission, permissionCheckFailed, needsPrimer, ready }
-
 class MaskerApp extends StatefulWidget {
   final BlePermissionService? permissionService;
 
@@ -45,68 +43,36 @@ class MaskerApp extends StatefulWidget {
 
 class _MaskerAppState extends State<MaskerApp> {
   late final BlePermissionService _permissionService;
-  _AppFlowState _flowState = _AppFlowState.loggedOut;
+  late final AppFlowBloc _appFlowBloc;
 
   @override
   void initState() {
     super.initState();
     _permissionService = widget.permissionService ?? const BlePermissionService();
+    _appFlowBloc = AppFlowBloc(permissionService: _permissionService);
   }
 
-  Future<void> _handleLoginSuccess() async {
-    // Re-entrancy guard: a duplicate login-success signal (e.g. a stray
-    // AuthBloc state emission) must not restart an in-flight or completed
-    // check.
-    if (_flowState != _AppFlowState.loggedOut) return;
-
-    setState(() {
-      _flowState = _AppFlowState.checkingPermission;
-    });
-
-    try {
-      final status = await _permissionService.checkPermission();
-      if (!mounted) return;
-      setState(() {
-        _flowState = status.isGranted ? _AppFlowState.ready : _AppFlowState.needsPrimer;
-      });
-    } catch (_) {
-      // Never hang on the spinner forever if the platform channel throws —
-      // surface a retry instead.
-      if (!mounted) return;
-      setState(() {
-        _flowState = _AppFlowState.permissionCheckFailed;
-      });
-    }
+  @override
+  void dispose() {
+    _appFlowBloc.close();
+    super.dispose();
   }
 
-  void _retryPermissionCheck() {
-    setState(() {
-      _flowState = _AppFlowState.loggedOut;
-    });
-    _handleLoginSuccess();
-  }
-
-  void _handlePrimerComplete() {
-    setState(() {
-      _flowState = _AppFlowState.ready;
-    });
-  }
-
-  Widget _buildHome() {
-    switch (_flowState) {
-      case _AppFlowState.loggedOut:
+  Widget _buildHome(AppFlowState flow) {
+    switch (flow.stage) {
+      case AppFlowStage.loggedOut:
         return LoginPage(
           onLoginSuccess: () {
-            _handleLoginSuccess();
+            _appFlowBloc.add(const AppFlowLoginSucceeded());
           },
         );
-      case _AppFlowState.checkingPermission:
+      case AppFlowStage.checkingPermission:
         // Brief native-call wait — a minimal spinner, not a full loading screen.
         return const Scaffold(
           backgroundColor: AppColors.background,
           body: Center(child: CircularProgressIndicator()),
         );
-      case _AppFlowState.permissionCheckFailed:
+      case AppFlowStage.permissionCheckFailed:
         return Scaffold(
           backgroundColor: AppColors.background,
           body: SafeArea(
@@ -125,7 +91,8 @@ class _MaskerAppState extends State<MaskerApp> {
                     AppButton(
                       label: "Retry",
                       variant: AppButtonVariant.primary,
-                      onPressed: _retryPermissionCheck,
+                      onPressed: () => _appFlowBloc
+                          .add(const AppFlowPermissionRetryRequested()),
                     ),
                   ],
                 ),
@@ -133,28 +100,48 @@ class _MaskerAppState extends State<MaskerApp> {
             ),
           ),
         );
-      case _AppFlowState.needsPrimer:
+      case AppFlowStage.needsPrimer:
         return BlePermissionPrimerPage(
           permissionService: _permissionService,
-          onPrimed: _handlePrimerComplete,
+          onPrimed: () => _appFlowBloc.add(const AppFlowPrimerCompleted()),
         );
-      case _AppFlowState.ready:
+      case AppFlowStage.ready:
         return const MainContainerPage();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<AuthBloc>(create: (_) => AuthBloc()),
-        BlocProvider<SimulatorCubit>(create: (_) => SimulatorCubit()),
-      ],
-      child: MaterialApp(
-        title: 'Sleep Apnea Detection App',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.darkTheme,
-        home: _buildHome(),
+    // Composition root (AD-11 / AD-12): the single boot-time BleReceiverService
+    // is the one IBLESensorDriver, provided here and injected by Constructor DI
+    // into every bio-signal consumer bloc.
+    return RepositoryProvider<IBLESensorDriver>(
+      create: (_) => BleReceiverService(),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthBloc>(create: (_) => AuthBloc()),
+          BlocProvider<SimulatorBloc>(
+            create: (ctx) {
+              final driver = ctx.read<IBLESensorDriver>();
+              return SimulatorBloc(
+                receiver: driver is BleReceiverService ? driver : null,
+              );
+            },
+          ),
+          BlocProvider<BleBloc>(
+            create: (ctx) =>
+                BleBloc(telemetryService: ctx.read<IBLESensorDriver>()),
+          ),
+        ],
+        child: MaterialApp(
+          title: 'Sleep Apnea Detection App',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.darkTheme,
+          home: BlocBuilder<AppFlowBloc, AppFlowState>(
+            bloc: _appFlowBloc,
+            builder: (context, flow) => _buildHome(flow),
+          ),
+        ),
       ),
     );
   }
