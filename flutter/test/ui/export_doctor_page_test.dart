@@ -15,6 +15,9 @@ void main() {
       expect(find.text('Export Physician Report'), findsOneWidget);
       expect(find.text('PHYSICIAN SUMMARY REPORT'), findsOneWidget);
       expect(find.text('Export Signed PDF Report'), findsOneWidget);
+
+      // Verify the apnea-only caveat is shown on this clinician surface
+      expect(find.textContaining('apnea-only screen'), findsOneWidget);
     });
   });
 }

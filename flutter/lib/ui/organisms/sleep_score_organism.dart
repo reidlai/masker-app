@@ -3,16 +3,16 @@ import '../../core/theme/app_theme.dart';
 
 class SleepScoreOrganism extends StatelessWidget {
   final int score;
-  final String ahiValue;
-  final String ahiStatus;
+  final String apneaIndexValue;
+  final String apneaIndexStatus;
   final String durationText;
   final String badgeText;
 
   const SleepScoreOrganism({
     super.key,
     this.score = 92,
-    this.ahiValue = "3.2",
-    this.ahiStatus = "Normal",
+    this.apneaIndexValue = "3.2",
+    this.apneaIndexStatus = "Normal",
     this.durationText = "7 Hours 45 Mins Monitoring",
     this.badgeText = "NORMAL RESPIRATION",
   });
@@ -68,7 +68,7 @@ class SleepScoreOrganism extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "AHI $ahiValue ($ahiStatus)",
+                  "Apnea Index $apneaIndexValue ($apneaIndexStatus)",
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

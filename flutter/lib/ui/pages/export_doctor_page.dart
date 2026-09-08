@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/apnea_copy.dart';
 import '../../core/theme/app_theme.dart';
 import '../atoms/shad_badge.dart';
 import '../atoms/shad_button.dart';
@@ -71,6 +72,15 @@ class _ExportDoctorPageState extends State<ExportDoctorPage> {
                     _buildReportDetailRow("Apnea Index", "3.2 / hr (Normal Range)"),
                     const SizedBox(height: 8),
                     _buildReportDetailRow("Recorded Events", "2 Obstructive Apnea Events"),
+                    const SizedBox(height: 12),
+                    const Text(
+                      kApneaOnlyCaveat,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
                   ],
                 ),
               ),

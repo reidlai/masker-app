@@ -19,6 +19,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthLogoutRequested>((event, emit) {
       emit(const AuthInitial());
     });
+
+    on<AuthUnregisterRequested>((event, emit) {
+      emit(const AuthInitial());
+    });
   }
 
   Future<void> _onPasskeySubmitted(

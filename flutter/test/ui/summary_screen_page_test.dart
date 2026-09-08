@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:masker_app/ui/pages/summary_screen_page.dart';
 
 void main() {
-  testWidgets('SummaryScreenPage renders AHI score 92, metrics grid, and FHIR export button', (WidgetTester tester) async {
+  testWidgets('SummaryScreenPage renders Apnea Index score 92, caveat, metrics grid, and FHIR export button', (WidgetTester tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: SummaryScreenPage(),
@@ -14,10 +14,13 @@ void main() {
     expect(find.text("Morning Sleep Summary"), findsOneWidget);
     expect(find.text("Nocturnal Session Report"), findsOneWidget);
 
-    // Verify Score & AHI Badge
+    // Verify Score & Apnea Index Badge
     expect(find.text("92"), findsOneWidget);
-    expect(find.text("AHI 3.2 (Normal)"), findsOneWidget);
+    expect(find.text("Apnea Index 3.2 (Normal)"), findsOneWidget);
     expect(find.text("NORMAL RESPIRATION"), findsOneWidget);
+
+    // Verify apnea-only caveat present
+    expect(find.textContaining("apnea-only screen"), findsOneWidget);
 
     // Verify Metrics Grid
     expect(find.text("2 Events"), findsOneWidget);

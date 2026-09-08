@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/apnea_copy.dart';
 import '../../core/theme/app_theme.dart';
 import '../atoms/shad_button.dart';
 import '../organisms/live_waveform_chart.dart';
@@ -60,18 +61,18 @@ class SummaryScreenPage extends StatelessWidget {
               // Sleep Score Organism
               const SleepScoreOrganism(
                 score: 92,
-                ahiValue: "3.2",
-                ahiStatus: "Normal",
+                apneaIndexValue: "3.2",
+                apneaIndexStatus: "Normal",
                 durationText: "7 Hours 45 Mins Monitoring",
                 badgeText: "NORMAL RESPIRATION",
               ),
               const SizedBox(height: 12),
 
-              // Apnea-only caveat disclosure
+              // Apnea-only caveat disclosure (canonical wording, verbatim)
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 4.0),
                 child: Text(
-                  "* Apnea Index scores apnea events per hour recorded by D-BAND thermal sensor. Not a full polysomnography AHI.",
+                  kApneaOnlyCaveat,
                   style: TextStyle(
                     fontSize: 11,
                     color: AppColors.textSecondary,
