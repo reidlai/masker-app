@@ -10,7 +10,8 @@ enum BLEDeviceState { disconnected, scanning, connecting, connected }
 /// to [breathing] before returning so the wear check sees strict excursions.
 enum _EmitShape { resting, breathing }
 
-class BLESensorDriver implements IBLESensorDriver {
+/// Pure synthetic mock driver for fast unit testing.
+class MockBLESensorDriver implements IBLESensorDriver {
   static const String serviceUuid = "0x180D";
   static const String characteristicUuid = "0x2A37";
 

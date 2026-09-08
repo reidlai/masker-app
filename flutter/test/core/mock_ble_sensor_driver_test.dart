@@ -1,19 +1,19 @@
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:masker_app/core/ble/ble_sensor_driver.dart';
+import 'package:masker_app/core/ble/mock_ble_sensor_driver.dart';
 import 'package:masker_app/core/monitoring/drift_and_noise_floor_envelope.dart';
 
 void main() {
-  group('BLESensorDriver (IDLE Band)', () {
+  group('MockBLESensorDriver (IDLE Band)', () {
     test('Initial state is disconnected', () {
-      final driver = BLESensorDriver();
+      final driver = MockBLESensorDriver();
       expect(driver.state, equals(BLEDeviceState.disconnected));
       driver.disconnect();
     });
 
     test('scanAndConnect connects and starts a continuous emitter', () {
       fakeAsync((async) {
-        final driver = BLESensorDriver();
+        final driver = MockBLESensorDriver();
         bool? result;
         driver.scanAndConnect().then((v) => result = v);
         async.elapse(const Duration(seconds: 2));
@@ -33,7 +33,7 @@ void main() {
 
     test('sampleIdleBand returns the running min/max of the resting sample', () {
       fakeAsync((async) {
-        final driver = BLESensorDriver();
+        final driver = MockBLESensorDriver();
         driver.scanAndConnect();
         async.elapse(const Duration(seconds: 2));
 
@@ -55,7 +55,7 @@ void main() {
     test('sampleIdleBand throws StateError when no sample arrives', () {
       fakeAsync((async) {
         // Never connected -> the emitter was never started -> the stream is silent.
-        final driver = BLESensorDriver();
+        final driver = MockBLESensorDriver();
         Object? err;
         driver
             .sampleIdleBand(window: const Duration(seconds: 1))
@@ -72,7 +72,7 @@ void main() {
     test('after sampleIdleBand the still-live stream strictly spans the returned '
         'band — >= 2 valid cycles within kWearCheckWindow', () {
       fakeAsync((async) {
-        final driver = BLESensorDriver();
+        final driver = MockBLESensorDriver();
         driver.scanAndConnect();
         async.elapse(const Duration(seconds: 2));
 
@@ -96,7 +96,7 @@ void main() {
 
     test('stopMonitoringSession keeps the emitter live (AD-12)', () {
       fakeAsync((async) {
-        final driver = BLESensorDriver();
+        final driver = MockBLESensorDriver();
         driver.scanAndConnect();
         async.elapse(const Duration(seconds: 2));
         driver.startMonitoringSession();
