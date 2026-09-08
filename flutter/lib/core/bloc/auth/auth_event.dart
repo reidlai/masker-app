@@ -14,3 +14,7 @@ class AuthPasskeySubmitted extends AuthEvent {
 class AuthLogoutRequested extends AuthEvent {
   const AuthLogoutRequested();
 }
+
+class AuthUnregisterRequested extends AuthEvent {
+  const AuthUnregisterRequested();
+}
