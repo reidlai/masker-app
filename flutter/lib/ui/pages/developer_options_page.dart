@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../core/bloc/simulator/simulator_bloc.dart';
+import '../../core/bloc/simulator/simulator_event.dart';
+import '../../core/bloc/simulator/simulator_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../organisms/ble_simulator_organism.dart';
 import '../organisms/settings_group_card_organism.dart';
@@ -7,8 +11,7 @@ import '../molecules/settings_menu_row.dart';
 class DeveloperOptionsPage extends StatelessWidget {
   const DeveloperOptionsPage({super.key});
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildContent(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -28,6 +31,57 @@ class DeveloperOptionsPage extends StatelessWidget {
               const Text(
                 "Simulate thermal BLE sensor streams for calibration testing and nocturnal apnea alarm evaluation.",
                 style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 20),
+
+              // Master Telemetry Simulator Toggle Card
+              BlocBuilder<SimulatorBloc, SimulatorState>(
+                builder: (context, state) {
+                  final isSimActive = state.isSimulatorActive;
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.cardBorder),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "BLE Telemetry Simulator",
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                "Simulate continuous Sensor Baseline Drift & Noise Floor Envelope detection and synthetic breathing telemetry",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: isSimActive,
+                          activeThumbColor: AppColors.accentGreen,
+                          onChanged: (val) {
+                            context.read<SimulatorBloc>().add(SimulatorEnabledSet(val));
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 20),
 
@@ -72,5 +126,18 @@ class DeveloperOptionsPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    try {
+      context.read<SimulatorBloc>();
+      return _buildContent(context);
+    } catch (_) {
+      return BlocProvider(
+        create: (_) => SimulatorBloc(),
+        child: Builder(builder: (bCtx) => _buildContent(bCtx)),
+      );
+    }
   }
 }

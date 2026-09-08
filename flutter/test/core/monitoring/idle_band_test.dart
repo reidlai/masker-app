@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:masker_app/core/monitoring/idle_band.dart';
+import 'package:masker_app/core/monitoring/drift_and_noise_floor_envelope.dart';
 
 void main() {
   group('IdleBand', () {
@@ -36,8 +36,29 @@ void main() {
       expect(band.isInBand(0.3501), isFalse);
     });
 
-    test('width is 0 for a degenerate band', () {
+    test('width and noiseFloor match upper - lower', () {
+      const band = IdleBand(lower: 0.2, upper: 0.5);
+      expect(band.width, 0.3);
+      expect(band.noiseFloor, 0.3);
       expect(const IdleBand(lower: 0.3, upper: 0.3).width, 0.0);
+      expect(const IdleBand(lower: 0.3, upper: 0.3).noiseFloor, 0.0);
+    });
+
+    test('fromSamplesTrimmed filters outlier spikes at percentiles', () {
+      // 20 samples: 18 samples in 0.25..0.35, 1 spike low (-5.0), 1 spike high (+10.0)
+      final samples = <double>[
+        -5.0, // outlier
+        0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33,
+        0.34, 0.35, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32,
+        10.0, // outlier
+      ];
+      final rawBand = IdleBand.fromSamples(samples);
+      expect(rawBand.lower, -5.0);
+      expect(rawBand.upper, 10.0);
+
+      final trimmedBand = IdleBand.fromSamplesTrimmed(samples, trimPercent: 0.05);
+      expect(trimmedBand.lower, greaterThanOrEqualTo(0.25));
+      expect(trimmedBand.upper, lessThanOrEqualTo(0.35));
     });
   });
 

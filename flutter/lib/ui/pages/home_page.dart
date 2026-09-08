@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../core/bloc/simulator/simulator_bloc.dart';
+import '../../core/bloc/simulator/simulator_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../molecules/device_status_card.dart';
 import '../molecules/home_summary_card.dart';
@@ -7,11 +10,13 @@ import 'history_filter_page.dart';
 
 class HomePage extends StatelessWidget {
   final VoidCallback? onOpenSummary;
+  final VoidCallback? onOpenMonitor;
   final VoidCallback? onOpenHistory;
 
   const HomePage({
     super.key,
     this.onOpenSummary,
+    this.onOpenMonitor,
     this.onOpenHistory,
   });
 
@@ -62,12 +67,40 @@ class HomePage extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // 3 — D-BAND Device Status Card
-              DeviceStatusCard(
-                state: DeviceConnectionState.connected,
-                batteryLevel: 84,
-                lastSyncText: "Last sync 7:02 AM",
-                onTap: () {},
+              // 3 — D-BAND Device Status Card (BLoC Driven)
+              Builder(
+                builder: (ctx) {
+                  bool hasProvider = false;
+                  try {
+                    ctx.read<SimulatorBloc>();
+                    hasProvider = true;
+                  } catch (_) {}
+
+                  Widget cardContent(BuildContext bCtx) {
+                    return BlocBuilder<SimulatorBloc, SimulatorState>(
+                      builder: (context, state) {
+                        final isConnected = state.isSimulatorActive;
+                        return DeviceStatusCard(
+                          state: isConnected
+                              ? DeviceConnectionState.connected
+                              : DeviceConnectionState.disconnected,
+                          batteryLevel: isConnected ? 84 : 0,
+                          lastSyncText: isConnected ? "Last sync 7:02 AM" : "Not connected",
+                          onTap: onOpenMonitor,
+                        );
+                      },
+                    );
+                  }
+
+                  if (hasProvider) {
+                    return cardContent(ctx);
+                  } else {
+                    return BlocProvider<SimulatorBloc>(
+                      create: (_) => SimulatorBloc(),
+                      child: Builder(builder: (bCtx) => cardContent(bCtx)),
+                    );
+                  }
+                },
               ),
               const SizedBox(height: 12),
 

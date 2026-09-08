@@ -6,13 +6,13 @@
     <bpmn:participant id="Participant_Patient" name="Patient Sleep Operations" processRef="Process_Patient" />
     <bpmn:participant id="Participant_EmergencyCenter" name="Emergency Center" processRef="Process_EmergencyCenter" />
     <bpmn:participant id="Participant_Clinic" name="Clinic &#38; Physician [Future]" processRef="Process_Clinic" />
-    <bpmn:participant id="Participant_DeviceLostRecovery" name="Device Loss &#38; Mobile Recovery Operations" processRef="Process_DeviceLostRecovery" />
-    <bpmn:participant id="Participant_MobileDashboardReview" name="Mobile Dashboard Review &#38; Analytics" processRef="Process_MobileDashboardReview" />
+    <bpmn:participant id="Participant_DeviceLostRecovery" name="Device &#38; Mobile Recovery" processRef="Process_DeviceLostRecovery" />
+    <bpmn:participant id="Participant_MobileDashboardReview" name="Dashboard &#38; Analytics" processRef="Process_MobileDashboardReview" />
     
     <bpmn:messageFlow id="Flow_Registration_Backoffice" name="Patient Profile &#38; Device Serial" sourceRef="Task_CreateUserProfile" targetRef="Task_VerifyPatientIdentity" />
     <bpmn:messageFlow id="Flow_Passkey_Auth" name="Registered Passkey Credential" sourceRef="Task_RegisterPasskey" targetRef="Task_PasskeyAuth" />
     <bpmn:messageFlow id="Flow_Emergency_Dispatch" name="30s Unacknowledged Alarm Push" sourceRef="Task_SleepMonitoring" targetRef="Task_DashboardAlert" />
-    <bpmn:messageFlow id="Flow_Morning_Sync" name="Morning Sleep Summary &#38; AHI Score" sourceRef="Task_EndSession" targetRef="Task_DoctorSync" />
+    <bpmn:messageFlow id="Flow_Morning_Sync" name="Morning Sleep Summary &#38; Apnea Index (AI)" sourceRef="Task_EndSession" targetRef="Task_DoctorSync" />
     <bpmn:messageFlow id="Flow_Dashboard_Review" name="Morning Sleep Summary Data Stream" sourceRef="Task_EndSession" targetRef="Task_ReviewMorningSummary" />
   </bpmn:collaboration>
 
@@ -92,8 +92,8 @@
       <bpmn:lane id="Lane_PatientAtHome" name="Patient Sleep Operations">
         <bpmn:flowNodeRef>Start_Bedtime</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Task_PasskeyAuth</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Task_Stage1Cal</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Task_Stage2Cal</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_NoiseFloorCal</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_WearCheck</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Task_SleepMonitoring</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Gateway_Tier1Alarm</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Gateway_PatientAwake</bpmn:flowNodeRef>
@@ -110,11 +110,11 @@
       <bpmn:incoming>Flow_P1</bpmn:incoming>
       <bpmn:outgoing>Flow_P2</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:userTask id="Task_Stage1Cal" name="Execute Stage 1 Idle Noise Calibration">
+    <bpmn:userTask id="Task_NoiseFloorCal" name="Sensor Baseline Drift &#38; Noise Floor Envelope Calibration">
       <bpmn:incoming>Flow_P2</bpmn:incoming>
       <bpmn:outgoing>Flow_P3</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:userTask id="Task_Stage2Cal" name="Execute Stage 2 Active Breath Calibration">
+    <bpmn:userTask id="Task_WearCheck" name="Worn-Sensor Signal Quality &#38; Position Check">
       <bpmn:incoming>Flow_P3</bpmn:incoming>
       <bpmn:outgoing>Flow_P4</bpmn:outgoing>
     </bpmn:userTask>
@@ -152,9 +152,9 @@
       <bpmn:incoming>Flow_P7</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_P1" sourceRef="Start_Bedtime" targetRef="Task_PasskeyAuth" />
-    <bpmn:sequenceFlow id="Flow_P2" sourceRef="Task_PasskeyAuth" targetRef="Task_Stage1Cal" />
-    <bpmn:sequenceFlow id="Flow_P3" sourceRef="Task_Stage1Cal" targetRef="Task_Stage2Cal" />
-    <bpmn:sequenceFlow id="Flow_P4" sourceRef="Task_Stage2Cal" targetRef="Task_SleepMonitoring" />
+    <bpmn:sequenceFlow id="Flow_P2" sourceRef="Task_PasskeyAuth" targetRef="Task_NoiseFloorCal" />
+    <bpmn:sequenceFlow id="Flow_P3" sourceRef="Task_NoiseFloorCal" targetRef="Task_WearCheck" />
+    <bpmn:sequenceFlow id="Flow_P4" sourceRef="Task_WearCheck" targetRef="Task_SleepMonitoring" />
     <bpmn:sequenceFlow id="Flow_P5" sourceRef="Task_SleepMonitoring" targetRef="Gateway_Tier1Alarm" />
     <bpmn:sequenceFlow id="Flow_P6" sourceRef="Task_TapSafe" targetRef="Task_EndSession" />
     <bpmn:sequenceFlow id="Flow_P7" sourceRef="Task_EndSession" targetRef="End_SessionComplete" />
@@ -214,11 +214,11 @@
     <bpmn:startEvent id="Start_ClinicSync" name="Start: Morning Report Trigger">
       <bpmn:outgoing>Flow_C1</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:userTask id="Task_DoctorSync" name="Sync Morning Sleep Scores &#38; AHI Reports [Future]">
+    <bpmn:userTask id="Task_DoctorSync" name="Sync Morning Sleep Scores &#38; Apnea Index (AI) Reports [Future]">
       <bpmn:incoming>Flow_C1</bpmn:incoming>
       <bpmn:outgoing>Flow_C2</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:userTask id="Task_PhysicianReview" name="Physician Reviews AHI Classification &#38; Notes [Future]">
+    <bpmn:userTask id="Task_PhysicianReview" name="Physician Reviews Apnea Index (AI) Classification &#38; Notes [Future]">
       <bpmn:incoming>Flow_C2</bpmn:incoming>
       <bpmn:outgoing>Flow_C3</bpmn:outgoing>
     </bpmn:userTask>
@@ -233,7 +233,7 @@
   <!-- SWIMLANE 6: DEVICE LOSS & MOBILE RECOVERY OPERATIONS -->
   <bpmn:process id="Process_DeviceLostRecovery" isExecutable="true">
     <bpmn:laneSet id="LaneSet_DeviceLostRecovery">
-      <bpmn:lane id="Lane_DeviceLostRecovery" name="Device Loss &#38; Mobile Recovery Operations">
+      <bpmn:lane id="Lane_DeviceLostRecovery" name="Device &#38; Mobile Recovery">
         <bpmn:flowNodeRef>Start_DeviceLostTrigger</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Task_ReportDeviceLost</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Task_ReportMobileLost</bpmn:flowNodeRef>
@@ -274,7 +274,7 @@
   <!-- SWIMLANE 7: MOBILE DASHBOARD REVIEW & ANALYTICS -->
   <bpmn:process id="Process_MobileDashboardReview" isExecutable="true">
     <bpmn:laneSet id="LaneSet_MobileDashboardReview">
-      <bpmn:lane id="Lane_MobileDashboardReview" name="Mobile Dashboard Review &#38; Analytics">
+      <bpmn:lane id="Lane_MobileDashboardReview" name="Dashboard &#38; Analytics">
         <bpmn:flowNodeRef>Start_DashboardReviewTrigger</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Task_ReviewMorningSummary</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Task_InspectRespirationWaveform</bpmn:flowNodeRef>
@@ -286,7 +286,7 @@
     <bpmn:startEvent id="Start_DashboardReviewTrigger" name="Start: Session Ended / App Open">
       <bpmn:outgoing>Flow_D1</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:userTask id="Task_ReviewMorningSummary" name="Review Morning Sleep Summary &#38; AHI Score">
+    <bpmn:userTask id="Task_ReviewMorningSummary" name="Review Morning Sleep Summary &#38; Apnea Index (AI)">
       <bpmn:incoming>Flow_D1</bpmn:incoming>
       <bpmn:outgoing>Flow_D2</bpmn:outgoing>
     </bpmn:userTask>
@@ -314,6 +314,7 @@
 
   <bpmndi:BPMNDiagram id="BPMNDiagram_SleepApnea">
     <bpmndi:BPMNPlane id="BPMNPlane_SleepApnea" bpmnElement="Collaboration_SleepApnea">
+      <!-- PARTICIPANTS (SWIMLANES) -->
       <bpmndi:BPMNShape id="Participant_Onboarding_di" bpmnElement="Participant_Onboarding" isHorizontal="true"><dc:Bounds x="10" y="50" width="1680" height="170" /></bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Participant_Backoffice_di" bpmnElement="Participant_Backoffice" isHorizontal="true"><dc:Bounds x="10" y="240" width="1680" height="170" /></bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Participant_Patient_di" bpmnElement="Participant_Patient" isHorizontal="true"><dc:Bounds x="10" y="430" width="1680" height="200" /></bpmndi:BPMNShape>
@@ -321,20 +322,124 @@
       <bpmndi:BPMNShape id="Participant_Clinic_di" bpmnElement="Participant_Clinic" isHorizontal="true"><dc:Bounds x="10" y="870" width="1680" height="180" /></bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Participant_DeviceLostRecovery_di" bpmnElement="Participant_DeviceLostRecovery" isHorizontal="true"><dc:Bounds x="10" y="1070" width="1680" height="190" /></bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Participant_MobileDashboardReview_di" bpmnElement="Participant_MobileDashboardReview" isHorizontal="true"><dc:Bounds x="10" y="1280" width="1680" height="190" /></bpmndi:BPMNShape>
-      
+
+      <!-- LANES -->
+      <bpmndi:BPMNShape id="Lane_PatientOnboarding_di" bpmnElement="Lane_PatientOnboarding" isHorizontal="true"><dc:Bounds x="40" y="50" width="1650" height="170" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_BackofficePlatform_di" bpmnElement="Lane_BackofficePlatform" isHorizontal="true"><dc:Bounds x="40" y="240" width="1650" height="170" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_PatientAtHome_di" bpmnElement="Lane_PatientAtHome" isHorizontal="true"><dc:Bounds x="40" y="430" width="1650" height="200" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_EmergencyCenter_di" bpmnElement="Lane_EmergencyCenter" isHorizontal="true"><dc:Bounds x="40" y="650" width="1650" height="200" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_ClinicPhysician_di" bpmnElement="Lane_ClinicPhysician" isHorizontal="true"><dc:Bounds x="40" y="870" width="1650" height="180" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_DeviceLostRecovery_di" bpmnElement="Lane_DeviceLostRecovery" isHorizontal="true"><dc:Bounds x="40" y="1070" width="1650" height="190" /></bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Lane_MobileDashboardReview_di" bpmnElement="Lane_MobileDashboardReview" isHorizontal="true"><dc:Bounds x="40" y="1280" width="1650" height="190" /></bpmndi:BPMNShape>
+
+      <!-- PATIENT SLEEP OPERATIONS NODES & EDGES -->
+      <bpmndi:BPMNShape id="Start_Bedtime_di" bpmnElement="Start_Bedtime"><dc:Bounds x="60" y="512" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_PasskeyAuth_di" bpmnElement="Task_PasskeyAuth"><dc:Bounds x="130" y="490" width="140" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_NoiseFloorCal_di" bpmnElement="Task_NoiseFloorCal"><dc:Bounds x="300" y="490" width="160" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_WearCheck_di" bpmnElement="Task_WearCheck"><dc:Bounds x="490" y="490" width="150" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SleepMonitoring_di" bpmnElement="Task_SleepMonitoring"><dc:Bounds x="670" y="490" width="150" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Tier1Alarm_di" bpmnElement="Gateway_Tier1Alarm" isMarkerVisible="true"><dc:Bounds x="850" y="510" width="40" height="40" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_PatientAwake_di" bpmnElement="Gateway_PatientAwake" isMarkerVisible="true"><dc:Bounds x="940" y="510" width="40" height="40" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_TapSafe_di" bpmnElement="Task_TapSafe"><dc:Bounds x="1020" y="490" width="130" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_EndSession_di" bpmnElement="Task_EndSession"><dc:Bounds x="1180" y="490" width="130" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_SessionComplete_di" bpmnElement="End_SessionComplete"><dc:Bounds x="1340" y="512" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Escalated_di" bpmnElement="End_Escalated"><dc:Bounds x="942" y="580" width="36" height="36" /></bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="Flow_P1_di" bpmnElement="Flow_P1"><di:waypoint x="96" y="530" /><di:waypoint x="130" y="530" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_P2_di" bpmnElement="Flow_P2"><di:waypoint x="270" y="530" /><di:waypoint x="300" y="530" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_P3_di" bpmnElement="Flow_P3"><di:waypoint x="460" y="530" /><di:waypoint x="490" y="530" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_P4_di" bpmnElement="Flow_P4"><di:waypoint x="640" y="530" /><di:waypoint x="670" y="530" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_P5_di" bpmnElement="Flow_P5"><di:waypoint x="820" y="530" /><di:waypoint x="850" y="530" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_AlarmNo_di" bpmnElement="Flow_AlarmNo"><di:waypoint x="870" y="510" /><di:waypoint x="870" y="460" /><di:waypoint x="745" y="460" /><di:waypoint x="745" y="490" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_AlarmYes_di" bpmnElement="Flow_AlarmYes"><di:waypoint x="890" y="530" /><di:waypoint x="940" y="530" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_AwakeYes_di" bpmnElement="Flow_AwakeYes"><di:waypoint x="980" y="530" /><di:waypoint x="1020" y="530" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_AwakeNo_di" bpmnElement="Flow_AwakeNo"><di:waypoint x="960" y="550" /><di:waypoint x="960" y="580" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_P6_di" bpmnElement="Flow_P6"><di:waypoint x="1150" y="530" /><di:waypoint x="1180" y="530" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_P7_di" bpmnElement="Flow_P7"><di:waypoint x="1310" y="530" /><di:waypoint x="1340" y="530" /></bpmndi:BPMNEdge>
+
+      <!-- PATIENT ONBOARDING NODES & EDGES -->
+      <bpmndi:BPMNShape id="Start_Onboarding_di" bpmnElement="Start_Onboarding"><dc:Bounds x="100" y="115" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_PatientRegister_di" bpmnElement="Task_PatientRegister"><dc:Bounds x="165" y="93" width="155" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CreateUserProfile_di" bpmnElement="Task_CreateUserProfile"><dc:Bounds x="355" y="93" width="165" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RegisterPasskey_di" bpmnElement="Task_RegisterPasskey"><dc:Bounds x="555" y="93" width="165" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_OnboardingComplete_di" bpmnElement="End_OnboardingComplete"><dc:Bounds x="755" y="115" width="36" height="36" /></bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="Flow_O1_di" bpmnElement="Flow_O1"><di:waypoint x="136" y="133" /><di:waypoint x="165" y="133" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_O1b_di" bpmnElement="Flow_O1b"><di:waypoint x="320" y="133" /><di:waypoint x="355" y="133" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_O2_di" bpmnElement="Flow_O2"><di:waypoint x="520" y="133" /><di:waypoint x="555" y="133" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_O3_di" bpmnElement="Flow_O3"><di:waypoint x="720" y="133" /><di:waypoint x="755" y="133" /></bpmndi:BPMNEdge>
+
+      <!-- BACKOFFICE NODES & EDGES -->
+      <bpmndi:BPMNShape id="Start_Backoffice_di" bpmnElement="Start_Backoffice"><dc:Bounds x="100" y="305" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_VerifyPatientIdentity_di" bpmnElement="Task_VerifyPatientIdentity"><dc:Bounds x="165" y="283" width="165" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_BindMedicalDevice_di" bpmnElement="Task_BindMedicalDevice"><dc:Bounds x="365" y="283" width="165" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_LockEmergencyContacts_di" bpmnElement="Task_LockEmergencyContacts"><dc:Bounds x="565" y="283" width="175" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_BackofficeComplete_di" bpmnElement="End_BackofficeComplete"><dc:Bounds x="775" y="305" width="36" height="36" /></bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="Flow_B1_di" bpmnElement="Flow_B1"><di:waypoint x="136" y="323" /><di:waypoint x="165" y="323" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B2_di" bpmnElement="Flow_B2"><di:waypoint x="330" y="323" /><di:waypoint x="365" y="323" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B3_di" bpmnElement="Flow_B3"><di:waypoint x="530" y="323" /><di:waypoint x="565" y="323" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B4_di" bpmnElement="Flow_B4"><di:waypoint x="740" y="323" /><di:waypoint x="775" y="323" /></bpmndi:BPMNEdge>
+
+      <!-- EMERGENCY CENTER NODES & EDGES -->
+      <bpmndi:BPMNShape id="Start_EmergencyTrigger_di" bpmnElement="Start_EmergencyTrigger"><dc:Bounds x="100" y="732" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_DashboardAlert_di" bpmnElement="Task_DashboardAlert"><dc:Bounds x="165" y="710" width="155" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_MetricCollection_di" bpmnElement="Task_MetricCollection"><dc:Bounds x="355" y="710" width="165" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CaregiverCall_di" bpmnElement="Task_CaregiverCall"><dc:Bounds x="555" y="710" width="175" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_DispatchEMS_di" bpmnElement="Task_DispatchEMS"><dc:Bounds x="765" y="710" width="165" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_DispatchResolved_di" bpmnElement="End_DispatchResolved"><dc:Bounds x="965" y="732" width="36" height="36" /></bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="Flow_E1_di" bpmnElement="Flow_E1"><di:waypoint x="136" y="750" /><di:waypoint x="165" y="750" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E2_di" bpmnElement="Flow_E2"><di:waypoint x="320" y="750" /><di:waypoint x="355" y="750" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E3_di" bpmnElement="Flow_E3"><di:waypoint x="520" y="750" /><di:waypoint x="555" y="750" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E4_di" bpmnElement="Flow_E4"><di:waypoint x="730" y="750" /><di:waypoint x="765" y="750" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E5_di" bpmnElement="Flow_E5"><di:waypoint x="930" y="750" /><di:waypoint x="965" y="750" /></bpmndi:BPMNEdge>
+
+      <!-- CLINIC NODES & EDGES -->
+      <bpmndi:BPMNShape id="Start_ClinicSync_di" bpmnElement="Start_ClinicSync"><dc:Bounds x="100" y="942" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_DoctorSync_di" bpmnElement="Task_DoctorSync"><dc:Bounds x="165" y="920" width="185" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_PhysicianReview_di" bpmnElement="Task_PhysicianReview"><dc:Bounds x="385" y="920" width="195" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_ClinicComplete_di" bpmnElement="End_ClinicComplete"><dc:Bounds x="615" y="942" width="36" height="36" /></bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="Flow_C1_di" bpmnElement="Flow_C1"><di:waypoint x="136" y="960" /><di:waypoint x="165" y="960" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C2_di" bpmnElement="Flow_C2"><di:waypoint x="350" y="960" /><di:waypoint x="385" y="960" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_di" bpmnElement="Flow_C3"><di:waypoint x="580" y="960" /><di:waypoint x="615" y="960" /></bpmndi:BPMNEdge>
+
+      <!-- DEVICE RECOVERY NODES & EDGES -->
+      <bpmndi:BPMNShape id="Start_DeviceLostTrigger_di" bpmnElement="Start_DeviceLostTrigger"><dc:Bounds x="100" y="1147" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReportDeviceLost_di" bpmnElement="Task_ReportDeviceLost"><dc:Bounds x="165" y="1125" width="165" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReportMobileLost_di" bpmnElement="Task_ReportMobileLost"><dc:Bounds x="365" y="1125" width="165" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_TriggerRemoteWipe_di" bpmnElement="Task_TriggerRemoteWipe"><dc:Bounds x="565" y="1125" width="175" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RebindReplacementDevice_di" bpmnElement="Task_RebindReplacementDevice"><dc:Bounds x="775" y="1125" width="185" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_DeviceRecoveryComplete_di" bpmnElement="End_DeviceRecoveryComplete"><dc:Bounds x="995" y="1147" width="36" height="36" /></bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="Flow_L1_di" bpmnElement="Flow_L1"><di:waypoint x="136" y="1165" /><di:waypoint x="165" y="1165" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_L2_di" bpmnElement="Flow_L2"><di:waypoint x="330" y="1165" /><di:waypoint x="365" y="1165" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_L3_di" bpmnElement="Flow_L3"><di:waypoint x="530" y="1165" /><di:waypoint x="565" y="1165" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_L4_di" bpmnElement="Flow_L4"><di:waypoint x="740" y="1165" /><di:waypoint x="775" y="1165" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_L5_di" bpmnElement="Flow_L5"><di:waypoint x="960" y="1165" /><di:waypoint x="995" y="1165" /></bpmndi:BPMNEdge>
+
+      <!-- MOBILE DASHBOARD REVIEW NODES & EDGES -->
       <bpmndi:BPMNShape id="Start_DashboardReviewTrigger_di" bpmnElement="Start_DashboardReviewTrigger"><dc:Bounds x="100" y="1345" width="36" height="36" /></bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Task_ReviewMorningSummary_di" bpmnElement="Task_ReviewMorningSummary"><dc:Bounds x="160" y="1305" width="155" height="80" /></bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Task_InspectRespirationWaveform_di" bpmnElement="Task_InspectRespirationWaveform"><dc:Bounds x="355" y="1305" width="165" height="80" /></bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Task_FilterHistoricalSessions_di" bpmnElement="Task_FilterHistoricalSessions"><dc:Bounds x="560" y="1305" width="155" height="80" /></bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Task_ExportDoctorReport_di" bpmnElement="Task_ExportDoctorReport"><dc:Bounds x="755" y="1305" width="155" height="80" /></bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="End_DashboardReviewComplete_di" bpmnElement="End_DashboardReviewComplete"><dc:Bounds x="950" y="1345" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_DashboardReviewComplete_di" bpmnElement="End_DashboardReviewComplete"><dc:Bounds x="950" y="1345" width="36" height="36" /></bpmndi:BPMNShape
       
       <bpmndi:BPMNEdge id="Flow_D1_di" bpmnElement="Flow_D1"><di:waypoint x="136" y="1363" /><di:waypoint x="160" y="1363" /></bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_D2_di" bpmnElement="Flow_D2"><di:waypoint x="315" y="1363" /><di:waypoint x="355" y="1363" /></bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_D3_di" bpmnElement="Flow_D3"><di:waypoint x="520" y="1363" /><di:waypoint x="560" y="1363" /></bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_D4_di" bpmnElement="Flow_D4"><di:waypoint x="715" y="1363" /><di:waypoint x="755" y="1363" /></bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_D5_di" bpmnElement="Flow_D5"><di:waypoint x="910" y="1363" /><di:waypoint x="950" y="1363" /></bpmndi:BPMNEdge>
+
+      <!-- INTER-PROCESS MESSAGE FLOW EDGES -->
+      <bpmndi:BPMNEdge id="Flow_Registration_Backoffice_di" bpmnElement="Flow_Registration_Backoffice"><di:waypoint x="437" y="173" /><di:waypoint x="437" y="228" /><di:waypoint x="247" y="228" /><di:waypoint x="247" y="283" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Passkey_Auth_di" bpmnElement="Flow_Passkey_Auth"><di:waypoint x="637" y="173" /><di:waypoint x="637" y="450" /><di:waypoint x="200" y="450" /><di:waypoint x="200" y="490" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Emergency_Dispatch_di" bpmnElement="Flow_Emergency_Dispatch"><di:waypoint x="745" y="570" /><di:waypoint x="745" y="680" /><di:waypoint x="242" y="680" /><di:waypoint x="242" y="710" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Morning_Sync_di" bpmnElement="Flow_Morning_Sync"><di:waypoint x="1245" y="570" /><di:waypoint x="1245" y="900" /><di:waypoint x="257" y="900" /><di:waypoint x="257" y="920" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Dashboard_Review_di" bpmnElement="Flow_Dashboard_Review"><di:waypoint x="1245" y="570" /><di:waypoint x="1245" y="1290" /><di:waypoint x="237" y="1290" /><di:waypoint x="237" y="1305" /></bpmndi:BPMNEdge>
+
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>

@@ -1,5 +1,10 @@
-abstract class BleState {
+import 'package:equatable/equatable.dart';
+
+abstract class BleState extends Equatable {
   const BleState();
+
+  @override
+  List<Object?> get props => const [];
 }
 
 class BleInitialState extends BleState {
@@ -18,19 +23,8 @@ class BleTelemetryActiveState extends BleState {
   });
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is BleTelemetryActiveState &&
-          runtimeType == other.runtimeType &&
-          currentSignal == other.currentSignal &&
-          isSimulatorMode == other.isSimulatorMode &&
-          estimatedBatteryDrainPercent == other.estimatedBatteryDrainPercent;
-
-  @override
-  int get hashCode =>
-      currentSignal.hashCode ^
-      isSimulatorMode.hashCode ^
-      estimatedBatteryDrainPercent.hashCode;
+  List<Object?> get props =>
+      [currentSignal, isSimulatorMode, estimatedBatteryDrainPercent];
 }
 
 class BleDisconnectedState extends BleState {

@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:masker_app/core/monitoring/apnea_evaluator.dart';
-import 'package:masker_app/core/monitoring/idle_band.dart';
+import 'package:masker_app/core/monitoring/drift_and_noise_floor_envelope.dart';
 
 void main() {
   group('ApneaEvaluator (IDLE Band model)', () {

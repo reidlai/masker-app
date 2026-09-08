@@ -7,6 +7,7 @@ class SettingsMenuRow extends StatelessWidget {
   final String? valueText;
   final bool hasStatusDot;
   final bool showChevron;
+  final Widget? trailingWidget;
   final VoidCallback? onTap;
 
   const SettingsMenuRow({
@@ -16,12 +17,13 @@ class SettingsMenuRow extends StatelessWidget {
     this.valueText,
     this.hasStatusDot = false,
     this.showChevron = true,
+    this.trailingWidget,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bool isNavigable = showChevron && onTap != null;
+    final bool isNavigable = onTap != null;
 
     final content = Container(
       constraints: const BoxConstraints(minHeight: 56),
@@ -39,38 +41,44 @@ class SettingsMenuRow extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 14,
-                color: isNavigable || valueText != null ? AppColors.textPrimary : AppColors.textSecondary,
+                color: isNavigable || valueText != null || trailingWidget != null
+                    ? AppColors.textPrimary
+                    : AppColors.textSecondary,
                 fontWeight: FontWeight.w400,
               ),
             ),
           ),
-          if (hasStatusDot) ...[
-            Container(
-              width: 6,
-              height: 6,
-              decoration: const BoxDecoration(
-                color: AppColors.warningAmber,
-                shape: BoxShape.circle,
+          if (trailingWidget != null) ...[
+            trailingWidget!,
+          ] else ...[
+            if (hasStatusDot) ...[
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  color: AppColors.warningAmber,
+                  shape: BoxShape.circle,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-          ],
-          if (valueText != null) ...[
-            Text(
-              valueText!,
-              style: AppTheme.tabularTextStyle(
-                fontSize: 14,
+              const SizedBox(width: 8),
+            ],
+            if (valueText != null) ...[
+              Text(
+                valueText!,
+                style: AppTheme.tabularTextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            if (showChevron)
+              const Icon(
+                Icons.chevron_right,
+                size: 18,
                 color: AppColors.textSecondary,
               ),
-            ),
-            const SizedBox(width: 8),
           ],
-          if (showChevron)
-            const Icon(
-              Icons.chevron_right,
-              size: 18,
-              color: AppColors.textSecondary,
-            ),
         ],
       ),
     );

@@ -25,7 +25,7 @@ pie title Architecture Invariants Quality Audit Score
 
 ### 2.1 Core Telemetry & Signal Engineering (Score: 100/100)
 * **AD-1 (BLE Telemetry Gateway):** Correctly specifies singleton `BleManager`, MTU 247 negotiation, exponential auto-reconnect (<3.0s), and 1-hour circular RAM ring buffer.
-* **AD-2 (Two-Stage Pre-Sleep Calibration):** Correctly defines Stage 1 ($N_{\text{idle}}$ subtraction) + Stage 2 ($V_{pp}$ 10% peak-to-trough threshold binding) with wear verification guardrails.
+* **AD-04 (Sensor Baseline Drift & Noise Floor Envelope Calibration):** Correctly defines single-stage Noise Floor Envelope ($[lower\_bound, upper\_bound]$ running min/max) + AD-05 wear verification guardrail ($\ge 2$ valid excursion cycles).
 * **AD-3 (Signal Worker Offloading):** Bandpass filtering, $N_{\text{idle}}$ subtraction, and 256-point FFT spectral frequency calculations run inside dedicated background **Dart Isolates** (`compute()`), keeping the main thread at 60 FPS.
 
 ### 2.2 Safety, Emergency & Battery Governance (Score: 100/100)

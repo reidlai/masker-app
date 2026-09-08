@@ -3,6 +3,9 @@ import '../../core/theme/app_theme.dart';
 import '../atoms/app_input_field.dart';
 
 class HealthDemographicsOrganism extends StatelessWidget {
+  final TextEditingController? nameController;
+  final TextEditingController? emailController;
+  final TextEditingController? phoneController;
   final TextEditingController ageController;
   final TextEditingController weightController;
   final TextEditingController heightController;
@@ -11,6 +14,9 @@ class HealthDemographicsOrganism extends StatelessWidget {
 
   const HealthDemographicsOrganism({
     super.key,
+    this.nameController,
+    this.emailController,
+    this.phoneController,
     required this.ageController,
     required this.weightController,
     required this.heightController,
@@ -23,6 +29,43 @@ class HealthDemographicsOrganism extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (nameController != null || emailController != null || phoneController != null) ...[
+          const Text(
+            "Patient Identification (HIPAA Level 1 PHI)",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (nameController != null)
+            AppInputField(
+              label: "Patient Full Name",
+              hint: "David Miller",
+              controller: nameController!,
+              onChanged: onChanged,
+            ),
+          if (emailController != null) ...[
+            const SizedBox(height: 12),
+            AppInputField(
+              label: "Patient Email Address",
+              hint: "david.miller@example.com",
+              controller: emailController!,
+              onChanged: onChanged,
+            ),
+          ],
+          if (phoneController != null) ...[
+            const SizedBox(height: 12),
+            AppInputField(
+              label: "Patient Phone Number",
+              hint: "(555) 019-8234",
+              controller: phoneController!,
+              onChanged: onChanged,
+            ),
+          ],
+          const SizedBox(height: 20),
+        ],
         const Text(
           "Health Baseline Demographics",
           style: TextStyle(

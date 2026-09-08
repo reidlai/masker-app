@@ -1,5 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../core/ble/ble_simulator_driver.dart';
+import '../../core/bloc/simulator/simulator_bloc.dart';
+import '../../core/bloc/simulator/simulator_event.dart';
+import '../../core/bloc/simulator/simulator_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../molecules/settings_menu_row.dart';
 import '../molecules/settings_section_header.dart';
@@ -22,7 +27,7 @@ class SettingsPage extends StatelessWidget {
   bool get _debug => debuggingEnabled ?? kDebugMode;
   bool get _dev =>
       developerEnabled ?? const bool.fromEnvironment('DEV_MODE', defaultValue: false);
-  bool get _showAdvanced => _debug || _dev;
+  bool get _showDeveloper => _debug || _dev;
 
   @override
   Widget build(BuildContext context) {
@@ -108,20 +113,62 @@ class SettingsPage extends StatelessWidget {
                 ],
               ),
 
-              // 4 — Advanced Section (Conditional)
-              if (_showAdvanced) ...[
-                const SettingsSectionHeader(title: "Advanced"),
+              // 4 — Developer Section (Conditional)
+              if (_showDeveloper) ...[
+                const SettingsSectionHeader(title: "Developer"),
                 _buildMenuCard(
                   children: [
-                    if (_debug)
+                    Builder(
+                      builder: (context) {
+                        bool hasProvider = false;
+                        try {
+                          context.read<SimulatorBloc>();
+                          hasProvider = true;
+                        } catch (_) {}
+
+                        Widget rowContent(BuildContext ctx) {
+                          return BlocBuilder<SimulatorBloc, SimulatorState>(
+                            builder: (bContext, state) {
+                              final isSimActive = state.isSimulatorActive;
+                              return SettingsMenuRow(
+                                leadingIcon: Icons.developer_board,
+                                label: "Simulator",
+                                showChevron: false,
+                                onTap: () {
+                                  bContext.read<SimulatorBloc>().add(const SimulatorToggled());
+                                },
+                                trailingWidget: Switch(
+                                  value: isSimActive,
+                                  activeThumbColor: AppColors.accentGreen,
+                                  onChanged: (val) {
+                                    bContext.read<SimulatorBloc>().add(SimulatorEnabledSet(val));
+                                  },
+                                ),
+                              );
+                            },
+                          );
+                        }
+
+                        if (hasProvider) {
+                          return rowContent(context);
+                        } else {
+                          return BlocProvider<SimulatorBloc>(
+                            create: (_) => SimulatorBloc(),
+                            child: Builder(builder: (bCtx) => rowContent(bCtx)),
+                          );
+                        }
+                      },
+                    ),
+                    if (_debug) ...[
+                      const Divider(height: 1, color: AppColors.cardBorder),
                       const SettingsMenuRow(
                         leadingIcon: Icons.bug_report_outlined,
                         label: "Debugging",
                         showChevron: false,
                       ),
-                    if (_debug && _dev)
+                    ],
+                    if (_dev) ...[
                       const Divider(height: 1, color: AppColors.cardBorder),
-                    if (_dev)
                       SettingsMenuRow(
                         leadingIcon: Icons.code,
                         label: "Developer",
@@ -133,6 +180,7 @@ class SettingsPage extends StatelessWidget {
                           );
                         },
                       ),
+                    ],
                   ],
                 ),
               ],

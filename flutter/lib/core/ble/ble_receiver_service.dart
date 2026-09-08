@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:rxdart/rxdart.dart';
-import '../monitoring/idle_band.dart';
+import '../monitoring/drift_and_noise_floor_envelope.dart';
 import 'i_ble_sensor_driver.dart';
 import 'ble_simulator_driver.dart';
-import 'ble_sensor_driver.dart';
+import 'flutter_blue_sensor_driver.dart';
 
 /// App-boot background BLE receiver service managing active [IBLESensorDriver]
 /// and exposing a unified RxDart [BehaviorSubject<double>] reactive stream queue.
@@ -28,10 +28,13 @@ class BleReceiverService implements IBLESensorDriver {
 
   // Private named constructor:
   // Dynamically selects initial driver based on compile-time environment flag.
-  // Production (DEV_MODE=false) defaults to physical hardware BLESensorDriver().
+  // Production (DEV_MODE=false) defaults to the real BLE hardware driver
+  // (FlutterBlueSensorDriver, flutter_blue_plus) — matching the pre-refactor
+  // MeasurementPage non-dev path.
   // Developer Mode (DEV_MODE=true) defaults to BleSimulatorDriver() for simulator testing.
   BleReceiverService._internal()
-      : _activeDriver = _isDevMode ? BleSimulatorDriver() : BLESensorDriver() {
+      : _activeDriver =
+            _isDevMode ? BleSimulatorDriver() : FlutterBlueSensorDriver() {
     _initializeStream();
   }
 
@@ -42,6 +45,14 @@ class BleReceiverService implements IBLESensorDriver {
   }
 
   IBLESensorDriver get activeDriver => _activeDriver;
+
+  /// True when the currently-bound driver is the developer/QA simulator and it
+  /// reports itself active. Lets downstream consumers (e.g. [BleBloc]) surface a
+  /// "simulator mode" flag without depending on a concrete driver type.
+  bool get isSimulatorActive {
+    final d = _activeDriver;
+    return d is BleSimulatorDriver && d.isSimulatorActive;
+  }
 
   void setActiveDriver(IBLESensorDriver driver) {
     _driverSubscription?.cancel();

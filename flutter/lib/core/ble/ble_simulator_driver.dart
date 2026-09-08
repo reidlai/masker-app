@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:rxdart/rxdart.dart';
-import '../monitoring/idle_band.dart';
+import '../monitoring/drift_and_noise_floor_envelope.dart';
 import 'i_ble_sensor_driver.dart';
 
 /// Developer / QA telemetry scenarios. Signal shapes are internally
@@ -23,8 +23,14 @@ class BleSimulatorDriver implements IBLESensorDriver {
   factory BleSimulatorDriver() => _instance;
   BleSimulatorDriver._internal();
 
+  /// The process-wide singleton. Lets the composition root and [SimulatorBloc]
+  /// reference the one simulator instance without a `BleSimulatorDriver()`
+  /// construction call site (AD-11: construction stays in the composition root
+  /// and [BleReceiverService]).
+  static BleSimulatorDriver get instance => _instance;
+
   BehaviorSubject<double> _signalSubject = BehaviorSubject<double>.seeded(0.3);
-  BehaviorSubject<bool> _isSimulatorSubject = BehaviorSubject<bool>.seeded(true);
+  BehaviorSubject<bool> _isSimulatorSubject = BehaviorSubject<bool>.seeded(false);
   BehaviorSubject<SimulatorScenario> _scenarioSubject =
       BehaviorSubject<SimulatorScenario>.seeded(SimulatorScenario.none);
 
@@ -124,8 +130,10 @@ class BleSimulatorDriver implements IBLESensorDriver {
       _isSimulatorSubject = BehaviorSubject<bool>.seeded(enabled);
     }
     _isSimulatorSubject.add(enabled);
-    if (!enabled) {
-      stopSimulation();
+    if (enabled) {
+      scanAndConnect();
+    } else {
+      disconnect();
     }
   }
 
@@ -151,9 +159,9 @@ class BleSimulatorDriver implements IBLESensorDriver {
           signal = 0.30 + 0.05 * sin(_step * 3);
           break;
         case SimulatorScenario.normalRespiration:
-          // 0.275 ± 0.2 → ~0.075–0.475: strictly crosses both bounds of a
-          // band learned from idleBandSample (~0.25–0.35).
-          signal = 0.275 + 0.2 * sin(_step * 1.6);
+          // Centered at 0.300 ± 0.18 → 0.120 to 0.480 V.
+          // Strictly crosses both bounds of a band learned from idleBandSample (~0.25–0.35).
+          signal = 0.300 + 0.18 * sin(_step * 1.5);
           break;
         case SimulatorScenario.inBandNoExcursion:
           // Flat, always inside the band — a stop-breathing stretch.
@@ -191,9 +199,9 @@ class BleSimulatorDriver implements IBLESensorDriver {
       _signalSubject.add(0.3);
     }
     if (_isSimulatorSubject.isClosed) {
-      _isSimulatorSubject = BehaviorSubject<bool>.seeded(true);
+      _isSimulatorSubject = BehaviorSubject<bool>.seeded(false);
     } else {
-      _isSimulatorSubject.add(true);
+      _isSimulatorSubject.add(false);
     }
     if (_scenarioSubject.isClosed) {
       _scenarioSubject =

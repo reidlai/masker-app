@@ -9,15 +9,20 @@
 <title>Medical Profile Setup — Sleep Apnea Detection App</title>
 <style>
   /* Illustrates: EXPERIENCE.md IA flow map (User Medical Profile Setup, MOB_USER_PROFILE,
-     between Passkey Auth and Bluetooth Priming); Settings screen "[NOTE FOR UX]" on Weight/
-     Height/Computed BMI + inline Caregiver contacts and the Units cross-dependency (default
-     metric); Secondary Flow "David corrects his weight" (Weight field -> live Computed BMI);
-     DESIGN.md ShadInput / ShadCard / ShadButton and Typography (h1/body/caption). Canonical
-     state rendered is onboarding Setup (Save & Continue advances the wizard). Redrawn on the
-     iPhone 17 Pro Max 440x956 artboard: the form now fits without scrolling on the taller
-     canvas, so the whole card group (header, both cards, button) is centered as one block
-     with wider card padding and section gaps instead of the old scroll container padded thin
-     with a bottom-pinned button. */
+     between Passkey Auth and Bluetooth Priming) with its three captured groups: Patient
+     Identification (HIPAA Level 1 PHI) = Full Name / Email Address / Phone Number; Health
+     Demographics = Age / Weight / Height / Computed BMI; Caregiver Contact = Caregiver Name /
+     Caregiver Phone Number (Tier-2 emergency SMS/voice). Settings screen "[NOTE FOR UX]" on
+     Weight/Height/Computed BMI + inline Caregiver contacts and the Units cross-dependency
+     (default metric); Secondary Flow "David corrects his weight" (Weight field -> live
+     Computed BMI); DESIGN.md ShadInput / ShadCard / ShadButton and Typography (h1/body/
+     caption). Canonical state rendered is onboarding Setup (Save & Continue advances the
+     wizard), pre-filled with David Miller's baseline to match ProfilePage / the Flutter
+     organisms (name/email/phone, Age 48, Weight 85 kg, Height 178 cm, BMI 26.8 = Overweight
+     band, amber). iPhone 17 Pro Max 440x956 artboard: the form now carries nine fields across
+     three grouped cards, so the card stack scrolls from the top (justify-content flex-start)
+     rather than centering as one block; Age+Weight and Height+BMI sit two-up in a row to
+     mirror HealthDemographicsOrganism. */
   :root {
     --bg-primary: #0F172A;
     --surface: #1E293B;
@@ -111,13 +116,13 @@
     flex: 1 1 auto;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    padding: 20px 28px 32px;
+    justify-content: flex-start;
+    padding: 14px 24px 10px;
     overflow-y: auto;
   }
-  .up-header { text-align: left; margin-bottom: 8px; }
-  .up-header h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
-  .up-header p { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+  .up-header { text-align: left; margin-bottom: 2px; }
+  .up-header h1 { font-size: 23px; font-weight: 700; margin-bottom: 4px; }
+  .up-header p { font-size: 13px; color: var(--text-secondary); line-height: 1.45; }
 
   .up-section-label {
     font-size: 12px;
@@ -125,32 +130,38 @@
     color: var(--text-secondary);
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    margin: 24px 0 10px;
+    margin: 15px 0 7px;
   }
-  .up-section-label:first-of-type { margin-top: 24px; }
+  .up-section-label:first-of-type { margin-top: 16px; }
+  .up-section-label .up-phi {
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--warning-amber);
+    font-weight: 600;
+  }
 
   .up-card {
     background: var(--surface);
     border: 1px solid var(--surface-border);
     border-radius: 8px;
-    padding: 20px;
+    padding: 14px;
   }
-  .up-field { margin-bottom: 16px; }
+  .up-field { margin-bottom: 12px; }
   .up-field:last-child { margin-bottom: 0; }
   .up-field label {
     display: block;
     font-size: 12px;
     font-weight: 500;
     color: var(--text-secondary);
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
   .up-input {
     width: 100%;
-    min-height: 48px;
+    min-height: 46px;
     background: var(--bg-primary);
     border: 1px solid var(--surface-border);
     border-radius: 8px;
-    padding: 0 16px;
+    padding: 0 14px;
     font-size: 14px;
     color: var(--text-primary);
     display: flex;
@@ -159,31 +170,38 @@
   }
   .up-input .unit { color: var(--text-secondary); font-size: 12px; }
 
-  .up-bmi-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  /* two-up row — mirrors HealthDemographicsOrganism (Age+Weight, Height+BMI) */
+  .up-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .up-row:last-child { margin-bottom: 0; }
+  .up-row .up-field { margin-bottom: 0; }
+
+  .up-bmi-box {
     background: var(--pressed-surface);
     border: 1px solid var(--surface-border);
     border-radius: 8px;
-    padding: 14px 16px;
-    margin-top: 6px;
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 46px;
   }
-  .up-bmi-row .up-bmi-label { font-size: 12px; color: var(--text-secondary); }
-  .up-bmi-row .up-bmi-value {
-    font-size: 24px;
+  .up-bmi-box .up-bmi-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 2px; }
+  .up-bmi-box .up-bmi-value {
+    font-size: 20px;
     font-weight: 600;
-    color: var(--accent-green);
+    color: var(--warning-amber);
     font-variant-numeric: tabular-nums;
+    line-height: 1.1;
   }
-  .up-bmi-row .up-bmi-tag {
+  .up-bmi-box .up-bmi-tag {
     font-size: 11px;
     font-weight: 600;
-    color: var(--accent-green);
-    background: rgba(16,185,129,0.12);
-    border-radius: 9999px;
-    padding: 3px 10px;
-    margin-left: 8px;
+    color: var(--warning-amber);
   }
 
   .btn-primary {
@@ -198,7 +216,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-top: 28px;
+    margin-top: 14px;
   }
 </style>
 </head>
@@ -220,22 +238,44 @@
           <p>A few details to personalize your overnight monitoring.</p>
         </div>
 
-        <div class="up-section-label">Body metrics (metric)</div>
+        <div class="up-section-label">Patient identification <span class="up-phi">· HIPAA Level 1 PHI</span></div>
         <div class="up-card">
           <div class="up-field">
-            <label for="up-weight">Weight</label>
-            <div class="up-input" id="up-weight">75 <span class="unit">kg</span></div>
+            <label for="up-name">Full name</label>
+            <div class="up-input" id="up-name">David Miller</div>
           </div>
           <div class="up-field">
-            <label for="up-height">Height</label>
-            <div class="up-input" id="up-height">178 <span class="unit">cm</span></div>
+            <label for="up-email">Email address</label>
+            <div class="up-input" id="up-email">david.miller@example.com</div>
           </div>
-          <div class="up-bmi-row">
-            <span class="up-bmi-label">Computed BMI</span>
-            <span>
-              <span class="up-bmi-value">23.7</span>
-              <span class="up-bmi-tag">Normal</span>
-            </span>
+          <div class="up-field">
+            <label for="up-phone">Phone number</label>
+            <div class="up-input" id="up-phone">(555) 019-8234</div>
+          </div>
+        </div>
+
+        <div class="up-section-label">Health demographics (metric)</div>
+        <div class="up-card">
+          <div class="up-row">
+            <div class="up-field">
+              <label for="up-age">Age</label>
+              <div class="up-input" id="up-age">48 <span class="unit">yrs</span></div>
+            </div>
+            <div class="up-field">
+              <label for="up-weight">Weight</label>
+              <div class="up-input" id="up-weight">85 <span class="unit">kg</span></div>
+            </div>
+          </div>
+          <div class="up-row">
+            <div class="up-field">
+              <label for="up-height">Height</label>
+              <div class="up-input" id="up-height">178 <span class="unit">cm</span></div>
+            </div>
+            <div class="up-bmi-box">
+              <span class="up-bmi-label">Computed BMI</span>
+              <span class="up-bmi-value">26.8</span>
+              <span class="up-bmi-tag">Overweight</span>
+            </div>
           </div>
         </div>
 

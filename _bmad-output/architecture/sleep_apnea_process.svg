@@ -122,63 +122,72 @@
   <circle cx="85" cy="520" r="16" class="event-start" />
   <text x="85" y="550" class="event-text"><tspan x="85" dy="0">Start: Bedtime</tspan><tspan x="85" dy="11">Session</tspan></text>
 
-  <rect x="537" y="480" width="135" height="80" class="task-rect" />
-  <text x="604" y="500" class="task-title">Authenticate</text>
-  <text x="604" y="514" class="task-desc">Passkey FIDO2</text>
-  <text x="604" y="528" class="task-desc">Biometrics Login</text>
+  <rect x="135" y="480" width="135" height="80" class="task-rect" />
+  <text x="202" y="500" class="task-title">Authenticate</text>
+  <text x="202" y="514" class="task-desc">Passkey FIDO2</text>
+  <text x="202" y="528" class="task-desc">Biometrics Login</text>
 
-  <rect x="695" y="480" width="120" height="80" class="task-rect" />
-  <text x="755" y="500" class="task-title">Stage 1 Calib.</text>
-  <text x="755" y="514" class="task-desc">Idle Noise Floor</text>
-  <text x="755" y="528" class="task-desc">Sampling (10s)</text>
+  <rect x="295" y="480" width="145" height="80" class="task-rect" />
+  <text x="367" y="500" class="task-title">Noise Envelope</text>
+  <text x="367" y="514" class="task-desc">Worn Idle Min/Max</text>
+  <text x="367" y="528" class="task-desc">Sampling (~10s)</text>
 
-  <rect x="835" y="480" width="120" height="80" class="task-rect" />
-  <text x="895" y="500" class="task-title">Stage 2 Calib.</text>
-  <text x="895" y="514" class="task-desc">Active Breath Vpp</text>
-  <text x="895" y="528" class="task-desc">Baseline (30s)</text>
+  <rect x="465" y="480" width="145" height="80" class="task-rect" />
+  <text x="537" y="500" class="task-title">Wear Check</text>
+  <text x="537" y="514" class="task-desc">Normal Breath Check</text>
+  <text x="537" y="528" class="task-desc">≥2 Excursions</text>
 
-  <rect x="975" y="480" width="120" height="80" class="task-rect" />
-  <text x="1035" y="500" class="task-title">Sleep Monitor</text>
-  <text x="1035" y="514" class="task-desc">Device Attached</text>
-  <text x="1035" y="528" class="task-desc">0-FPS Low Power</text>
+  <rect x="635" y="480" width="135" height="80" class="task-rect" />
+  <text x="702" y="500" class="task-title">Sleep Monitor</text>
+  <text x="702" y="514" class="task-desc">Device Attached</text>
+  <text x="702" y="528" class="task-desc">0-FPS Low Power</text>
 
-  <polygon points="1120,520 1140,500 1160,520 1140,540" class="gateway" />
-  <text x="1140" y="524" class="gateway-text">X</text>
-  <text x="1140" y="555" class="task-desc" font-weight="bold">Alarm?</text>
+  <polygon points="795,520 815,500 835,520 815,540" class="gateway" />
+  <text x="815" y="524" class="gateway-text">X</text>
+  <text x="815" y="555" class="task-desc" font-weight="bold">Alarm?</text>
 
-  <polygon points="1215,520 1235,500 1255,520 1235,540" class="gateway" />
-  <text x="1235" y="524" class="gateway-text">X</text>
-  <text x="1235" y="555" class="task-desc" font-weight="bold">Awake &lt;30s?</text>
+  <polygon points="875,520 895,500 915,520 895,540" class="gateway" />
+  <text x="895" y="524" class="gateway-text">X</text>
+  <text x="895" y="555" class="task-desc" font-weight="bold">Awake &lt;30s?</text>
 
-  <rect x="1290" y="480" width="120" height="80" class="task-rect" />
-  <text x="1350" y="500" class="task-title">Tap 'I'm Safe'</text>
-  <text x="1350" y="514" class="task-desc">Cancel Siren</text>
-  <text x="1350" y="528" class="task-desc">Dismiss Alarm</text>
+  <rect x="945" y="480" width="125" height="80" class="task-rect" />
+  <text x="1007" y="500" class="task-title">Tap 'I'm Safe'</text>
+  <text x="1007" y="514" class="task-desc">Cancel Siren</text>
+  <text x="1007" y="528" class="task-desc">Dismiss Alarm</text>
 
-  <rect x="1430" y="480" width="120" height="80" class="task-rect" />
-  <text x="1490" y="500" class="task-title">End Session</text>
-  <rect x="20" y="1250" width="1640" height="200" class="pool-bg-7" rx="6" />
-  <path d="M 20 1256 A 6 6 0 0 1 26 1250 L 60 1250 L 60 1440 L 26 1440 A 6 6 0 0 1 20 1434 Z" class="pool-header-7" />
-  <text x="40" y="1350" class="header-text" transform="rotate(-90 40 1350)">Analytics &amp; Data Pipeline</text>
+  <rect x="1095" y="480" width="125" height="80" class="task-rect" />
+  <text x="1157" y="500" class="task-title">End Session</text>
+  <text x="1157" y="514" class="task-desc">Session Summary</text>
+  <text x="1157" y="528" class="task-desc">Apnea Index (AI) Sync</text>
 
-  <path d="M 1160 520 L 1215 520" class="flow-path" marker-end="url(#arrow)" />
-  <path d="M 815 520 L 835 520" class="flow-path" marker-end="url(#arrow)" />
-  <path d="M 955 520 L 975 520" class="flow-path" marker-end="url(#arrow)" />
-  <path d="M 1095 520 L 1120 520" class="flow-path" marker-end="url(#arrow)" />
+  <circle cx="1255" cy="520" r="16" class="event-end" />
+  <text x="1255" y="550" class="event-text">Complete</text>
 
+  <!-- Flow Paths in Pool 3 -->
+  <path d="M 101 520 L 135 520" class="flow-path" marker-end="url(#arrow)" />
+  <path d="M 270 520 L 295 520" class="flow-path" marker-end="url(#arrow)" />
+  <path d="M 440 520 L 465 520" class="flow-path" marker-end="url(#arrow)" />
+  <path d="M 610 520 L 635 520" class="flow-path" marker-end="url(#arrow)" />
+  <path d="M 770 520 L 795 520" class="flow-path" marker-end="url(#arrow)" />
 
-  <path d="M 1140 500 L 1140 460 L 1035 460 L 1035 480" class="flow-path" marker-end="url(#arrow)" />
-  <text x="1085" y="472" class="flow-label">No</text>
+  <path d="M 815 500 L 815 455 L 702 455 L 702 480" class="flow-path" marker-end="url(#arrow)" />
+  <text x="750" y="468" class="flow-label">No</text>
 
-  <path d="M 1255 520 L 1290 520" class="flow-path" marker-end="url(#arrow)" />
-  <text x="1265" y="512" class="flow-label">Yes</text>
+  <path d="M 835 520 L 875 520" class="flow-path" marker-end="url(#arrow)" />
 
-  <path d="M 1410 520 L 1430 520" class="flow-path" marker-end="url(#arrow)" />
-  <path d="M 1550 520 L 1569 520" class="flow-path" marker-end="url(#arrow)" />
+  <path d="M 915 520 L 945 520" class="flow-path" marker-end="url(#arrow)" />
+  <text x="923" y="512" class="flow-label">Yes</text>
+
+  <path d="M 895 540 L 895 575" class="flow-path" marker-end="url(#arrow)" />
+  <circle cx="895" cy="591" r="14" class="event-end" />
+  <text x="895" y="617" class="event-text">Escalated</text>
+
+  <path d="M 1070 520 L 1095 520" class="flow-path" marker-end="url(#arrow)" />
+  <path d="M 1220 520 L 1239 520" class="flow-path" marker-end="url(#arrow)" />
 
   <!-- Message flow to Emergency Center -->
-  <path d="M 1235 540 L 1097 690" class="msg-flow" marker-end="url(#arrow-msg)" />
-  <text x="1175" y="620" class="msg-label">30s Unacknowledged Alarm Push</text>
+  <path d="M 895 540 L 895 690" class="msg-flow" marker-end="url(#arrow-msg)" />
+  <text x="905" y="650" class="msg-label">30s Unacknowledged Alarm Push</text>
 
   <!-- ==================== POOL 4: EMERGENCY CENTER ==================== -->
   <rect x="20" y="630" width="1640" height="200" class="pool-bg-4" rx="6" />
@@ -232,10 +241,10 @@
   <path d="M 1386 930 L 1430 930" class="flow-path" stroke-dasharray="4 3" marker-end="url(#arrow)" />
   <path d="M 1565 930 L 1594 930" class="flow-path" stroke-dasharray="4 3" marker-end="url(#arrow)" />
 
-  <!-- ==================== POOL 6: DEVICE LOSS & MOBILE RECOVERY OPERATIONS ==================== -->
+  <!-- ==================== POOL 6: DEVICE & MOBILE RECOVERY ==================== -->
   <rect x="20" y="1040" width="1640" height="190" class="pool-bg-6" rx="6" />
   <path d="M 20 1046 A 6 6 0 0 1 26 1040 L 60 1040 L 60 1230 L 26 1230 A 6 6 0 0 1 20 1224 Z" class="pool-header-6" />
-  <text x="40" y="1135" class="header-text" transform="rotate(-90 40 1135)">Device &amp; Mobile Lost Operations</text>
+  <text x="40" y="1135" class="header-text" transform="rotate(-90 40 1135)">Device &amp; Mobile Recovery</text>
 
   <circle cx="100" cy="1135" r="16" class="event-start" />
   <text x="100" y="1165" class="event-text"><tspan x="100" dy="0">Start: Device/Mobile</tspan><tspan x="100" dy="11">Lost Reported</tspan></text>
@@ -269,10 +278,10 @@
   <path d="M 675 1135 L 710 1135" class="flow-path" marker-end="url(#arrow)" />
   <path d="M 865 1135 L 894 1135" class="flow-path" marker-end="url(#arrow)" />
 
-  <!-- ==================== POOL 7: MOBILE DASHBOARD REVIEW & ANALYTICS ==================== -->
+  <!-- ==================== POOL 7: DASHBOARD & ANALYTICS ==================== -->
   <rect x="20" y="1250" width="1640" height="190" class="pool-bg-7" rx="6" />
   <path d="M 20 1256 A 6 6 0 0 1 26 1250 L 60 1250 L 60 1440 L 26 1440 A 6 6 0 0 1 20 1434 Z" class="pool-header-7" />
-  <text x="40" y="1345" class="header-text" transform="rotate(-90 40 1345)">Mobile Dashboard Review &amp; Analytics</text>
+  <text x="40" y="1345" class="header-text" transform="rotate(-90 40 1345)">Dashboard &amp; Analytics</text>
 
   <circle cx="100" cy="1345" r="16" class="event-start" />
   <text x="100" y="1375" class="event-text"><tspan x="100" dy="0">Start: Session Ended /</tspan><tspan x="100" dy="11">App Open</tspan></text>

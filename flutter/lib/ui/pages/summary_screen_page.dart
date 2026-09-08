@@ -23,6 +23,12 @@ class SummaryScreenPage extends StatelessWidget {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text("Morning Sleep Summary"),
+        leading: ModalRoute.of(context)?.canPop == true
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                onPressed: () => Navigator.of(context).pop(),
+              )
+            : null,
         automaticallyImplyLeading: false,
         actions: [
           IconButton(

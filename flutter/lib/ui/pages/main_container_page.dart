@@ -27,6 +27,7 @@ class _MainContainerPageState extends State<MainContainerPage> {
     final List<Widget> pages = [
       HomePage(
         onOpenSummary: () => _navigateToTab(2),
+        onOpenMonitor: () => _navigateToTab(1),
         onOpenHistory: () {
           Navigator.of(context).push(
             MaterialPageRoute(

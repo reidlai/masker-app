@@ -6,16 +6,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IDLE Band Calibration — Sleep Apnea Detection App</title>
+<title>Sensor Baseline Drift &amp; Noise Floor Envelope Calibration — Sleep Apnea Detection App</title>
 <style>
-  /* Illustrates: EXPERIENCE.md IA flow map (IDLE Band Calibration Wizard,
-     MOB_CALIBRATION); Component Pattern #2 IdleBandCalibrationWizardOrganism;
-     State Pattern #2 State_CalibratingIdleBand (D-BAND worn, user still, ~10s
-     sampling the running min/max of the raw bio-signal -> the IDLE Band); Voice
+  /* Illustrates: EXPERIENCE.md IA flow map (Sensor Baseline Drift & Noise Floor Envelope Calibration Wizard,
+     MOB_CALIBRATION); Component Pattern #2 NoiseFloorEnvelopeCalibrationWizardOrganism;
+     State Pattern #2 State_CalibratingNoiseFloorEnvelope (D-BAND worn, user still, ~10s
+     sampling the running min/max of the raw bio-signal -> the Noise Floor Envelope); Voice
      and Tone "Calibration Instructions" quote; DESIGN.md Component #2
      CalibrationStepHeader (step pill, title, instruction body, progress bar).
      This screen shows STEP 1 of 2 (idle sample). STEP 2 is the wear check
-     (breathe normally; the app confirms >=2 valid band-excursion cycles before
+     (breathe normally; the app confirms >=2 valid envelope-excursion cycles before
      "Start Sleep Monitoring" unlocks) — noted in the footer. */
   :root {
     --bg-primary: #0F172A;
@@ -213,15 +213,15 @@
     </div>
     <div class="screen-content">
       <div class="cal-wrap">
-        <span class="csh-pill">STEP 1 OF 2 · IDLE SAMPLE</span>
-        <div class="csh-title">Learning your IDLE Band</div>
+        <span class="csh-pill">STEP 1 OF 2 · NOISE FLOOR ENVELOPE SAMPLE</span>
+        <div class="csh-title">Sensor Baseline Drift &amp; Noise Floor Envelope</div>
         <p class="csh-instruction">Put on your D-BAND, sit still, and breathe gently for 10 seconds.</p>
         <div class="csh-progress-track"><div class="csh-progress-fill"></div></div>
 
         <div class="cal-center">
           <div class="cal-sample-card">
             <div class="cal-timer">00:04</div>
-            <div class="cal-timer-label">Sampling resting signal&hellip;</div>
+            <div class="cal-timer-label">Sampling resting noise floor signal&hellip;</div>
             <div class="cal-waveform" aria-hidden="true">
               <span style="height: 12px;"></span>
               <span style="height: 22px;"></span>
@@ -234,13 +234,13 @@
               <span style="height: 13px;"></span>
             </div>
             <div class="cal-band">
-              <span>IDLE Band lower&nbsp;<b>35</b></span>
+              <span>Noise floor lower&nbsp;<b>35</b></span>
               <span>upper&nbsp;<b>240</b></span>
             </div>
           </div>
         </div>
 
-        <p class="cal-foot">Next: take a few normal breaths so we can check the fit — the signal has to cross both band lines before you can start.</p>
+        <p class="cal-foot">Next: take a few normal breaths so we can check the fit — the signal has to cross both envelope lines before you can start.</p>
       </div>
     </div>
     <div class="home-indicator"><span class="bar"></span></div>
