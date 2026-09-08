@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:masker_app/core/ble/ble_receiver_service.dart';
-import 'package:masker_app/core/ble/ble_sensor_driver.dart';
+import 'package:masker_app/core/ble/mock_ble_sensor_driver.dart';
 import 'package:masker_app/core/ble/ble_simulator_driver.dart';
 import 'package:masker_app/core/ble/i_ble_sensor_driver.dart';
 import 'package:masker_app/core/bloc/simulator/simulator_bloc.dart';
@@ -197,7 +197,7 @@ void main() {
   testWidgets(
       'end-to-end: real BLESensorDriver drives the wizard through the idle '
       'sample and >=2 wear-check cycles, then Start Sleep Monitoring fires', (tester) async {
-    final driver = BLESensorDriver();
+    final driver = MockBLESensorDriver();
     addTearDown(driver.disconnect);
 
     // No developerEnabled override and no SimulatorBloc ancestor: the monitoring
@@ -262,7 +262,7 @@ void main() {
     BleSimulatorDriver().setSimulatorEnabled(true);
     addTearDown(() => BleSimulatorDriver().resetForTest());
 
-    final driver = BLESensorDriver();
+    final driver = MockBLESensorDriver();
     addTearDown(driver.disconnect);
 
     await tester.pumpWidget(MaterialApp(
@@ -321,7 +321,7 @@ void main() {
     // Demo builds pass developerEnabled: true. The toolbar must not self-gate
     // itself away in that case, and the stage panel must not appear alone.
     BleSimulatorDriver().resetForTest(); // simulator OFF
-    final driver = BLESensorDriver();
+    final driver = MockBLESensorDriver();
     addTearDown(driver.disconnect);
 
     await tester.pumpWidget(MaterialApp(
@@ -481,7 +481,7 @@ void main() {
     // developerEnabled override).
     BleSimulatorDriver().setSimulatorEnabled(true);
 
-    final driver = BLESensorDriver();
+    final driver = MockBLESensorDriver();
     addTearDown(driver.disconnect);
     late SimulatorBloc simBloc;
 

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:masker_app/core/ble/ble_receiver_service.dart';
-import 'package:masker_app/core/ble/ble_sensor_driver.dart';
+import 'package:masker_app/core/ble/mock_ble_sensor_driver.dart';
 import 'package:masker_app/core/ble/ble_simulator_driver.dart';
 
 void main() {
@@ -53,8 +53,8 @@ void main() {
       await sub2.cancel();
     });
 
-    test('Driver Polymorphism allows dynamic switching between BLESensorDriver and BleSimulatorDriver', () async {
-      final hardwareDriver = BLESensorDriver();
+    test('Driver Polymorphism allows dynamic switching between MockBLESensorDriver and BleSimulatorDriver', () async {
+      final hardwareDriver = MockBLESensorDriver();
       receiverService.setActiveDriver(hardwareDriver);
 
       expect(receiverService.activeDriver, equals(hardwareDriver));
