@@ -437,6 +437,13 @@ void main() {
     expect(find.text("D-BAND Sensor Connected ✓"), findsNothing);
     expect(find.text("⚡ DEV SIMULATOR TOOLBAR"), findsNothing);
 
+    // ...and the calibration wizard cannot be started without a sensor.
+    final startSampling =
+        find.widgetWithText(ElevatedButton, "Start Noise Floor Sampling");
+    expect(tester.widget<ElevatedButton>(startSampling).onPressed, isNull);
+    expect(find.text("Connect your D-BAND to begin noise floor sampling."),
+        findsOneWidget);
+
     // Enable the simulator → dev bypass re-runs the connect flow.
     fake.connectResult = true;
     simBloc.add(const SimulatorEnabledSet(true));
@@ -448,6 +455,8 @@ void main() {
     expect(find.text("Scanning for D-BAND (BLE 5.0+)..."), findsNothing);
     // Toolbar is developer-only AND monitoring-only — never on setup.
     expect(find.text("⚡ DEV SIMULATOR TOOLBAR"), findsNothing);
+    // Connected now → sampling is enabled.
+    expect(tester.widget<ElevatedButton>(startSampling).onPressed, isNotNull);
 
     // Disable the simulator → real gate re-runs, connect fails again.
     fake.connectResult = false;
@@ -458,6 +467,7 @@ void main() {
 
     expect(find.text("Scanning for D-BAND (BLE 5.0+)..."), findsOneWidget);
     expect(find.text("D-BAND Sensor Connected ✓"), findsNothing);
+    expect(tester.widget<ElevatedButton>(startSampling).onPressed, isNull);
   });
 
   testWidgets(

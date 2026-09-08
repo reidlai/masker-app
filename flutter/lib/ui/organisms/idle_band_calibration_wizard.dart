@@ -17,16 +17,23 @@ import '../atoms/app_button.dart';
 ///     [kWearCheckWindow]; on timeout the gate is held with a retry toast,
 ///     never auto-advanced, never silently retried.
 ///
-/// The wizard is a `BlocBuilder` over [CalibrationBloc] — all sampling /
-/// wear-check orchestration lives in the bloc.
+/// The wizard is a `BlocConsumer` over [CalibrationBloc] — all sampling /
+/// wear-check orchestration lives in the bloc; the widget adds only the
+/// [isConnected] gate on the "start sampling" actions.
 class IdleBandCalibrationWizard extends StatefulWidget {
   final IBLESensorDriver bleDriver;
   final void Function(IdleBand) onCalibrationComplete;
+
+  /// Whether the D-BAND is connected. When `false`, every "start sampling"
+  /// action is disabled — there is no sensor to sample from. `true` in
+  /// dev/simulator mode (the simulator reports itself connected).
+  final bool isConnected;
 
   const IdleBandCalibrationWizard({
     super.key,
     required this.bleDriver,
     required this.onCalibrationComplete,
+    required this.isConnected,
   });
 
   @override
@@ -48,6 +55,11 @@ class _IdleBandCalibrationWizardState extends State<IdleBandCalibrationWizard> {
     _bloc.close();
     super.dispose();
   }
+
+  /// A tap handler for a "start sampling" action, or `null` when there is no
+  /// connected sensor to sample from — so every such button disables together.
+  VoidCallback? _whenConnected(CalibrationEvent event) =>
+      widget.isConnected ? () => _bloc.add(event) : null;
 
   void _onStateChanged(BuildContext context, CalibrationState state) {
     if (state.step == CalibrationStep.complete && state.band != null) {
@@ -133,9 +145,11 @@ class _IdleBandCalibrationWizardState extends State<IdleBandCalibrationWizard> {
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary)),
       const SizedBox(height: 6),
-      const Text(
-        "Put on your D-BAND, sit still, and breathe gently for 10 seconds to calibrate the sensor baseline drift & noise floor envelope.",
-        style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+      Text(
+        widget.isConnected
+            ? "Put on your D-BAND, sit still, and breathe gently for 10 seconds to calibrate the sensor baseline drift & noise floor envelope."
+            : "Connect your D-BAND to begin noise floor sampling.",
+        style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
       ),
       const SizedBox(height: 16),
       if (state.sampling) ...[
@@ -160,13 +174,13 @@ class _IdleBandCalibrationWizardState extends State<IdleBandCalibrationWizard> {
         AppButton(
           label: "Retry",
           variant: AppButtonVariant.primary,
-          onPressed: () => _bloc.add(const CalibrationIdleSampleStarted()),
+          onPressed: _whenConnected(const CalibrationIdleSampleStarted()),
         ),
       ] else ...[
         AppButton(
           label: "Start Noise Floor Sampling",
           variant: AppButtonVariant.primary,
-          onPressed: () => _bloc.add(const CalibrationIdleSampleStarted()),
+          onPressed: _whenConnected(const CalibrationIdleSampleStarted()),
         ),
       ],
     ];
@@ -182,9 +196,11 @@ class _IdleBandCalibrationWizardState extends State<IdleBandCalibrationWizard> {
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary)),
       const SizedBox(height: 6),
-      const Text(
-        "Noise floor calibrated! When you are ready, tap below and take 2 full, deep breaths so we can verify sensor fit.",
-        style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+      Text(
+        widget.isConnected
+            ? "Noise floor calibrated! When you are ready, tap below and take 2 full, deep breaths so we can verify sensor fit."
+            : "Connect your D-BAND to continue the fit & breathing check.",
+        style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
       ),
       const SizedBox(height: 12),
       _bandReadout(state.band),
@@ -193,7 +209,7 @@ class _IdleBandCalibrationWizardState extends State<IdleBandCalibrationWizard> {
         AppButton(
           label: "I'm Ready — Start Breathing Check",
           variant: AppButtonVariant.primary,
-          onPressed: () => _bloc.add(const CalibrationWearCheckStarted()),
+          onPressed: _whenConnected(const CalibrationWearCheckStarted()),
         ),
       ] else if (state.wearCheckFailed) ...[
         const Text(
@@ -204,7 +220,7 @@ class _IdleBandCalibrationWizardState extends State<IdleBandCalibrationWizard> {
         AppButton(
           label: "Retry Breathing Check",
           variant: AppButtonVariant.primary,
-          onPressed: () => _bloc.add(const CalibrationWearCheckStarted()),
+          onPressed: _whenConnected(const CalibrationWearCheckStarted()),
         ),
       ] else if (state.wearCheckRunning) ...[
         Container(

@@ -492,6 +492,7 @@ class _MeasurementPageState extends State<MeasurementPage>
               IdleBandCalibrationWizard(
                 key: ValueKey(state.connectGeneration),
                 bleDriver: _bleDriver,
+                isConnected: state.isBleConnected,
                 onCalibrationComplete: (band) => _bloc
                     .add(SleepMonitoringCalibrationCompleted(band)),
               ),
