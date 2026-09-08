@@ -1,9 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:masker_app/core/constants/apnea_copy.dart';
+
+const String _apneaOnlyCaveat = kApneaOnlyCaveat;
 
 class MockFHIRReportExporter {
   Map<String, dynamic> generateSignedFhirJson({
     required String patientId,
-    required double ahiScore,
+    required double apneaIndexScore,
     required int durationSeconds,
     required int apneaEventsCount,
     required int safetyTapsCount,
@@ -24,13 +27,7 @@ class MockFHIRReportExporter {
         }
       ],
       "code": {
-        "coding": [
-          {
-            "system": "http://loinc.org",
-            "code": "93832-4",
-            "display": "Apnea Hypopnea Index [Events/hour]"
-          }
-        ]
+        "text": "Apnea Index (apnea events per hour, apnea-only)"
       },
       "subject": {"reference": "Patient/$patientId"},
       "effectivePeriod": {
@@ -38,11 +35,14 @@ class MockFHIRReportExporter {
         "end": "2026-09-01T06:15:00Z"
       },
       "valueQuantity": {
-        "value": ahiScore,
+        "value": apneaIndexScore,
         "unit": "events/hour",
         "system": "http://unitsofmeasure.org",
         "code": "{events}/h"
       },
+      "note": [
+        {"text": _apneaOnlyCaveat}
+      ],
       "component": [
         {
           "code": {"text": "Total Duration Seconds"},
@@ -84,7 +84,7 @@ void main() {
     test('generateSignedFhirJson produces valid FHIR Observation payload', () {
       final Map<String, dynamic> fhirJson = exporter.generateSignedFhirJson(
         patientId: "david-48-persona-a",
-        ahiScore: 3.2,
+        apneaIndexScore: 3.2,
         durationSeconds: 27900,
         apneaEventsCount: 2,
         safetyTapsCount: 1,
@@ -100,7 +100,7 @@ void main() {
     test('FHIR report components include sleep duration and event counts', () {
       final Map<String, dynamic> fhirJson = exporter.generateSignedFhirJson(
         patientId: "david-48-persona-a",
-        ahiScore: 3.2,
+        apneaIndexScore: 3.2,
         durationSeconds: 27900,
         apneaEventsCount: 2,
         safetyTapsCount: 1,
@@ -111,6 +111,38 @@ void main() {
       expect(components[0]["valueInteger"], equals(27900));
       expect(components[1]["valueInteger"], equals(2));
       expect(components[2]["valueInteger"], equals(1));
+    });
+
+    test('code describes an apnea-only index and never references Hypopnea', () {
+      final Map<String, dynamic> fhirJson = exporter.generateSignedFhirJson(
+        patientId: "david-48-persona-a",
+        apneaIndexScore: 3.2,
+        durationSeconds: 27900,
+        apneaEventsCount: 2,
+        safetyTapsCount: 1,
+      );
+
+      final String codeText = fhirJson["code"]["text"] as String;
+      expect(codeText.toLowerCase(), contains("apnea"));
+      expect(codeText.toLowerCase(), isNot(contains("hypopnea")));
+      expect(fhirJson["code"].containsKey("coding"), isFalse);
+    });
+
+    test('an Observation.note carries the canonical apnea-only caveat', () {
+      final Map<String, dynamic> fhirJson = exporter.generateSignedFhirJson(
+        patientId: "david-48-persona-a",
+        apneaIndexScore: 3.2,
+        durationSeconds: 27900,
+        apneaEventsCount: 2,
+        safetyTapsCount: 1,
+      );
+
+      final List notes = fhirJson["note"];
+      expect(
+        notes.any((n) => (n["text"] as String).contains("apnea-only screen")),
+        isTrue,
+      );
+      expect(notes.first["text"], equals(_apneaOnlyCaveat));
     });
   });
 }

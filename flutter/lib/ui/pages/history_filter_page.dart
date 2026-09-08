@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/bloc/history/history_bloc.dart';
 import '../../core/bloc/history/history_event.dart';
 import '../../core/bloc/history/history_state.dart';
+import '../../core/constants/apnea_copy.dart';
 import '../../core/theme/app_theme.dart';
 import '../atoms/shad_badge.dart';
 import 'summary_screen_page.dart';
@@ -51,11 +52,25 @@ class _HistoryFilterView extends StatelessWidget {
                             context, "All", 0, state.selectedFilterIndex),
                         _buildFilterChip(context, "Normal (<5)", 1,
                             state.selectedFilterIndex),
-                        _buildFilterChip(context, "Moderate (5–29)", 2,
+                        _buildFilterChip(context, "Mild (5–15)", 2,
                             state.selectedFilterIndex),
-                        _buildFilterChip(context, "Severe (≥30)", 3,
+                        _buildFilterChip(context, "Moderate (15–30)", 3,
+                            state.selectedFilterIndex),
+                        _buildFilterChip(context, "Severe (≥30)", 4,
                             state.selectedFilterIndex),
                       ],
+                    ),
+                  ),
+                ),
+                // Apnea-only caveat — shown once for the whole list, not per row.
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
+                  child: Text(
+                    kApneaOnlyCaveat,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                      fontStyle: FontStyle.italic,
                     ),
                   ),
                 ),
@@ -77,6 +92,7 @@ class _HistoryFilterView extends StatelessWidget {
                           switch (HistoryState.severityFor(ai)) {
                         HistorySeverity.severe => ShadBadgeVariant.severe,
                         HistorySeverity.moderate => ShadBadgeVariant.moderate,
+                        HistorySeverity.mild => ShadBadgeVariant.moderate,
                         HistorySeverity.normal => ShadBadgeVariant.normal,
                       };
 

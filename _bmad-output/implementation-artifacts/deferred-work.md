@@ -105,3 +105,19 @@ Findings surfaced during build reviews that were intentionally not addressed in 
 - source_spec: `_bmad-output/implementation-artifacts/spec-calibration-requires-ble-connection.md`
   summary: Minor polish flagged in step-04 review, out of the frozen scope: (1) the `wearCheckFailed` inline red text hardcodes "Sensor not detecting breathing — check the fit and try again." even when `wearCheckConnectionLost == true` (only the snackbar differentiates the cause); (2) the newly-disabled buttons carry no `Semantics` hint / tooltip explaining *why* they are disabled, and the "Connect your D-BAND…" copy is an unrelated node.
   evidence: step-04 blind-hunter review. The frozen spec's "Never touch the wear-check running/failed UI" and the a11y scope put both outside this fix.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-fix-apnea-index-labeling-and-severity-bands.md`
+  summary: Three follow-ups intentionally out of scope for the labeling/severity-band fix: (a) severity-driven ring/badge colour on `SleepScoreOrganism` for non-Normal sessions (it keeps a hard-green ring/badge regardless of the Apnea Index); (b) the alarm-fired "demote AI band to a clinical caption" behaviour on `home_summary_card` (the amber `alarm_fired` treatment stays layered on top of the band logic, not replacing it); (c) a real signed FHIR/PDF exporter with a correct apnea-only code system — `export_doctor_page` still only shows a toast and the FHIR payload lives solely in a mock test fixture.
+  evidence: Called out under "Deferred" in the spec's Design Notes. (a) and (b) are also listed under the spec's "Never" boundary; (c) needs a production exporter that does not exist yet.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-fix-apnea-index-labeling-and-severity-bands.md`
+  summary: The Morning Sleep Summary caveat swap replaced a footnote that also *defined* the metric ("scores apnea events per hour recorded by D-BAND thermal sensor") with the canonical apnea-only caveat only. The per-hour definition and the sensor provenance no longer appear on `MOB_SLEEP_SUMMARY`; consider restoring a one-line metric descriptor alongside the caveat.
+  evidence: step-04 blind-hunter + verification-gap review. Spec's frozen "Always" mandated the verbatim caveat but did not require preserving the descriptor; treated as a copy enhancement for the user to word.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-fix-apnea-index-labeling-and-severity-bands.md`
+  summary: `HistorySeverity` and `HistoryState.severityFor` live in `flutter/lib/core/bloc/history/history_state.dart`, so `home_summary_card` (a generic molecule) and any other consumer must import the history bloc's state class to band an Apnea Index. Move the enum + `severityFor` (and a shared `HistorySeverity -> ShadBadgeVariant` mapping) to a neutral `core/domain` location.
+  evidence: step-04 blind-hunter + verification-gap review. `home_summary_card`'s new dependency on `history_state.dart` made the mis-layering visible; out of scope for the labeling/band fix.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-fix-apnea-index-labeling-and-severity-bands.md`
+  summary: The History filter now shows 5 chips ("All", "Normal (<5)", "Mild (5–15)", "Moderate (15–30)", "Severe (≥30)") in a horizontal scroll row — on a ~375pt phone the "Severe" chip is off-screen until scrolled, and the "(5–15)" / "(15–30)" range labels both print the shared boundary (15) with no inclusive/exclusive marker. Consider shorter, non-overlapping chip labels or a wrap layout.
+  evidence: step-04 blind-hunter + edge-case-hunter review. The widget test needed `ensureVisible` before tapping "Moderate"; a UX-copy/layout decision left for the user.

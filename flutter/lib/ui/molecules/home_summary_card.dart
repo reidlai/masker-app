@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/bloc/history/history_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../atoms/shad_badge.dart';
 
@@ -26,18 +27,31 @@ class HomeSummaryCard extends StatelessWidget {
 
   ShadBadgeVariant _getBadgeVariant() {
     if (alarmFired) return ShadBadgeVariant.amberAlert;
-    if (apneaIndex < 5.0) return ShadBadgeVariant.normal;
-    if (apneaIndex < 30.0) return ShadBadgeVariant.moderate;
-    return ShadBadgeVariant.severe;
+    switch (HistoryState.severityFor(apneaIndex)) {
+      case HistorySeverity.normal:
+        return ShadBadgeVariant.normal;
+      case HistorySeverity.mild:
+      case HistorySeverity.moderate:
+        return ShadBadgeVariant.moderate;
+      case HistorySeverity.severe:
+        return ShadBadgeVariant.severe;
+    }
   }
 
   String _getBadgeLabel() {
     if (alarmFired) {
       return alarmCount == 1 ? "1 apnea alert" : "$alarmCount apnea alerts";
     }
-    if (apneaIndex < 5.0) return "Normal";
-    if (apneaIndex < 30.0) return "Moderate";
-    return "Severe";
+    switch (HistoryState.severityFor(apneaIndex)) {
+      case HistorySeverity.normal:
+        return "Normal";
+      case HistorySeverity.mild:
+        return "Mild";
+      case HistorySeverity.moderate:
+        return "Moderate";
+      case HistorySeverity.severe:
+        return "Severe";
+    }
   }
 
   @override
