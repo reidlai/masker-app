@@ -50,6 +50,10 @@ class _MeasurementPageState extends State<MeasurementPage>
     }
   }
 
+  /// Drives the bloc's **permission-gate bypass** only — deliberately permissive
+  /// (the driver fallback lets a sim-active receiver bypass the OS gate even with
+  /// no `SimulatorBloc` in scope). Dev-UI *visibility* is gated separately and
+  /// strictly on `SimulatorBloc.isSimulatorActive` (see `_buildMonitoring`).
   bool get _isDevMode {
     if (widget.developerEnabled != null) return widget.developerEnabled!;
     try {
@@ -293,26 +297,27 @@ class _MeasurementPageState extends State<MeasurementPage>
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // Developer-only: toolbar + stage panel, gated directly on
-              // SimulatorBloc so they hide/show the instant the simulator is
-              // toggled, independent of signal-tick rebuild cadence. Falls back
-              // to the _isDevMode getter when no SimulatorBloc is in scope.
+              // Developer-only: toolbar + stage panel. Visible when the explicit
+              // `developerEnabled` demo flag is set, OR (in normal builds) when
+              // the live SimulatorBloc says the simulator is on — hide/show
+              // tracks the toggle instantly. No SimulatorBloc in scope and no
+              // demo flag ⟹ hidden (never a stale-driver "show"). The organism
+              // gets the same `forced` flag so it doesn't self-gate under a demo.
               Builder(builder: (context) {
-                bool active;
-                if (widget.developerEnabled != null) {
-                  active = widget.developerEnabled!;
-                } else {
+                final bool forced = widget.developerEnabled == true;
+                bool active = forced;
+                if (!active) {
                   try {
                     active = context.select<SimulatorBloc, bool>(
                         (b) => b.state.isSimulatorActive);
                   } catch (_) {
-                    active = _isDevMode;
+                    active = false;
                   }
                 }
                 if (!active) return const SizedBox.shrink();
                 return Column(
                   children: [
-                    DeveloperSimulatorBarOrganism(),
+                    DeveloperSimulatorBarOrganism(showEvenIfInactive: forced),
                     _devStagePanel(state, isStopBreathingDetected),
                   ],
                 );

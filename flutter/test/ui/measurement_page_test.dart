@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:masker_app/core/ble/ble_receiver_service.dart';
 import 'package:masker_app/core/ble/ble_sensor_driver.dart';
 import 'package:masker_app/core/ble/ble_simulator_driver.dart';
 import 'package:masker_app/core/ble/i_ble_sensor_driver.dart';
@@ -199,9 +200,11 @@ void main() {
     final driver = BLESensorDriver();
     addTearDown(driver.disconnect);
 
+    // No developerEnabled override and no SimulatorBloc ancestor: the monitoring
+    // screen's dev Builder gate hits its `context.select` -> catch -> active=false
+    // path, so no dev toolbar / stage panel (I/O Matrix row 4).
     await tester.pumpWidget(MaterialApp(
       home: MeasurementPage(
-        developerEnabled: false,
         sensorDriver: driver,
         permissionService: _FakeBlePermissionService(
           const BlePermissionStatus(BlePermissionResult.granted, []),
@@ -242,6 +245,9 @@ void main() {
 
     expect(find.text("Night Mode Active (Battery Saver)"), findsOneWidget);
     expect(driver.currentPhase, equals(SensorMonitoringPhase.monitoring));
+    // Row 4: no SimulatorBloc + no developerEnabled -> gate resolves hidden.
+    expect(find.text("⚡ DEV SIMULATOR TOOLBAR"), findsNothing);
+    expect(find.text("📊 DETECTION MECHANISM STAGE MONITOR"), findsNothing);
 
     // The page-scoped bloc no longer disconnects its injected driver on close
     // (AD-12: in production that driver is the app-lifetime BleReceiverService),
@@ -250,16 +256,23 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
   });
 
-  testWidgets('renders DeveloperSimulatorBarOrganism during active monitoring when dev mode is enabled', (tester) async {
+  testWidgets('renders DeveloperSimulatorBarOrganism during active monitoring when the simulator is on', (tester) async {
+    // Dev-UI visibility is gated purely on SimulatorBloc.isSimulatorActive:
+    // the simulator must actually be on AND a SimulatorBloc must be in scope.
+    BleSimulatorDriver().setSimulatorEnabled(true);
+    addTearDown(() => BleSimulatorDriver().resetForTest());
+
     final driver = BLESensorDriver();
     addTearDown(driver.disconnect);
 
     await tester.pumpWidget(MaterialApp(
-      home: MeasurementPage(
-        developerEnabled: true,
-        sensorDriver: driver,
-        permissionService: _FakeBlePermissionService(
-          const BlePermissionStatus(BlePermissionResult.granted, []),
+      home: BlocProvider<SimulatorBloc>(
+        create: (_) => SimulatorBloc(),
+        child: MeasurementPage(
+          sensorDriver: driver,
+          permissionService: _FakeBlePermissionService(
+            const BlePermissionStatus(BlePermissionResult.granted, []),
+          ),
         ),
       ),
     ));
@@ -292,10 +305,104 @@ void main() {
     expect(find.text("Night Mode Active (Battery Saver)"), findsOneWidget);
     expect(find.text("⚡ DEV SIMULATOR TOOLBAR"), findsOneWidget);
 
+    // Stop the simulator's periodic emitter before the pending-timer check.
+    BleSimulatorDriver().resetForTest();
+    await tester.pump();
+
     // The page-scoped bloc no longer disconnects its injected driver on close
     // (AD-12), so this test owns the teardown of the driver it constructed.
     driver.disconnect();
     await tester.pump(const Duration(milliseconds: 300));
+  });
+
+  testWidgets(
+      'developerEnabled forces the COMPLETE dev section (toolbar + stage panel) '
+      'on the monitoring screen even with the simulator off', (tester) async {
+    // Demo builds pass developerEnabled: true. The toolbar must not self-gate
+    // itself away in that case, and the stage panel must not appear alone.
+    BleSimulatorDriver().resetForTest(); // simulator OFF
+    final driver = BLESensorDriver();
+    addTearDown(driver.disconnect);
+
+    await tester.pumpWidget(MaterialApp(
+      home: MeasurementPage(
+        developerEnabled: true,
+        sensorDriver: driver,
+        permissionService: _FakeBlePermissionService(
+          const BlePermissionStatus(BlePermissionResult.granted, []),
+        ),
+      ),
+    ));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+
+    await tester.tap(find.text("Start Noise Floor Sampling"));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 11));
+    await tester.pump();
+    await tester.tap(find.text("I'm Ready — Start Breathing Check"));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 12));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(
+        ElevatedButton, "Step 3: Start Nocturnal Sleep Monitoring"));
+    await tester.pump();
+
+    expect(find.text("Night Mode Active (Battery Saver)"), findsOneWidget);
+    expect(find.text("⚡ DEV SIMULATOR TOOLBAR"), findsOneWidget);
+    expect(find.text("📊 DETECTION MECHANISM STAGE MONITOR"), findsOneWidget);
+
+    driver.disconnect();
+    await tester.pump(const Duration(milliseconds: 300));
+  });
+
+  testWidgets(
+      'monitoring screen with NO SimulatorBloc ancestor hides the dev toolbar + '
+      'stage panel even though _isDevMode is true (catch → active = false)',
+      (tester) async {
+    // A BleReceiverService whose active driver is the (enabled) simulator: this
+    // makes MeasurementPage._isDevMode resolve TRUE via its driver fallback, so
+    // the permission gate is bypassed — but dev-UI visibility must NOT follow
+    // _isDevMode; with no SimulatorBloc in the tree the gate's `catch` resolves
+    // hidden. Reverting `catch { active = false }` to `catch { active = _isDevMode }`
+    // makes the two expects below fail.
+    BleSimulatorDriver().resetForTest();
+    BleSimulatorDriver().setSimulatorEnabled(true);
+    addTearDown(() => BleSimulatorDriver().resetForTest());
+    final receiver = BleReceiverService.withDriver(BleSimulatorDriver());
+    addTearDown(receiver.dispose);
+
+    await tester.pumpWidget(MaterialApp(
+      home: MeasurementPage(
+        sensorDriver: receiver,
+        permissionService: _FakeBlePermissionService(
+          const BlePermissionStatus(BlePermissionResult.granted, []),
+        ),
+      ),
+    ));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+
+    await tester.tap(find.text("Start Noise Floor Sampling"));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 11));
+    await tester.pump();
+    await tester.tap(find.text("I'm Ready — Start Breathing Check"));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 12));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(
+        ElevatedButton, "Step 3: Start Nocturnal Sleep Monitoring"));
+    await tester.pump();
+
+    expect(find.text("Night Mode Active (Battery Saver)"), findsOneWidget);
+    expect(find.text("⚡ DEV SIMULATOR TOOLBAR"), findsNothing);
+    expect(find.text("📊 DETECTION MECHANISM STAGE MONITOR"), findsNothing);
+
+    BleSimulatorDriver().resetForTest();
+    await tester.pump();
   });
 
   testWidgets(
@@ -412,6 +519,12 @@ void main() {
     expect(find.text("⚡ DEV SIMULATOR TOOLBAR"), findsNothing);
     expect(find.text("📊 DETECTION MECHANISM STAGE MONITOR"), findsNothing);
     expect(find.text("Night Mode Active (Battery Saver)"), findsOneWidget);
+
+    // A later rebuild (e.g. a signal tick) must not bring them back — the gate
+    // is on SimulatorBloc state, not on any transient rebuild.
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text("⚡ DEV SIMULATOR TOOLBAR"), findsNothing);
+    expect(find.text("📊 DETECTION MECHANISM STAGE MONITOR"), findsNothing);
 
     driver.disconnect();
     await tester.pump(const Duration(milliseconds: 300));

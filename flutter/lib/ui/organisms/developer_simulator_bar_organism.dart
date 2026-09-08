@@ -6,8 +6,18 @@ import '../../core/bloc/simulator/simulator_event.dart';
 import '../../core/bloc/simulator/simulator_state.dart';
 import '../../core/theme/app_theme.dart';
 
+/// Developer/QA in-session scenario toolbar. **Renders nothing** (`SizedBox`)
+/// when `SimulatorBloc.isSimulatorActive` is false — the whole bar is
+/// meaningless with the simulator off, so it is safe to place unconditionally
+/// (do not wrap it in a `Padding`/`SizedBox` that would then show empty space).
+///
+/// [showEvenIfInactive] overrides that gate — set it from an explicit
+/// developer/demo flag (`MeasurementPage.developerEnabled`) when the bar must
+/// stay visible regardless of the live simulator state.
 class DeveloperSimulatorBarOrganism extends StatelessWidget {
-  const DeveloperSimulatorBarOrganism({super.key});
+  final bool showEvenIfInactive;
+
+  const DeveloperSimulatorBarOrganism({super.key, this.showEvenIfInactive = false});
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +32,13 @@ class DeveloperSimulatorBarOrganism extends StatelessWidget {
         Widget barContent(BuildContext bCtx) {
           return BlocBuilder<SimulatorBloc, SimulatorState>(
             builder: (context, state) {
-              final isSimEnabled = state.isSimulatorActive;
+              // Developer-only: the whole bar is meaningless with the simulator
+              // off. Self-gate so "simulator off ⟹ no toolbar" holds at every
+              // call site — unless an explicit developer/demo flag forces it.
+              if (!state.isSimulatorActive && !showEvenIfInactive) {
+                return const SizedBox.shrink();
+              }
+
               final activeScenario = state.currentScenario;
 
               return Container(
@@ -63,29 +79,27 @@ class DeveloperSimulatorBarOrganism extends StatelessWidget {
                         ),
                       ],
                     ),
-                    if (isSimEnabled) ...[
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          _buildChip(
-                            context,
-                            label: "Stop Breathing during sleep",
-                            scenario: SimulatorScenario.inBandNoExcursion,
-                            activeScenario: activeScenario,
-                            color: AppColors.dangerRed,
-                          ),
-                          _buildChip(
-                            context,
-                            label: "Normal Breathing during sleep",
-                            scenario: SimulatorScenario.normalRespiration,
-                            activeScenario: activeScenario,
-                            color: AppColors.accentGreen,
-                          ),
-                        ],
-                      ),
-                    ],
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _buildChip(
+                          context,
+                          label: "Stop Breathing during sleep",
+                          scenario: SimulatorScenario.inBandNoExcursion,
+                          activeScenario: activeScenario,
+                          color: AppColors.dangerRed,
+                        ),
+                        _buildChip(
+                          context,
+                          label: "Normal Breathing during sleep",
+                          scenario: SimulatorScenario.normalRespiration,
+                          activeScenario: activeScenario,
+                          color: AppColors.accentGreen,
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               );
