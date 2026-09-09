@@ -31,9 +31,12 @@ class PasskeySimulatorConfig extends ChangeNotifier {
   void reset() => setEnabled(true);
 }
 
-/// Whether the simulated passkey path should actually be taken, given the
-/// build's `DEV_MODE`. Always `false` outside `DEV_MODE` so a release build can
-/// never bypass real authentication, whatever the stored flag says. This is the
-/// single gate [main] wires into [AuthBloc]; keep the `DEV_MODE` conjunct.
-bool passkeySimulatorActive({required bool devMode}) =>
-    devMode && PasskeySimulatorConfig.instance.isEnabled;
+/// Whether the simulated passkey path should actually be taken.
+///
+/// [developerBuild] must be `kDebugMode || DEV_MODE` — the same condition that
+/// renders the "Passkey Simulator" row in Settings. It is always `false` in a
+/// release build (no `kDebugMode`, no `DEV_MODE`), so a shipped build can never
+/// bypass real authentication whatever the stored flag says. This is the single
+/// gate [main] wires into [AuthBloc]; keep the [developerBuild] conjunct.
+bool passkeySimulatorActive({required bool developerBuild}) =>
+    developerBuild && PasskeySimulatorConfig.instance.isEnabled;

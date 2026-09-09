@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -122,11 +123,12 @@ class _MaskerAppState extends State<MaskerApp> {
         providers: [
           BlocProvider<AuthBloc>(
             create: (_) => AuthBloc(
-              // Passkey Simulator flag is only honored under DEV_MODE; release
-              // builds always fall through to the real auth path.
+              // Passkey Simulator flag is honored wherever the toggle is shown
+              // (kDebugMode or DEV_MODE); release builds always fall through to
+              // the real auth path.
               isPasskeySimulatorEnabled: () => passkeySimulatorActive(
-                devMode: const bool.fromEnvironment('DEV_MODE',
-                    defaultValue: false),
+                developerBuild: kDebugMode ||
+                    const bool.fromEnvironment('DEV_MODE', defaultValue: false),
               ),
             ),
           ),

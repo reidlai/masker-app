@@ -43,13 +43,13 @@ void main() {
     expect(find.text('Debugging'), findsNothing);
   });
 
-  testWidgets('debugging on: DEVELOPER header + BLE Simulator & Debugging rows, no Passkey Simulator or Developer options row', (tester) async {
+  testWidgets('debugging on: DEVELOPER header + BLE Simulator, Passkey Simulator & Debugging rows, no Developer options row', (tester) async {
     await pumpSettings(tester, debuggingEnabled: true);
 
     expect(find.text('Profile'), findsOneWidget);
     expect(find.text('DEVELOPER'), findsOneWidget);
     expect(find.text('BLE Simulator'), findsOneWidget);
-    expect(find.text('Passkey Simulator'), findsNothing);
+    expect(find.text('Passkey Simulator'), findsOneWidget);
     expect(find.text('Debugging'), findsOneWidget);
     expect(find.text('Developer'), findsNothing);
   });

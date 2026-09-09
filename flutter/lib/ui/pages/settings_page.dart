@@ -161,28 +161,28 @@ class SettingsPage extends StatelessWidget {
                         }
                       },
                     ),
-                    if (_dev) ...[
-                      const Divider(height: 1, color: AppColors.cardBorder),
-                      ListenableBuilder(
-                        listenable: PasskeySimulatorConfig.instance,
-                        builder: (context, _) {
-                          final enabled = PasskeySimulatorConfig.instance.isEnabled;
-                          return SettingsMenuRow(
-                            leadingIcon: Icons.fingerprint,
-                            label: "Passkey Simulator",
-                            showChevron: false,
-                            onTap: () =>
-                                PasskeySimulatorConfig.instance.setEnabled(!enabled),
-                            trailingWidget: Switch(
-                              key: const Key('passkey-simulator-switch'),
-                              value: enabled,
-                              activeThumbColor: AppColors.accentGreen,
-                              onChanged: PasskeySimulatorConfig.instance.setEnabled,
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                    // Shown whenever the Developer section is (same gate as the
+                    // BLE Simulator row above): _showDeveloper = kDebugMode || DEV_MODE.
+                    const Divider(height: 1, color: AppColors.cardBorder),
+                    ListenableBuilder(
+                      listenable: PasskeySimulatorConfig.instance,
+                      builder: (context, _) {
+                        final enabled = PasskeySimulatorConfig.instance.isEnabled;
+                        return SettingsMenuRow(
+                          leadingIcon: Icons.fingerprint,
+                          label: "Passkey Simulator",
+                          showChevron: false,
+                          onTap: () =>
+                              PasskeySimulatorConfig.instance.setEnabled(!enabled),
+                          trailingWidget: Switch(
+                            key: const Key('passkey-simulator-switch'),
+                            value: enabled,
+                            activeThumbColor: AppColors.accentGreen,
+                            onChanged: PasskeySimulatorConfig.instance.setEnabled,
+                          ),
+                        );
+                      },
+                    ),
                     if (_debug) ...[
                       const Divider(height: 1, color: AppColors.cardBorder),
                       const SettingsMenuRow(

@@ -34,24 +34,24 @@ void main() {
   });
 
   group('passkeySimulatorActive gate', () {
-    test('is always false outside DEV_MODE, regardless of the stored flag', () {
-      expect(passkeySimulatorActive(devMode: false), isFalse);
+    test('is always false in a release build, regardless of the stored flag', () {
+      expect(passkeySimulatorActive(developerBuild: false), isFalse);
 
       PasskeySimulatorConfig.instance.setEnabled(true);
-      expect(passkeySimulatorActive(devMode: false), isFalse);
+      expect(passkeySimulatorActive(developerBuild: false), isFalse);
 
       PasskeySimulatorConfig.instance.setEnabled(false);
-      expect(passkeySimulatorActive(devMode: false), isFalse);
+      expect(passkeySimulatorActive(developerBuild: false), isFalse);
     });
 
-    test('under DEV_MODE, mirrors the stored flag', () {
-      expect(passkeySimulatorActive(devMode: true), isTrue); // default enabled
+    test('in a developer build, mirrors the stored flag', () {
+      expect(passkeySimulatorActive(developerBuild: true), isTrue); // default enabled
 
       PasskeySimulatorConfig.instance.setEnabled(false);
-      expect(passkeySimulatorActive(devMode: true), isFalse);
+      expect(passkeySimulatorActive(developerBuild: true), isFalse);
 
       PasskeySimulatorConfig.instance.setEnabled(true);
-      expect(passkeySimulatorActive(devMode: true), isTrue);
+      expect(passkeySimulatorActive(developerBuild: true), isTrue);
     });
   });
 }
