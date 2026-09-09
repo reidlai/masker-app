@@ -154,3 +154,7 @@ Findings surfaced during build reviews that were intentionally not addressed in 
 - source_spec: `_bmad-output/implementation-artifacts/spec-profile-store-wiring.md`
   summary: ProfilePage "Save & Continue" / check-icon buttons still only show a snackbar — edits are not written back to UserProfileService or the repository, so reopening ProfilePage discards them. Also ProfileState.fromProfile shows BMI 0.0 when a fetched profile carries weight/height but no computedBmi (recompute on load).
   evidence: step-04 blind-hunter review of spec-profile-store-wiring. Out of scope for that slice (spec only hydrated the existing read form; edit/save is "Ask First"). Belongs with a profile-edit-persistence spec, likely alongside the real ProfileRepository write path.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-profile-edit-save.md`
+  summary: ProfilePage has no unsaved-changes guard — editing fields then tapping the back arrow (or navigating away) silently discards the edits. Also no client-side validation (required fields, RFC-5322 email, phone format) on save, and _save() falls back to a hard-coded 'demo-user' userId when saving from an empty store.
+  evidence: step-04 blind-hunter review of spec-profile-edit-save. All listed "Ask First" in that spec (out of scope for the save-persistence slice). Belongs with a profile-validation / onboarding spec; the userId fallback resolves when a real ProfileRepository write path assigns IDs.

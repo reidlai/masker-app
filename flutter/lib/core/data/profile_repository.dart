@@ -26,6 +26,9 @@ abstract class ProfileRepository {
 
   /// Load the current bound device (`null` = no device bound).
   Future<DeviceProfile?> fetchDeviceProfile();
+
+  /// Persist the edited user profile server-side.
+  Future<void> saveUserProfile(UserProfile profile);
 }
 
 /// Demo identity used until a real backend is wired — the values that used to
@@ -73,4 +76,8 @@ class SimulatedProfileRepository implements ProfileRepository {
   @override
   Future<DeviceProfile?> fetchDeviceProfile() =>
       Future<DeviceProfile?>.delayed(latency, () => demoDeviceProfile);
+
+  @override
+  Future<void> saveUserProfile(UserProfile profile) =>
+      Future<void>.delayed(latency);
 }
