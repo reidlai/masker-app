@@ -56,28 +56,55 @@ final DeviceProfile demoDeviceProfile = DeviceProfile(
   boundAt: DateTime(2026, 9, 1),
 );
 
-/// No-backend stand-in: resolves after a short delay. Reads return the demo
-/// payloads; `unbind` / `unregister` just delay (the caller clears the stores).
+/// No-backend stand-in: resolves after a short delay and holds the current
+/// user / device in memory. A plain instance starts **empty** (`null`) — a new
+/// user, routed to onboarding. Use [SimulatedProfileRepository.seededReturningUser]
+/// for the returning-user path (demo payload).
 class SimulatedProfileRepository implements ProfileRepository {
   final Duration latency;
+  UserProfile? _user;
+  DeviceProfile? _device;
 
-  SimulatedProfileRepository({this.latency = const Duration(milliseconds: 500)});
+  SimulatedProfileRepository({
+    this.latency = const Duration(milliseconds: 500),
+    UserProfile? seedUser,
+    DeviceProfile? seedDevice,
+  })  : _user = seedUser,
+        _device = seedDevice;
+
+  /// A repository pre-populated with the demo identity + bound device.
+  factory SimulatedProfileRepository.seededReturningUser(
+          {Duration latency = const Duration(milliseconds: 500)}) =>
+      SimulatedProfileRepository(
+        latency: latency,
+        seedUser: demoUserProfile,
+        seedDevice: demoDeviceProfile,
+      );
+
+  Future<T> _delayed<T>(T value) => Future<T>.delayed(latency, () => value);
 
   @override
-  Future<void> unbindDevice() => Future<void>.delayed(latency);
+  Future<void> unbindDevice() async {
+    await Future<void>.delayed(latency);
+    _device = null;
+  }
 
   @override
-  Future<void> unregisterUser() => Future<void>.delayed(latency);
+  Future<void> unregisterUser() async {
+    await Future<void>.delayed(latency);
+    _user = null;
+    _device = null;
+  }
 
   @override
-  Future<UserProfile?> fetchUserProfile() =>
-      Future<UserProfile?>.delayed(latency, () => demoUserProfile);
+  Future<UserProfile?> fetchUserProfile() => _delayed(_user);
 
   @override
-  Future<DeviceProfile?> fetchDeviceProfile() =>
-      Future<DeviceProfile?>.delayed(latency, () => demoDeviceProfile);
+  Future<DeviceProfile?> fetchDeviceProfile() => _delayed(_device);
 
   @override
-  Future<void> saveUserProfile(UserProfile profile) =>
-      Future<void>.delayed(latency);
+  Future<void> saveUserProfile(UserProfile profile) async {
+    await Future<void>.delayed(latency);
+    _user = profile;
+  }
 }

@@ -17,6 +17,7 @@ import 'ui/atoms/app_button.dart';
 import 'ui/pages/ble_permission_primer_page.dart';
 import 'ui/pages/login_page.dart';
 import 'ui/pages/main_container_page.dart';
+import 'ui/pages/onboarding_wizard_page.dart';
 
 void main() {
   // Ensure the Flutter Engine C++ bridge and native platform channels (BLE/MethodChannels)
@@ -66,11 +67,15 @@ class _MaskerAppState extends State<MaskerApp> {
         return LoginPage(
           onLoginSuccess: () async {
             // Pull the user + device profile into the reactive stores before
-            // the tab shell mounts.
-            await ProfileSession.hydrate();
-            _appFlowBloc.add(const AppFlowLoginSucceeded());
+            // the tab shell mounts. A cleanly-absent profile (not a fetch
+            // error) → route to the onboarding wizard.
+            final needsOnboarding = await ProfileSession.hydrate();
+            _appFlowBloc
+                .add(AppFlowLoginSucceeded(needsOnboarding: needsOnboarding));
           },
         );
+      case AppFlowStage.onboarding:
+        return const OnboardingWizardPage();
       case AppFlowStage.checkingPermission:
         // Brief native-call wait — a minimal spinner, not a full loading screen.
         return const Scaffold(

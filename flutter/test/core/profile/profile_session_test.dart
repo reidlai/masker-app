@@ -40,10 +40,20 @@ void main() {
   });
   tearDown(ProfileRepository.reset);
 
-  test('hydrate populates both stores from the repository', () async {
-    await ProfileSession.hydrate();
+  test('hydrate populates both stores from a returning-user repo; returns false', () async {
+    ProfileRepository.instance =
+        SimulatedProfileRepository.seededReturningUser(latency: Duration.zero);
+    final needsOnboarding = await ProfileSession.hydrate();
+    expect(needsOnboarding, isFalse);
     expect(UserProfileService.instance.current, demoUserProfile);
     expect(DeviceProfileService.instance.current, demoDeviceProfile);
+  });
+
+  test('hydrate on a new-user (default) repo leaves stores empty; returns true', () async {
+    final needsOnboarding = await ProfileSession.hydrate();
+    expect(needsOnboarding, isTrue);
+    expect(UserProfileService.instance.current, isNull);
+    expect(DeviceProfileService.instance.current, isNull);
   });
 
   test('hydrate clears the stores when the repository returns null', () async {
@@ -57,13 +67,14 @@ void main() {
     expect(DeviceProfileService.instance.current, isNull);
   });
 
-  test('a fetch failure does not throw and leaves the stores empty', () async {
+  test('a fetch failure does not throw, clears the stores, and returns false (not "onboard")', () async {
     UserProfileService.instance.set(const UserProfile(userId: 'stale'));
     DeviceProfileService.instance.set(const DeviceProfile(bindingId: 'stale'));
     ProfileRepository.instance = _ThrowingFetchRepository();
 
-    await expectLater(ProfileSession.hydrate(), completes);
+    final needsOnboarding = await ProfileSession.hydrate();
 
+    expect(needsOnboarding, isFalse);
     expect(UserProfileService.instance.current, isNull);
     expect(DeviceProfileService.instance.current, isNull);
   });

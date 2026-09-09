@@ -68,4 +68,86 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 80));
     expect(bloc.state.stage, AppFlowStage.loggedOut);
   });
+
+  group('onboarding', () {
+    AppFlowBloc build() =>
+        AppFlowBloc(permissionService: const _GrantedPermissionService());
+
+    test('login with needsOnboarding routes to the wizard at step register', () async {
+      final bloc = build();
+      addTearDown(bloc.close);
+
+      bloc.add(const AppFlowLoginSucceeded(needsOnboarding: true));
+      await expectLater(
+        bloc.stream,
+        emits(predicate<AppFlowState>((s) =>
+            s.stage == AppFlowStage.onboarding &&
+            s.onboardingStep == OnboardingStep.register)),
+      );
+    });
+
+    test('Advance walks the steps then transitions to ready', () async {
+      final bloc = build();
+      addTearDown(bloc.close);
+      bloc.add(const AppFlowLoginSucceeded(needsOnboarding: true));
+      await bloc.stream.firstWhere((s) => s.stage == AppFlowStage.onboarding);
+
+      bloc.add(const AppFlowOnboardingStepAdvanced());
+      await bloc.stream.firstWhere(
+          (s) => s.onboardingStep == OnboardingStep.medicalProfile);
+      bloc.add(const AppFlowOnboardingStepAdvanced());
+      await bloc.stream.firstWhere(
+          (s) => s.onboardingStep == OnboardingStep.passkeyEnrollment);
+      bloc.add(const AppFlowOnboardingStepAdvanced());
+      await bloc.stream.firstWhere((s) => s.stage == AppFlowStage.ready);
+
+      expect(bloc.state.onboardingStep, OnboardingStep.done);
+    });
+
+    test('Back retreats a step; no-op on the first step', () async {
+      final bloc = build();
+      addTearDown(bloc.close);
+      bloc.add(const AppFlowLoginSucceeded(needsOnboarding: true));
+      await bloc.stream.firstWhere((s) => s.stage == AppFlowStage.onboarding);
+      bloc.add(const AppFlowOnboardingStepAdvanced());
+      await bloc.stream.firstWhere(
+          (s) => s.onboardingStep == OnboardingStep.medicalProfile);
+
+      bloc.add(const AppFlowOnboardingStepBack());
+      await bloc.stream
+          .firstWhere((s) => s.onboardingStep == OnboardingStep.register);
+
+      bloc.add(const AppFlowOnboardingStepBack()); // no-op on first step
+      bloc.add(const AppFlowOnboardingStepAdvanced()); // observable follow-up
+      await bloc.stream.firstWhere(
+          (s) => s.onboardingStep == OnboardingStep.medicalProfile);
+      expect(bloc.state.onboardingStep, OnboardingStep.medicalProfile);
+    });
+
+    test('logout mid-onboarding resets stage and step', () async {
+      final bloc = build();
+      addTearDown(bloc.close);
+      bloc.add(const AppFlowLoginSucceeded(needsOnboarding: true));
+      await bloc.stream.firstWhere((s) => s.stage == AppFlowStage.onboarding);
+      bloc.add(const AppFlowOnboardingStepAdvanced());
+      await bloc.stream.firstWhere(
+          (s) => s.onboardingStep == OnboardingStep.medicalProfile);
+
+      bloc.add(const AppFlowLogoutRequested());
+      await bloc.stream.firstWhere((s) => s.stage == AppFlowStage.loggedOut);
+      expect(bloc.state.onboardingStep, OnboardingStep.register);
+    });
+
+    test('step events are ignored outside the onboarding stage', () async {
+      final bloc = build();
+      addTearDown(bloc.close);
+      bloc.add(const AppFlowLoginSucceeded()); // returning user → ready
+      await bloc.stream.firstWhere((s) => s.stage == AppFlowStage.ready);
+
+      bloc.add(const AppFlowOnboardingStepAdvanced());
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(bloc.state.stage, AppFlowStage.ready);
+      expect(bloc.state.onboardingStep, OnboardingStep.register);
+    });
+  });
 }

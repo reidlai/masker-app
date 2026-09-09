@@ -21,6 +21,40 @@ class AppFlowBloc extends Bloc<AppFlowEvent, AppFlowState> {
     on<AppFlowLogoutRequested>(
       (event, emit) => emit(const AppFlowState()),
     );
+    on<AppFlowOnboardingStepAdvanced>(_onOnboardingAdvanced);
+    on<AppFlowOnboardingStepBack>(_onOnboardingBack);
+  }
+
+  static const _steps = [
+    OnboardingStep.register,
+    OnboardingStep.medicalProfile,
+    OnboardingStep.passkeyEnrollment,
+  ];
+
+  void _onOnboardingAdvanced(
+    AppFlowOnboardingStepAdvanced event,
+    Emitter<AppFlowState> emit,
+  ) {
+    if (state.stage != AppFlowStage.onboarding) return;
+    final i = _steps.indexOf(state.onboardingStep);
+    if (i < 0 || i == _steps.length - 1) {
+      // Past the last step → onboarding complete.
+      emit(state.copyWith(
+        stage: AppFlowStage.ready,
+        onboardingStep: OnboardingStep.done,
+      ));
+    } else {
+      emit(state.copyWith(onboardingStep: _steps[i + 1]));
+    }
+  }
+
+  void _onOnboardingBack(
+    AppFlowOnboardingStepBack event,
+    Emitter<AppFlowState> emit,
+  ) {
+    if (state.stage != AppFlowStage.onboarding) return;
+    final i = _steps.indexOf(state.onboardingStep);
+    if (i > 0) emit(state.copyWith(onboardingStep: _steps[i - 1]));
   }
 
   Future<void> _onLoginSucceeded(
@@ -31,6 +65,16 @@ class AppFlowBloc extends Bloc<AppFlowEvent, AppFlowState> {
     // AuthBloc state emission) must not restart an in-flight or completed
     // check.
     if (state.stage != AppFlowStage.loggedOut) return;
+
+    // A new / just-unregistered user (no profile after hydrate) is routed to
+    // the onboarding wizard, not the permission-check path.
+    if (event.needsOnboarding) {
+      emit(state.copyWith(
+        stage: AppFlowStage.onboarding,
+        onboardingStep: OnboardingStep.register,
+      ));
+      return;
+    }
 
     emit(state.copyWith(stage: AppFlowStage.checkingPermission));
 

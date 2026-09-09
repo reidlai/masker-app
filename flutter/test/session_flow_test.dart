@@ -43,18 +43,28 @@ Future<void> _openSettings(WidgetTester tester) async {
 
 void main() {
   setUp(() {
-    ProfileRepository.instance = SimulatedProfileRepository(latency: Duration.zero);
+    // Default to a returning user so the Settings-flow tests reach the tab shell.
+    ProfileRepository.instance =
+        SimulatedProfileRepository.seededReturningUser(latency: Duration.zero);
     UserProfileService.instance.reset();
     DeviceProfileService.instance.reset();
   });
   tearDown(ProfileRepository.reset);
 
-  testWidgets('login seeds both profile stores and lands on Home', (tester) async {
+  testWidgets('returning-user login seeds both profile stores and lands on Home', (tester) async {
     await _login(tester);
 
     expect(UserProfileService.instance.current, demoUserProfile);
     expect(DeviceProfileService.instance.current, demoDeviceProfile);
     expect(find.text('12 nights monitored'), findsOneWidget); // Home is showing
+  });
+
+  testWidgets('new-user login lands on the onboarding wizard', (tester) async {
+    ProfileRepository.instance = SimulatedProfileRepository(latency: Duration.zero);
+    await _login(tester);
+
+    expect(find.text('Set up your account  1/3'), findsOneWidget);
+    expect(find.text('12 nights monitored'), findsNothing);
   });
 
   testWidgets('Log out returns to the passkey login screen', (tester) async {
@@ -85,5 +95,25 @@ void main() {
     expect(find.text('Sign in with Passkey'), findsOneWidget);
     expect(UserProfileService.instance.current, isNull);
     expect(DeviceProfileService.instance.current, isNull);
+  });
+
+  testWidgets('after Unregister, signing in again enters the onboarding wizard', (tester) async {
+    await _login(tester);
+    await _openSettings(tester);
+
+    await tester.ensureVisible(find.text('Unregister User Account'));
+    await tester.tap(find.text('Unregister User Account'));
+    await _tick(tester);
+    await tester.tap(find.text('Confirm Reset'));
+    await _tick(tester);
+
+    // Back on the login screen — sign in again.
+    await tester.tap(find.text('Sign in with Passkey'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await _tick(tester);
+
+    expect(find.text('Set up your account  1/3'), findsOneWidget);
+    expect(find.text('12 nights monitored'), findsNothing);
   });
 }

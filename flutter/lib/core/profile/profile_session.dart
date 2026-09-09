@@ -9,8 +9,14 @@ import 'user_profile_service.dart';
 class ProfileSession {
   const ProfileSession._();
 
-  static Future<void> hydrate() async {
-    await _load(
+  /// Loads both profiles into the stores.
+  ///
+  /// Returns `true` only when the user-profile fetch **succeeded and returned
+  /// null** — i.e. the account is known to have no profile, so onboarding is
+  /// due. A fetch *error* returns `false` (leave the returning-user path alone;
+  /// a transient blip must not force a re-onboard).
+  static Future<bool> hydrate() async {
+    final userAbsent = await _load(
       () => ProfileRepository.instance.fetchUserProfile(),
       (p) => UserProfileService.instance.set(p),
       () => UserProfileService.instance.clear(),
@@ -20,11 +26,12 @@ class ProfileSession {
       (p) => DeviceProfileService.instance.set(p),
       () => DeviceProfileService.instance.clear(),
     );
+    return userAbsent;
   }
 
   /// A fetch failure must never block login — on any error, leave the store
-  /// empty and let the app flow continue.
-  static Future<void> _load<T>(
+  /// empty and continue. Returns `true` iff the fetch cleanly returned `null`.
+  static Future<bool> _load<T>(
     Future<T?> Function() fetch,
     void Function(T) set,
     void Function() clear,
@@ -33,11 +40,13 @@ class ProfileSession {
       final value = await fetch();
       if (value != null) {
         set(value);
-      } else {
-        clear();
+        return false;
       }
+      clear();
+      return true;
     } catch (_) {
       clear();
+      return false;
     }
   }
 }
