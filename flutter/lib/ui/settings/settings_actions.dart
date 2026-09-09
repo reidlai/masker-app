@@ -83,14 +83,16 @@ class SettingsActions {
         AppColors.accentGreen);
   }
 
-  /// Unregister the local user account: server unregister → empty the
-  /// user-profile store → dispatch [AuthUnregisterRequested] → pop to onboarding.
+  /// Unregister the local user account: server unregister → empty **both**
+  /// profile stores → clear auth and drive the app flow back to the login
+  /// screen. No `Navigator` work — the root `BlocBuilder<AppFlowBloc>` swaps
+  /// `home` on the `loggedOut` stage.
   static Future<void> unregisterAccount(BuildContext context) async {
     final confirm = await _confirm(
       context,
       title: "Unregister User Account?",
       content:
-          "Deletes local Passkey credentials, clears patient profile, and restarts Phase 1 Onboarding.",
+          "Deletes local Passkey credentials, clears patient profile, and returns to sign-in.",
     );
     if (confirm != true || !context.mounted) return;
 
@@ -106,15 +108,9 @@ class SettingsActions {
     if (!context.mounted) return;
 
     UserProfileService.instance.clear();
-    try {
-      context.read<AuthBloc>().add(const AuthUnregisterRequested());
-    } catch (_) {
-      // No AuthBloc in scope (e.g. isolated widget tests).
-    }
-
-    _snack(context, "User Account unregistered. Navigating to Onboarding...",
-        AppColors.accentGreen);
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    DeviceProfileService.instance.clear();
+    context.read<AuthBloc>().add(const AuthUnregisterRequested());
+    context.read<AppFlowBloc>().add(const AppFlowLogoutRequested());
   }
 
   /// Log out: empty both profile stores, clear auth, and drive the app flow

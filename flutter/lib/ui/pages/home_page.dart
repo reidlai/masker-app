@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/bloc/simulator/simulator_bloc.dart';
 import '../../core/bloc/simulator/simulator_state.dart';
+import '../../core/profile/device_profile.dart';
+import '../../core/profile/device_profile_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../molecules/device_status_card.dart';
 import '../molecules/home_summary_card.dart';
@@ -77,16 +79,28 @@ class HomePage extends StatelessWidget {
                   } catch (_) {}
 
                   Widget cardContent(BuildContext bCtx) {
-                    return BlocBuilder<SimulatorBloc, SimulatorState>(
-                      builder: (context, state) {
-                        final isConnected = state.isSimulatorActive;
-                        return DeviceStatusCard(
-                          state: isConnected
-                              ? DeviceConnectionState.connected
-                              : DeviceConnectionState.disconnected,
-                          batteryLevel: isConnected ? 84 : 0,
-                          lastSyncText: isConnected ? "Last sync 7:02 AM" : "Not connected",
-                          onTap: onOpenMonitor,
+                    return StreamBuilder<DeviceProfile?>(
+                      stream: DeviceProfileService.instance.stream,
+                      initialData: DeviceProfileService.instance.current,
+                      builder: (sCtx, snap) {
+                        final bound = snap.data != null;
+                        return BlocBuilder<SimulatorBloc, SimulatorState>(
+                          builder: (context, state) {
+                            // No bound device → "not found", whatever the
+                            // simulator toggle says.
+                            final isConnected =
+                                bound && state.isSimulatorActive;
+                            return DeviceStatusCard(
+                              state: isConnected
+                                  ? DeviceConnectionState.connected
+                                  : DeviceConnectionState.disconnected,
+                              batteryLevel: isConnected ? 84 : 0,
+                              lastSyncText: isConnected
+                                  ? "Last sync 7:02 AM"
+                                  : "Not connected",
+                              onTap: onOpenMonitor,
+                            );
+                          },
                         );
                       },
                     );

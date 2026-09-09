@@ -20,6 +20,10 @@ class _ThrowingProfileRepository implements ProfileRepository {
   Future<void> unbindDevice() async => throw Exception('network');
   @override
   Future<void> unregisterUser() async => throw Exception('network');
+  @override
+  Future<UserProfile?> fetchUserProfile() async => throw Exception('network');
+  @override
+  Future<DeviceProfile?> fetchDeviceProfile() async => throw Exception('network');
 }
 
 void main() {
@@ -244,10 +248,14 @@ void main() {
     expect(find.text("Couldn't unbind device — try again."), findsOneWidget);
   });
 
-  testWidgets('Unregister: repo success empties the user store and resets AuthBloc', (tester) async {
+  testWidgets('Unregister: repo success clears both stores, resets AuthBloc, logs out', (tester) async {
     UserProfileService.instance.set(const UserProfile(userId: 'u1'));
+    DeviceProfileService.instance.set(const DeviceProfile(bindingId: 'b1'));
     final authBloc = AuthBloc();
+    final appFlowBloc = AppFlowBloc();
     addTearDown(authBloc.close);
+    addTearDown(appFlowBloc.close);
+    appFlowBloc.emit(const AppFlowState(stage: AppFlowStage.ready));
 
     await tester.pumpWidget(
       MaterialApp(
@@ -255,6 +263,7 @@ void main() {
           providers: [
             BlocProvider<SimulatorBloc>(create: (_) => SimulatorBloc()),
             BlocProvider<AuthBloc>.value(value: authBloc),
+            BlocProvider<AppFlowBloc>.value(value: appFlowBloc),
           ],
           child: const SettingsPage(debuggingEnabled: true),
         ),
@@ -268,7 +277,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(UserProfileService.instance.current, isNull);
+    expect(DeviceProfileService.instance.current, isNull);
     expect(authBloc.state, isA<AuthInitial>());
+    expect(appFlowBloc.state.stage, AppFlowStage.loggedOut);
   });
 
   testWidgets('Log out: confirm empties both stores and drives auth + app-flow to logged-out', (tester) async {

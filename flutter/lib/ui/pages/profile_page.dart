@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/bloc/profile/profile_bloc.dart';
 import '../../core/bloc/profile/profile_event.dart';
 import '../../core/bloc/profile/profile_state.dart';
+import '../../core/profile/user_profile_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../atoms/app_button.dart';
 import '../organisms/emergency_contact_organism.dart';
@@ -17,7 +18,7 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final ProfileBloc _bloc = ProfileBloc();
+  final ProfileBloc _bloc = ProfileBloc(initial: UserProfileService.instance.current);
 
   late final TextEditingController _nameController;
   late final TextEditingController _emailController;
@@ -93,11 +94,18 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Encapsulated User Card Header Organism
-                  const UserHeaderOrganism(
-                    firstName: "David",
-                    customTitle: "David (Persona A)",
-                    subtitle: "High-Risk Nocturnal Apnea Patient",
+                  // Encapsulated User Card Header Organism — derived from the
+                  // loaded profile, with a placeholder when the store is empty.
+                  UserHeaderOrganism(
+                    firstName: state.name.trim().isNotEmpty
+                        ? state.name.trim().split(' ').first
+                        : "New",
+                    customTitle: state.name.trim().isNotEmpty
+                        ? state.name
+                        : "Complete your profile",
+                    subtitle: state.name.trim().isNotEmpty
+                        ? "High-Risk Nocturnal Apnea Patient"
+                        : "No profile on file",
                     showNotificationBell: false,
                     showCardBackground: true,
                   ),
