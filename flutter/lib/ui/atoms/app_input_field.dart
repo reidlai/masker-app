@@ -8,6 +8,10 @@ class AppInputField extends StatelessWidget {
   final TextEditingController? controller;
   final ValueChanged<String>? onChanged;
 
+  /// When non-null, rendered below the field in the error style (and the border
+  /// turns to the theme's error color). Default null → identical to before.
+  final String? errorText;
+
   const AppInputField({
     super.key,
     required this.label,
@@ -15,6 +19,7 @@ class AppInputField extends StatelessWidget {
     this.isPassword = false,
     this.controller,
     this.onChanged,
+    this.errorText,
   });
 
   @override
@@ -39,6 +44,7 @@ class AppInputField extends StatelessWidget {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: const TextStyle(color: AppColors.textMuted),
+            errorText: errorText,
             filled: true,
             fillColor: AppColors.cardBg,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),

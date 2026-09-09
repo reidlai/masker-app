@@ -7,11 +7,17 @@ class EmergencyContactOrganism extends StatelessWidget {
   final TextEditingController phoneController;
   final ValueChanged<String>? onChanged;
 
+  // Optional per-field inline error text (Story 1.11). Null → no error shown.
+  final String? nameError;
+  final String? phoneError;
+
   const EmergencyContactOrganism({
     super.key,
     this.nameController,
     required this.phoneController,
     this.onChanged,
+    this.nameError,
+    this.phoneError,
   });
 
   @override
@@ -34,6 +40,7 @@ class EmergencyContactOrganism extends StatelessWidget {
             hint: "Maria Chen",
             controller: nameController!,
             onChanged: onChanged,
+            errorText: nameError,
           ),
           const SizedBox(height: 12),
         ],
@@ -42,6 +49,7 @@ class EmergencyContactOrganism extends StatelessWidget {
           hint: "(555) 019-2244",
           controller: phoneController,
           onChanged: onChanged,
+          errorText: phoneError,
         ),
       ],
     );

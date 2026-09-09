@@ -122,7 +122,7 @@ void main() {
     expect(fieldWithValue("Saved Name"), findsOneWidget);
   });
 
-  testWidgets('save from an empty store: userId defaults, non-numeric age → 0', (tester) async {
+  testWidgets('validation blocks a save from an empty store — inline errors, nothing persists', (tester) async {
     // store null (setUp reset)
     await tester.pumpWidget(const MaterialApp(home: ProfilePage()));
 
@@ -133,11 +133,10 @@ void main() {
     await tester.tap(find.byIcon(Icons.check));
     await tester.pumpAndSettle();
 
-    final saved = UserProfileService.instance.current;
-    expect(saved, isNotNull);
-    expect(saved!.userId, "demo-user");
-    expect(saved.fullName, "New Patient");
-    expect(saved.age, 0);
+    expect(find.text("Enter a whole number"), findsOneWidget); // age error
+    expect(find.text("Email address is required"), findsOneWidget);
+    expect(find.text("Medical profile saved ✓"), findsNothing);
+    expect(UserProfileService.instance.current, isNull);
   });
 
   testWidgets('a second tap while a save is in flight is ignored', (tester) async {
