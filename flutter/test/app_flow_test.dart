@@ -44,11 +44,27 @@ Future<void> _loginAndSettle(WidgetTester tester) async {
 
 void main() {
   setUp(() {
-    // Keep the post-login ProfileSession.hydrate() instant so _loginAndSettle's
+    // These tests exercise the returning-user (post-onboarding) permission
+    // gate. Seed a returning user; keep hydrate() instant so _loginAndSettle's
     // fixed pump budget still reaches the flow gate.
-    ProfileRepository.instance = SimulatedProfileRepository(latency: Duration.zero);
+    ProfileRepository.instance =
+        SimulatedProfileRepository.seededReturningUser(latency: Duration.zero);
   });
   tearDown(ProfileRepository.reset);
+
+  testWidgets('a new user (no profile) is routed to the onboarding wizard after login', (tester) async {
+    ProfileRepository.instance = SimulatedProfileRepository(latency: Duration.zero);
+    await tester.pumpWidget(MaskerApp(
+      permissionService: const _FakeBlePermissionService(
+        BlePermissionStatus(BlePermissionResult.granted, []),
+      ),
+    ));
+
+    await _loginAndSettle(tester);
+
+    expect(find.text("Set up your account  1/3"), findsOneWidget);
+    expect(find.text("Bluetooth Access Needed"), findsNothing);
+  });
 
   testWidgets('primer is shown after login when permission is not granted', (tester) async {
     await tester.pumpWidget(MaskerApp(

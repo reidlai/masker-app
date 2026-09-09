@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:masker_app/core/data/profile_repository.dart';
+import 'package:masker_app/core/profile/user_profile.dart';
 
 void main() {
   tearDown(ProfileRepository.reset);
@@ -15,15 +16,32 @@ void main() {
     await expectLater(repo.unregisterUser(), completes);
   });
 
-  test('SimulatedProfileRepository fetch* returns the demo payloads', () async {
+  test('a plain SimulatedProfileRepository is empty (new user)', () async {
     final repo = SimulatedProfileRepository(latency: Duration.zero);
+    expect(await repo.fetchUserProfile(), isNull);
+    expect(await repo.fetchDeviceProfile(), isNull);
+  });
+
+  test('seededReturningUser returns the demo payloads', () async {
+    final repo =
+        SimulatedProfileRepository.seededReturningUser(latency: Duration.zero);
     expect(await repo.fetchUserProfile(), demoUserProfile);
     expect(await repo.fetchDeviceProfile(), demoDeviceProfile);
   });
 
-  test('SimulatedProfileRepository.saveUserProfile completes', () async {
+  test('saveUserProfile then fetchUserProfile returns the saved profile', () async {
     final repo = SimulatedProfileRepository(latency: Duration.zero);
-    await expectLater(repo.saveUserProfile(demoUserProfile), completes);
+    const p = UserProfile(userId: 'u1', fullName: 'Saved');
+    await repo.saveUserProfile(p);
+    expect(await repo.fetchUserProfile(), p);
+  });
+
+  test('unregisterUser clears the stored user and device', () async {
+    final repo =
+        SimulatedProfileRepository.seededReturningUser(latency: Duration.zero);
+    await repo.unregisterUser();
+    expect(await repo.fetchUserProfile(), isNull);
+    expect(await repo.fetchDeviceProfile(), isNull);
   });
 
   test('instance is substitutable and reset restores the default', () {

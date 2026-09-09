@@ -159,3 +159,7 @@ Findings surfaced during build reviews that were intentionally not addressed in 
 - source_spec: `_bmad-output/implementation-artifacts/spec-profile-edit-save.md`
   summary: ProfilePage has no unsaved-changes guard — editing fields then tapping the back arrow (or navigating away) silently discards the edits. Also no client-side validation (required fields, RFC-5322 email, phone format) on save, and _save() falls back to a hard-coded 'demo-user' userId when saving from an empty store.
   evidence: step-04 blind-hunter review of spec-profile-edit-save. All listed "Ask First" in that spec (out of scope for the save-persistence slice). Belongs with a profile-validation / onboarding spec; the userId fallback resolves when a real ProfileRepository write path assigns IDs.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-9-onboarding-wizard-fresh-user-routing.md`
+  summary: OnboardingWizardPage (the AppFlowStage.onboarding root) has no back-press / PopScope handling — Android hardware/gesture back backgrounds or exits the app mid-onboarding instead of stepping back or confirming. Also no cross-relaunch resumability (needs the persistence layer). Both belong with the real step screens in Stories 1.10–1.12.
+  evidence: step-04 blind-hunter review of spec-1-9-onboarding-wizard-fresh-user-routing. Out of scope for the wizard-shell slice (placeholder steps have no entered data to protect).
