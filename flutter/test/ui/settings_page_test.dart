@@ -144,6 +144,30 @@ void main() {
     expect(BleSimulatorDriver().isSimulatorActive, isFalse);
   });
 
+  testWidgets('BLE Simulator switch stays off after a stray driver re-assert (intent latch)', (tester) async {
+    await pumpSettings(tester, developerEnabled: true);
+    final bleSwitch = find.byKey(const Key('ble-simulator-switch'));
+
+    await tester.ensureVisible(bleSwitch);
+    await tester.tap(bleSwitch); // on
+    await tester.pump(const Duration(milliseconds: 10));
+    expect(tester.widget<Switch>(bleSwitch).value, isTrue);
+
+    await tester.tap(bleSwitch); // off — cancels the scenario timer
+    await tester.pump(const Duration(milliseconds: 10));
+    expect(tester.widget<Switch>(bleSwitch).value, isFalse);
+
+    // The residual re-assert the real MeasurementPage / SleepMonitoringBloc
+    // would cause: something drives the simulator singleton again.
+    BleSimulatorDriver().emitSignal(0.3, isSimulator: true);
+    await tester.pump(const Duration(milliseconds: 10));
+
+    expect(tester.widget<Switch>(bleSwitch).value, isFalse,
+        reason: 'the toggle must reflect the user choice, not driver activity');
+
+    BleSimulatorDriver().resetForTest();
+  });
+
   testWidgets('Passkey Simulator switch defaults On and toggling flips PasskeySimulatorConfig', (tester) async {
     await pumpSettings(tester, developerEnabled: true);
 
