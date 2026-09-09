@@ -134,3 +134,15 @@ Findings surfaced during build reviews that were intentionally not addressed in 
 - source_spec: `_bmad-output/implementation-artifacts/spec-dev-passkey-simulator-toggle.md`
   summary: BLE Signal Simulator scenario-trigger UI was removed with `developer_options_page.dart` (Change Log #4). Story 1.5's deliverable no longer has a UI, though `SimulatorBloc` / `BleSimulatorDriver` still implement and unit-test the scenarios. `flutter/README.md:129` still describes the old "Advanced section → Developer menu row" flow (stale — section is "Developer", nav row deleted).
   evidence: Human-directed deletion 2026-09-09. If QA needs no-hardware apnea/calibration scenario triggers again, restore `ble_simulator_organism.dart` from git and mount it in the Settings Developer section. README doc pass also pending.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-profile-stores-reset-seam.md`
+  summary: G2 — Rework ProfilePage/ProfileBloc to consume UserProfileService (RxDart BehaviorSubject) instead of the hardcoded 'David Miller' demo data in ProfileState; add empty/loading UI states and a (simulated) fetch-on-login populate path.
+  evidence: Multi-goal split 2026-09-09 [S] of the "profile stores + reset seam + logout" request. The first slice (G1a+G1b) only wires clear-on-reset; the load/populate path and the ProfilePage consumer change are their own effort.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-profile-stores-reset-seam.md`
+  summary: G3 — Build the multi-phase onboarding flow (registration -> medical profile -> passkey enrollment -> bedtime-ready), per Epic 0 / Epic 1. The G1b logout currently routes to the existing LoginPage as an interim; once G3 exists, logout should trigger the full onboarding flow.
+  evidence: Multi-goal split 2026-09-09 [S]. User asked to "build the multi-phase onboarding too" but it is epic-sized (new screens + state machine) and independent of the reset/logout seam.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-profile-stores-reset-seam.md`
+  summary: SettingsActions.logOut clears the profile stores + auth + app-flow, but does NOT stop an active nocturnal monitoring session or tear down the always-on BLE foreground service. A logged-out user can still have a live BLE receiver running.
+  evidence: step-04 blind-hunter review of spec-profile-stores-reset-seam. Out of scope for that slice (spec scoped logout to stores/auth/app-flow only). Belongs with the multi-phase onboarding work (deferred G3) or a dedicated session-teardown-on-logout follow-up; unbindBleDevice already does the BLE reset, logOut should likely call the same path.
