@@ -18,6 +18,8 @@ class _ThrowingSaveRepository implements ProfileRepository {
   @override
   Future<void> saveUserProfile(UserProfile profile) async =>
       throw Exception('network');
+  @override
+  Future<UserProfile> registerUser() async => throw UnimplementedError();
 }
 
 void main() {
