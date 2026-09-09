@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:masker_app/core/bloc/app_flow/app_flow_bloc.dart';
 import 'package:masker_app/core/bloc/app_flow/app_flow_event.dart';
 import 'package:masker_app/core/bloc/app_flow/app_flow_state.dart';
+import 'package:masker_app/core/config/passkey_simulator_config.dart';
 import 'package:masker_app/core/data/profile_repository.dart';
 import 'package:masker_app/core/permissions/ble_permission_service.dart';
 import 'package:masker_app/core/profile/user_profile.dart';
@@ -40,6 +41,25 @@ class _SaveThrowsRepository extends SimulatedProfileRepository {
   @override
   Future<void> saveUserProfile(UserProfile profile) async =>
       throw Exception('network');
+}
+
+/// Register + save work (needed to reach step 3); `enrollPasskey()` throws.
+class _EnrollThrowsRepository extends SimulatedProfileRepository {
+  _EnrollThrowsRepository() : super(latency: Duration.zero);
+  @override
+  Future<UserProfile> enrollPasskey() async =>
+      throw Exception('biometric cancelled');
+}
+
+class _CountingEnrollRepository extends SimulatedProfileRepository {
+  _CountingEnrollRepository()
+      : super(latency: const Duration(milliseconds: 200));
+  int calls = 0;
+  @override
+  Future<UserProfile> enrollPasskey() {
+    calls++;
+    return super.enrollPasskey();
+  }
 }
 
 Future<AppFlowBloc> _pumpAtOnboarding(WidgetTester tester) async {
@@ -84,6 +104,13 @@ Future<void> _completeMedicalProfile(WidgetTester tester) async {
   await tester.enterText(f.at(7), '(555) 333-4444');
   await tester.ensureVisible(find.text('Save & Continue'));
   await tester.tap(find.text('Save & Continue'));
+  await tester.pumpAndSettle();
+}
+
+/// Tap "Create Passkey" on step 3. Assumes the wizard is on `passkeyEnrollment`.
+Future<void> _completePasskey(WidgetTester tester) async {
+  await tester.ensureVisible(find.byKey(const Key('onboarding-create-passkey')));
+  await tester.tap(find.byKey(const Key('onboarding-create-passkey')));
   await tester.pumpAndSettle();
 }
 
@@ -136,14 +163,81 @@ void main() {
     expect(UserProfileService.instance.current, isNull);
   });
 
-  testWidgets('walk to ready: register, medical profile, then Finish', (tester) async {
+  testWidgets('walk to ready: register, medical profile, passkey', (tester) async {
     final bloc = await _pumpAtOnboarding(tester);
     await _completeRegister(tester); // → medicalProfile
     await _completeMedicalProfile(tester); // → passkeyEnrollment
-    expect(find.text('Finish'), findsOneWidget);
+    expect(find.byKey(const Key('onboarding-create-passkey')), findsOneWidget);
 
-    await tester.tap(find.text('Finish'));
+    await _completePasskey(tester); // → ready / done
+    // In the real app `main` swaps to MainContainerPage here; this test tree
+    // keeps OnboardingWizardPage mounted, so assert on the bloc, not the UI.
+    expect(bloc.state.stage, AppFlowStage.ready);
+    expect(bloc.state.onboardingStep, OnboardingStep.done);
+  });
+
+  testWidgets('passkey step: Create Passkey only — no Back / Finish / Continue', (tester) async {
+    await _pumpAtOnboarding(tester);
+    await _completeRegister(tester);
+    await _completeMedicalProfile(tester); // → passkeyEnrollment
+
+    expect(find.byKey(const Key('onboarding-step-passkeyEnrollment')), findsOneWidget);
+    expect(find.text('Set up your account  3/3'), findsOneWidget);
+    expect(find.byKey(const Key('onboarding-create-passkey')), findsOneWidget);
+    expect(find.textContaining('Simulated enrollment'), findsOneWidget); // flag defaults ON in tests
+    expect(find.text('Back'), findsNothing);
+    expect(find.text('Finish'), findsNothing);
+    expect(find.text('Continue'), findsNothing);
+  });
+
+  testWidgets('Create Passkey records a credential id and reaches ready', (tester) async {
+    final bloc = await _pumpAtOnboarding(tester);
+    await _completeRegister(tester);
+    await _completeMedicalProfile(tester);
+    await _completePasskey(tester);
+
+    expect(bloc.state.stage, AppFlowStage.ready);
+    expect(bloc.state.onboardingStep, OnboardingStep.done);
+    expect(UserProfileService.instance.current!.passkeyCredentialId, isNotEmpty);
+  });
+
+  testWidgets('enrollPasskey failure shows an inline retry and does not advance', (tester) async {
+    ProfileRepository.instance = _EnrollThrowsRepository();
+    final bloc = await _pumpAtOnboarding(tester);
+    await _completeRegister(tester);
+    await _completeMedicalProfile(tester);
+    await _completePasskey(tester);
+
+    expect(find.text("Couldn't create your passkey — try again."), findsOneWidget);
+    expect(bloc.state.onboardingStep, OnboardingStep.passkeyEnrollment);
+    expect(bloc.state.stage, AppFlowStage.onboarding);
+  });
+
+  testWidgets('passkey step shows the biometric copy when the simulator flag is off', (tester) async {
+    addTearDown(PasskeySimulatorConfig.instance.reset);
+    PasskeySimulatorConfig.instance.setEnabled(false);
+
+    await _pumpAtOnboarding(tester);
+    await _completeRegister(tester);
+    await _completeMedicalProfile(tester); // → passkeyEnrollment
+
+    expect(find.textContaining('device biometrics'), findsOneWidget);
+    expect(find.textContaining('Simulated enrollment'), findsNothing);
+  });
+
+  testWidgets('a second tap while enrolling is ignored (one enrollPasskey call)', (tester) async {
+    final repo = _CountingEnrollRepository();
+    ProfileRepository.instance = repo;
+    final bloc = await _pumpAtOnboarding(tester);
+    await _completeRegister(tester);
+    await _completeMedicalProfile(tester);
+
+    await tester.tap(find.byKey(const Key('onboarding-create-passkey')));
+    await tester.pump(const Duration(milliseconds: 50)); // in flight
+    await tester.tap(find.byKey(const Key('onboarding-create-passkey'))); // ignored
     await tester.pumpAndSettle();
+
+    expect(repo.calls, 1);
     expect(bloc.state.stage, AppFlowStage.ready);
   });
 
@@ -210,15 +304,4 @@ void main() {
     expect(bloc.state.onboardingStep, OnboardingStep.medicalProfile);
   });
 
-  testWidgets('Back on the passkeyEnrollment step returns to medicalProfile', (tester) async {
-    final bloc = await _pumpAtOnboarding(tester);
-    await _completeRegister(tester); // → medicalProfile
-    await _completeMedicalProfile(tester); // → passkeyEnrollment
-
-    await tester.tap(find.text('Back'));
-    await tester.pumpAndSettle();
-
-    expect(bloc.state.onboardingStep, OnboardingStep.medicalProfile);
-    expect(find.byKey(const Key('onboarding-step-medicalProfile')), findsOneWidget);
-  });
 }

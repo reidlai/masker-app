@@ -175,3 +175,7 @@ Findings surfaced during build reviews that were intentionally not addressed in 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-11-medical-profile-first-run-mode.md`
   summary: profile_validators positiveNumberError has no upper/plausible-range bound — weight/height accept any value > 0 (e.g. height "0.5" cm or weight "9999" kg), yielding nonsense BMI. Age is bounded 1–149 but weight/height are not.
   evidence: step-04 blind-hunter review of Story 1.11. The spec scoped weight/height to "positive numerics" only; clinical plausible-range checks (and unit-aware bounds once kg/lb, cm/ft-in land) are a follow-up.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-12-passkey-enrollment-step.md`
+  summary: On onboarding completion, verify the user profile exists via ProfileRepository.fetchUserProfile() (API sanity check) and auto-bind a simulated D-BAND when fetchDeviceProfile() is empty, so a fresh user does not land on the Dashboard with no bound device. Needs a new SimulatedProfileRepository bind path + DeviceProfileService wiring at the AppFlowStage.ready transition.
+  evidence: Split from Story 1.12 (/bmad-build multi-goal check). Goal A (the Passkey Enrollment step) is what epics.md scopes 1.12 to; this device-provisioning concern hooks the ready-transition (which Goal A does not touch) and crosses into Epic 2 device-binding territory.

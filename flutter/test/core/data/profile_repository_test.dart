@@ -55,6 +55,29 @@ void main() {
     expect(await repo.fetchUserProfile(), user); // persisted
   });
 
+  test('enrollPasskey stamps a credential id and leaves other fields intact', () async {
+    final repo = SimulatedProfileRepository(latency: Duration.zero);
+    final registered = await repo.registerUser();
+    await repo.saveUserProfile(
+      registered.copyWith(fullName: 'Dana Scully', age: 42, email: 'd@x.com'),
+    );
+    expect((await repo.fetchUserProfile())!.passkeyCredentialId, isEmpty);
+
+    final enrolled = await repo.enrollPasskey();
+
+    expect(enrolled.passkeyCredentialId, isNotEmpty);
+    expect(enrolled.userId, registered.userId);
+    expect(enrolled.fullName, 'Dana Scully');
+    expect(enrolled.age, 42);
+    expect(enrolled.email, 'd@x.com');
+    expect(await repo.fetchUserProfile(), enrolled); // persisted
+  });
+
+  test('enrollPasskey throws when there is no account yet', () async {
+    final repo = SimulatedProfileRepository(latency: Duration.zero);
+    expect(repo.enrollPasskey(), throwsStateError);
+  });
+
   test('instance is substitutable and reset restores the default', () {
     final fake = SimulatedProfileRepository(latency: Duration.zero);
     ProfileRepository.instance = fake;

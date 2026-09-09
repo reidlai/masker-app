@@ -153,6 +153,9 @@ class ProfileFormState extends State<ProfileForm> {
       computedBmi: _bloc.state.computedBmi,
       caregiverName: _caregiverNameController.text.trim(),
       caregiverPhone: _emergencyPhoneController.text.trim(),
+      // Not a form field — carry through whatever the onboarding passkey step
+      // recorded so a Settings edit never blanks it.
+      passkeyCredentialId: current?.passkeyCredentialId ?? '',
     );
 
     // Optimistic: update the in-memory store first, then the (simulated) server

@@ -1,17 +1,20 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/bloc/app_flow/app_flow_bloc.dart';
 import '../../core/bloc/app_flow/app_flow_event.dart';
 import '../../core/bloc/app_flow/app_flow_state.dart';
+import '../../core/config/passkey_simulator_config.dart';
 import '../../core/data/profile_repository.dart';
 import '../../core/profile/user_profile_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../atoms/app_button.dart';
 import '../organisms/profile_form.dart';
 
-/// First-run onboarding wizard shell (Story 1.9). Step 1 (Register, Story 1.10)
-/// and step 2 (Medical Profile, Story 1.11) are real; Passkey Enrollment (1.12)
-/// is still a placeholder.
+/// First-run onboarding wizard shell (Story 1.9). All three steps are real:
+/// Register (1.10), Medical Profile (1.11), Passkey Enrollment (1.12). Every
+/// step carries its own primary action — the wizard is forward-only, with no
+/// generic Continue / Back / Finish.
 class OnboardingWizardPage extends StatelessWidget {
   const OnboardingWizardPage({super.key});
 
@@ -21,12 +24,6 @@ class OnboardingWizardPage extends StatelessWidget {
     OnboardingStep.passkeyEnrollment,
   ];
 
-  // Only steps that still render `_Placeholder` need a label here.
-  static const _labels = {
-    OnboardingStep.register: 'Register',
-    OnboardingStep.passkeyEnrollment: 'Passkey Enrollment',
-  };
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AppFlowBloc, AppFlowState>(
@@ -35,10 +32,6 @@ class OnboardingWizardPage extends StatelessWidget {
             ? flow.onboardingStep
             : OnboardingStep.register;
         final index = _order.indexOf(step);
-        // Register and Medical Profile carry their own primary action; every
-        // other step uses the generic Continue / Back.
-        final selfActioned = step == OnboardingStep.register ||
-            step == OnboardingStep.medicalProfile;
 
         return Scaffold(
           backgroundColor: AppColors.background,
@@ -61,64 +54,19 @@ class OnboardingWizardPage extends StatelessWidget {
                         OnboardingStep.register => const _RegisterStep(),
                         OnboardingStep.medicalProfile =>
                           const _MedicalProfileStep(),
-                        _ => _Placeholder(label: _labels[step]!),
+                        OnboardingStep.passkeyEnrollment =>
+                          const _PasskeyEnrollmentStep(),
+                        // Unreachable: `step` is always one of `_order`.
+                        _ => const SizedBox.shrink(),
                       },
                     ),
                   ),
-                  if (!selfActioned) ...[
-                    if (index > 0) ...[
-                      AppButton(
-                        label: 'Back',
-                        variant: AppButtonVariant.secondary,
-                        onPressed: () => context
-                            .read<AppFlowBloc>()
-                            .add(const AppFlowOnboardingStepBack()),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                    AppButton(
-                      label: index == _order.length - 1 ? 'Finish' : 'Continue',
-                      variant: AppButtonVariant.primary,
-                      onPressed: () => context
-                          .read<AppFlowBloc>()
-                          .add(const AppFlowOnboardingStepAdvanced()),
-                    ),
-                  ],
                 ],
               ),
             ),
           ),
         );
       },
-    );
-  }
-}
-
-class _Placeholder extends StatelessWidget {
-  final String label;
-  const _Placeholder({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'This step is coming soon.',
-            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -137,6 +85,91 @@ class _MedicalProfileStep extends StatelessWidget {
       onSaved: () => context
           .read<AppFlowBloc>()
           .add(const AppFlowOnboardingStepAdvanced()),
+    );
+  }
+}
+
+/// Onboarding step 3 (Story 1.12): FIDO2 passkey enrollment. Mirrors
+/// [_RegisterStep]: owns its repo call, advances the wizard only on success.
+class _PasskeyEnrollmentStep extends StatefulWidget {
+  const _PasskeyEnrollmentStep();
+
+  @override
+  State<_PasskeyEnrollmentStep> createState() => _PasskeyEnrollmentStepState();
+}
+
+class _PasskeyEnrollmentStepState extends State<_PasskeyEnrollmentStep> {
+  bool _busy = false;
+  String? _error;
+
+  bool get _simulated => passkeySimulatorActive(
+        developerBuild: kDebugMode ||
+            const bool.fromEnvironment('DEV_MODE', defaultValue: false),
+      );
+
+  Future<void> _createPasskey() async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      // Flag ON → simulated enrollment. Flag OFF → real FIDO2/WebAuthn
+      // registration (TODO(FIDO)); until that authenticator is wired, fall
+      // through to the same simulated path so a DEV_MODE-off build can still
+      // finish onboarding — mirrors AuthBloc's passkey-login handling.
+      final user = await ProfileRepository.instance.enrollPasskey();
+      if (!mounted) return;
+      UserProfileService.instance.set(user);
+      context.read<AppFlowBloc>().add(const AppFlowOnboardingStepAdvanced());
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = "Couldn't create your passkey — try again.");
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Set up your passkey',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          _simulated
+              ? 'Simulated enrollment · developer. A passkey credential is '
+                  'recorded on your account without a biometric prompt.'
+              : "You'll be prompted for your device biometrics (Face ID / "
+                  'Touch ID / fingerprint) to create a passkey for future '
+                  'sign-ins.',
+          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            _error!,
+            style: const TextStyle(fontSize: 13, color: AppColors.dangerRed),
+          ),
+        ],
+        const Spacer(),
+        AppButton(
+          key: const Key('onboarding-create-passkey'),
+          label: 'Create Passkey',
+          isLoading: _busy,
+          variant: AppButtonVariant.primary,
+          onPressed: _createPasskey,
+        ),
+      ],
     );
   }
 }

@@ -19,6 +19,8 @@ class _NullProfileRepository implements ProfileRepository {
   Future<void> saveUserProfile(UserProfile profile) async {}
   @override
   Future<UserProfile> registerUser() async => throw UnimplementedError();
+  @override
+  Future<UserProfile> enrollPasskey() async => throw UnimplementedError();
 }
 
 class _ThrowingFetchRepository implements ProfileRepository {
@@ -34,6 +36,8 @@ class _ThrowingFetchRepository implements ProfileRepository {
   Future<void> saveUserProfile(UserProfile profile) async {}
   @override
   Future<UserProfile> registerUser() async => throw UnimplementedError();
+  @override
+  Future<UserProfile> enrollPasskey() async => throw UnimplementedError();
 }
 
 void main() {

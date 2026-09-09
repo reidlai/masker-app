@@ -18,6 +18,10 @@ class UserProfile extends Equatable {
   final String caregiverName;
   final String caregiverPhone;
 
+  /// FIDO2/WebAuthn credential id recorded by the onboarding passkey-enrollment
+  /// step (Story 1.12). Empty until a passkey is enrolled.
+  final String passkeyCredentialId;
+
   const UserProfile({
     required this.userId,
     this.fullName = '',
@@ -30,7 +34,37 @@ class UserProfile extends Equatable {
     this.computedBmi = 0,
     this.caregiverName = '',
     this.caregiverPhone = '',
+    this.passkeyCredentialId = '',
   });
+
+  UserProfile copyWith({
+    String? userId,
+    String? fullName,
+    String? email,
+    String? phone,
+    int? age,
+    String? gender,
+    double? weightKg,
+    double? heightCm,
+    double? computedBmi,
+    String? caregiverName,
+    String? caregiverPhone,
+    String? passkeyCredentialId,
+  }) =>
+      UserProfile(
+        userId: userId ?? this.userId,
+        fullName: fullName ?? this.fullName,
+        email: email ?? this.email,
+        phone: phone ?? this.phone,
+        age: age ?? this.age,
+        gender: gender ?? this.gender,
+        weightKg: weightKg ?? this.weightKg,
+        heightCm: heightCm ?? this.heightCm,
+        computedBmi: computedBmi ?? this.computedBmi,
+        caregiverName: caregiverName ?? this.caregiverName,
+        caregiverPhone: caregiverPhone ?? this.caregiverPhone,
+        passkeyCredentialId: passkeyCredentialId ?? this.passkeyCredentialId,
+      );
 
   @override
   List<Object?> get props => [
@@ -45,5 +79,6 @@ class UserProfile extends Equatable {
         computedBmi,
         caregiverName,
         caregiverPhone,
+        passkeyCredentialId,
       ];
 }
