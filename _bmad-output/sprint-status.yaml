@@ -22,7 +22,7 @@
 #   - done: Completed
 
 generated: '2026-09-03'
-last_updated: '09-09-2026 (Story 1.11 medical-profile first-run mode → review)'
+last_updated: '09-10-2026 (Story 1.12 passkey enrollment → review; onboarding wizard complete)'
 project: masker-app
 project_key: NOKEY
 tracking_system: file-system
@@ -37,7 +37,7 @@ development_status:
   1-9-first-run-onboarding-wizard-and-fresh-user-routing: review
   1-10-patient-account-registration: review
   1-11-medical-profile-first-run-mode: review
-  1-12-passkey-enrollment-step: backlog
+  1-12-passkey-enrollment-step: review
   epic-1-retrospective: done
 
   epic-2: in-progress

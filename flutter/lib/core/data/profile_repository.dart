@@ -33,6 +33,11 @@ abstract class ProfileRepository {
   /// Create a new account: mint a `UserProfile` with a fresh id and no PHI,
   /// store it, and return it. Onboarding step 1.
   Future<UserProfile> registerUser();
+
+  /// Enroll a FIDO2 passkey for the current account: record a
+  /// `passkeyCredentialId` on the stored user and return the updated profile.
+  /// Onboarding step 3. Throws if there is no account yet.
+  Future<UserProfile> enrollPasskey();
 }
 
 /// Demo identity used until a real backend is wired — the values that used to
@@ -119,5 +124,19 @@ class SimulatedProfileRepository implements ProfileRepository {
         UserProfile(userId: 'user-${DateTime.now().microsecondsSinceEpoch}');
     _user = user;
     return user;
+  }
+
+  @override
+  Future<UserProfile> enrollPasskey() async {
+    await Future<void>.delayed(latency);
+    final user = _user;
+    if (user == null) {
+      throw StateError('enrollPasskey called before registerUser');
+    }
+    final updated = user.copyWith(
+      passkeyCredentialId: 'passkey-${DateTime.now().microsecondsSinceEpoch}',
+    );
+    _user = updated;
+    return updated;
   }
 }

@@ -20,6 +20,8 @@ class _ThrowingSaveRepository implements ProfileRepository {
       throw Exception('network');
   @override
   Future<UserProfile> registerUser() async => throw UnimplementedError();
+  @override
+  Future<UserProfile> enrollPasskey() async => throw UnimplementedError();
 }
 
 void main() {

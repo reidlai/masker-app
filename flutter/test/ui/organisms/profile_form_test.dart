@@ -85,6 +85,20 @@ void main() {
     expect(UserProfileService.instance.current!.email, 'david.miller@example.com');
   });
 
+  testWidgets('a Settings save preserves an enrolled passkeyCredentialId', (tester) async {
+    UserProfileService.instance.set(
+      _valid.copyWith(passkeyCredentialId: 'passkey-xyz'),
+    );
+    final key = await pump(tester);
+
+    await tester.enterText(fieldWithValue('David Miller'), 'David M. Miller');
+    unawaited(key.currentState!.save());
+    await tester.pumpAndSettle();
+
+    expect(UserProfileService.instance.current!.fullName, 'David M. Miller');
+    expect(UserProfileService.instance.current!.passkeyCredentialId, 'passkey-xyz');
+  });
+
   testWidgets('correcting the field and re-saving clears the error and persists', (tester) async {
     UserProfileService.instance.set(_valid);
     final key = await pump(tester);
