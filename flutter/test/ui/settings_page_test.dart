@@ -41,9 +41,11 @@ void main() {
     expect(find.text('BLE Simulator'), findsNothing);
     expect(find.text('Passkey Simulator'), findsNothing);
     expect(find.text('Debugging'), findsNothing);
+    expect(find.text('Unbind BLE Sensor Device'), findsNothing);
+    expect(find.text('Unregister User Account'), findsNothing);
   });
 
-  testWidgets('debugging on: DEVELOPER header + BLE Simulator, Passkey Simulator & Debugging rows, no Developer options row', (tester) async {
+  testWidgets('debugging on: DEVELOPER header + BLE Simulator, Passkey Simulator, Debugging & reset rows, no Developer options row', (tester) async {
     await pumpSettings(tester, debuggingEnabled: true);
 
     expect(find.text('Profile'), findsOneWidget);
@@ -51,6 +53,8 @@ void main() {
     expect(find.text('BLE Simulator'), findsOneWidget);
     expect(find.text('Passkey Simulator'), findsOneWidget);
     expect(find.text('Debugging'), findsOneWidget);
+    expect(find.text('Unbind BLE Sensor Device'), findsOneWidget);
+    expect(find.text('Unregister User Account'), findsOneWidget);
     expect(find.text('Developer'), findsNothing);
   });
 
@@ -151,7 +155,30 @@ void main() {
     expect(find.text('BLE Simulator'), findsOneWidget);
     expect(find.text('Passkey Simulator'), findsOneWidget);
     expect(find.text('Debugging'), findsOneWidget);
+    expect(find.text('Unbind BLE Sensor Device'), findsOneWidget);
+    expect(find.text('Unregister User Account'), findsOneWidget);
     expect(find.text('Developer'), findsOneWidget);
+  });
+
+  testWidgets('reset rows open their confirmation dialogs and Cancel dismisses', (tester) async {
+    await pumpSettings(tester, debuggingEnabled: true);
+
+    await tester.ensureVisible(find.text('Unbind BLE Sensor Device'));
+    await tester.tap(find.text('Unbind BLE Sensor Device'));
+    await tester.pumpAndSettle();
+    expect(find.text('Unbind BLE Sensor?'), findsOneWidget);
+    expect(find.text('Confirm Reset'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(find.text('Unbind BLE Sensor?'), findsNothing);
+
+    await tester.ensureVisible(find.text('Unregister User Account'));
+    await tester.tap(find.text('Unregister User Account'));
+    await tester.pumpAndSettle();
+    expect(find.text('Unregister User Account?'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(find.text('Unregister User Account?'), findsNothing);
   });
 
   testWidgets('navigable rows show trailing chevrons', (tester) async {

@@ -36,7 +36,7 @@ context: []
 **Never:**
 - Show the Passkey Simulator row, or let `AuthBloc` honor the flag, in a release build (no `kDebugMode`, no `DEV_MODE`) — `passkeySimulatorActive(developerBuild: false)` must always be `false`.
 - Let the flag gate anything except the `AuthBloc` passkey-submit branch.
-- Touch `developer_options_page.dart`, the BLE simulator drivers, or `SimulatorBloc`.
+- Touch the BLE simulator drivers or `SimulatorBloc`. (`developer_options_page.dart` was refactored — human-directed, see Change Log 2026-09-09 #3 — to share the reset helper; its behavior and copy are unchanged.)
 - Add a logout / re-auth path (known limitation, see Design Notes) — out of scope.
 
 ## I/O & Edge-Case Matrix
@@ -88,6 +88,14 @@ context: []
 ### 2026-09-09 — review pass (patch only, no loopback)
 - **patch** (verification-gap): the "never simulate auth outside `DEV_MODE`" rule existed only as an inline `&&` in `main.dart` with no test. Extracted to `passkeySimulatorActive({required bool devMode})` in `passkey_simulator_config.dart` and added `passkey_simulator_config_test.dart` pinning `devMode: false` → always `false`. No frozen-block change.
 - **defer**: pre-existing `flutter analyze` warning `settings_page.dart:4` unused import `ble_simulator_driver.dart` — recorded in `deferred-work.md`, not caused by this change.
+
+### 2026-09-09 — human renegotiation #3: pull deferred G2 (reset tools) back in
+- The user asked for **Unbind BLE Sensor Device** + **Unregister User Account** directly in the Settings → Developer section (the previously-deferred G2), reusing the existing shipped logic. Implemented:
+  - New `flutter/lib/ui/developer/developer_reset_actions.dart` — `DeveloperResetActions.unbindBleDevice` / `.unregisterAccount`: the confirm-`AlertDialog` + `BleReceiverService` / `AuthUnregisterRequested` + success-`SnackBar` flows, extracted verbatim (copy identical) with `context.mounted` guards added across the async gaps.
+  - `developer_options_page.dart` refactored to call the helper — removed its private `_showConfirmDialog` and the two inline `onTap` bodies. All 3 `developer_options_page_test.dart` cases pass unchanged. Net `flutter analyze` count dropped 4→3 (the pre-existing `use_build_context_synchronously` info at old L179 is gone).
+  - `settings_page.dart` — two new `SettingsMenuRow`s in the Developer card (unconditional, same `_showDeveloper` gate), delegating to the helper.
+  - `settings_page_test.dart` — reset rows present under `_showDeveloper`, absent otherwise, and a dialog-open/Cancel test.
+- `deferred-work.md` G2 entry marked resolved.
 
 ### 2026-09-09 — human renegotiation: match BLE Simulator gate
 - Frozen intent amended at the user's request: the "Passkey Simulator" row and the `AuthBloc` flag effect now use the **same condition as the BLE Simulator row** (`_showDeveloper` = `kDebugMode || DEV_MODE`), not `DEV_MODE`-only. Row is now unconditional inside the Developer card. `passkeySimulatorActive` param renamed `devMode` → `developerBuild`; `main` passes `kDebugMode || DEV_MODE`. Safety property preserved: a true release build has neither flag, so the row is hidden and the gate is `false`. Tests updated: `settings_page_test.dart` "debugging on" now asserts the Passkey Simulator row is present; `passkey_simulator_config_test.dart` uses `developerBuild:`.

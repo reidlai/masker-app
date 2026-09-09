@@ -7,6 +7,7 @@ import '../../core/bloc/simulator/simulator_event.dart';
 import '../../core/bloc/simulator/simulator_state.dart';
 import '../../core/config/passkey_simulator_config.dart';
 import '../../core/theme/app_theme.dart';
+import '../developer/developer_reset_actions.dart';
 import '../molecules/settings_menu_row.dart';
 import '../molecules/settings_section_header.dart';
 import 'billing_page.dart';
@@ -191,6 +192,22 @@ class SettingsPage extends StatelessWidget {
                         showChevron: false,
                       ),
                     ],
+                    // Reset tools — same gate as the rows above; delegate to the
+                    // shared flows also used by DeveloperOptionsPage.
+                    const Divider(height: 1, color: AppColors.cardBorder),
+                    SettingsMenuRow(
+                      leadingIcon: Icons.bluetooth_disabled,
+                      label: "Unbind BLE Sensor Device",
+                      showChevron: false,
+                      onTap: () => DeveloperResetActions.unbindBleDevice(context),
+                    ),
+                    const Divider(height: 1, color: AppColors.cardBorder),
+                    SettingsMenuRow(
+                      leadingIcon: Icons.delete_forever,
+                      label: "Unregister User Account",
+                      showChevron: false,
+                      onTap: () => DeveloperResetActions.unregisterAccount(context),
+                    ),
                     if (_dev) ...[
                       const Divider(height: 1, color: AppColors.cardBorder),
                       SettingsMenuRow(
