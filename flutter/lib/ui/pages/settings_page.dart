@@ -6,9 +6,9 @@ import '../../core/bloc/simulator/simulator_event.dart';
 import '../../core/bloc/simulator/simulator_state.dart';
 import '../../core/config/passkey_simulator_config.dart';
 import '../../core/theme/app_theme.dart';
-import '../developer/developer_reset_actions.dart';
 import '../molecules/settings_menu_row.dart';
 import '../molecules/settings_section_header.dart';
+import '../settings/settings_actions.dart';
 import 'billing_page.dart';
 import 'language_region_page.dart';
 import 'payment_method_page.dart';
@@ -113,7 +113,20 @@ class SettingsPage extends StatelessWidget {
                 ],
               ),
 
-              // 4 — Developer Section (Conditional)
+              // 4 — Session
+              const SettingsSectionHeader(title: "Session"),
+              _buildMenuCard(
+                children: [
+                  SettingsMenuRow(
+                    leadingIcon: Icons.logout,
+                    label: "Log out",
+                    showChevron: false,
+                    onTap: () => SettingsActions.logOut(context),
+                  ),
+                ],
+              ),
+
+              // 5 — Developer Section (Conditional)
               if (_showDeveloper) ...[
                 const SettingsSectionHeader(title: "Developer"),
                 _buildMenuCard(
@@ -191,20 +204,20 @@ class SettingsPage extends StatelessWidget {
                       ),
                     ],
                     // Reset tools — same gate as the rows above; delegate to the
-                    // shared DeveloperResetActions flows.
+                    // shared SettingsActions flows.
                     const Divider(height: 1, color: AppColors.cardBorder),
                     SettingsMenuRow(
                       leadingIcon: Icons.bluetooth_disabled,
                       label: "Unbind BLE Sensor Device",
                       showChevron: false,
-                      onTap: () => DeveloperResetActions.unbindBleDevice(context),
+                      onTap: () => SettingsActions.unbindBleDevice(context),
                     ),
                     const Divider(height: 1, color: AppColors.cardBorder),
                     SettingsMenuRow(
                       leadingIcon: Icons.delete_forever,
                       label: "Unregister User Account",
                       showChevron: false,
-                      onTap: () => DeveloperResetActions.unregisterAccount(context),
+                      onTap: () => SettingsActions.unregisterAccount(context),
                     ),
                     // System Diagnostics — inert placeholders, no backing action
                     // yet (moved here from the retired Developer Options page).

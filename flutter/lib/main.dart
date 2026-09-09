@@ -120,6 +120,9 @@ class _MaskerAppState extends State<MaskerApp> {
       create: (_) => BleReceiverService(),
       child: MultiBlocProvider(
         providers: [
+          // Owned by this State; provided here so descendants (e.g. the Settings
+          // "Log out" row) can dispatch AppFlowLogoutRequested.
+          BlocProvider<AppFlowBloc>.value(value: _appFlowBloc),
           BlocProvider<AuthBloc>(
             create: (_) => AuthBloc(
               // Passkey Simulator flag is honored wherever the toggle is shown

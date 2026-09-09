@@ -18,6 +18,9 @@ class AppFlowBloc extends Bloc<AppFlowEvent, AppFlowState> {
     on<AppFlowPrimerCompleted>(
       (event, emit) => emit(state.copyWith(stage: AppFlowStage.ready)),
     );
+    on<AppFlowLogoutRequested>(
+      (event, emit) => emit(const AppFlowState()),
+    );
   }
 
   Future<void> _onLoginSucceeded(
@@ -34,6 +37,9 @@ class AppFlowBloc extends Bloc<AppFlowEvent, AppFlowState> {
     try {
       final status = await _permissionService.checkPermission();
       if (isClosed) return;
+      // A logout (or retry) may have moved the flow on while the async
+      // permission check was in flight — don't clobber it with a stale result.
+      if (state.stage != AppFlowStage.checkingPermission) return;
       emit(state.copyWith(
         stage: status.isGranted
             ? AppFlowStage.ready
@@ -42,7 +48,7 @@ class AppFlowBloc extends Bloc<AppFlowEvent, AppFlowState> {
     } catch (_) {
       // Never hang on the spinner forever if the platform channel throws —
       // surface a retry instead.
-      if (isClosed) return;
+      if (isClosed || state.stage != AppFlowStage.checkingPermission) return;
       emit(state.copyWith(stage: AppFlowStage.permissionCheckFailed));
     }
   }

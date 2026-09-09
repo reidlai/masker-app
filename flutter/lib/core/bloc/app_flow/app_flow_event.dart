@@ -23,3 +23,9 @@ class AppFlowPermissionRetryRequested extends AppFlowEvent {
 class AppFlowPrimerCompleted extends AppFlowEvent {
   const AppFlowPrimerCompleted();
 }
+
+/// The user logged out — return the flow to [AppFlowStage.loggedOut] so the
+/// root renders the login screen again.
+class AppFlowLogoutRequested extends AppFlowEvent {
+  const AppFlowLogoutRequested();
+}
