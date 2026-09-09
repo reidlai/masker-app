@@ -31,13 +31,14 @@ context: []
 **Ask First:**
 - Adding persistence for the flag.
 - Writing real FIDO2/WebAuthn logic, or making Off visibly differ from On.
-- Renaming the "BLE Telemetry Simulator" card/header on `developer_options_page.dart`.
 
 **Never:**
 - Show the Passkey Simulator row, or let `AuthBloc` honor the flag, in a release build (no `kDebugMode`, no `DEV_MODE`) — `passkeySimulatorActive(developerBuild: false)` must always be `false`.
 - Let the flag gate anything except the `AuthBloc` passkey-submit branch.
-- Touch the BLE simulator drivers or `SimulatorBloc`. (`developer_options_page.dart` was refactored — human-directed, see Change Log 2026-09-09 #3 — to share the reset helper; its behavior and copy are unchanged.)
+- Touch the BLE simulator drivers or `SimulatorBloc` core (scenario capability lives there and stays).
 - Add a logout / re-auth path (known limitation, see Design Notes) — out of scope.
+
+_Scope note (Change Log #4): `developer_options_page.dart` and `ble_simulator_organism.dart` were **deleted** — human-directed. The Settings → Developer section is now the only developer surface._
 
 ## I/O & Edge-Case Matrix
 
@@ -88,6 +89,15 @@ context: []
 ### 2026-09-09 — review pass (patch only, no loopback)
 - **patch** (verification-gap): the "never simulate auth outside `DEV_MODE`" rule existed only as an inline `&&` in `main.dart` with no test. Extracted to `passkeySimulatorActive({required bool devMode})` in `passkey_simulator_config.dart` and added `passkey_simulator_config_test.dart` pinning `devMode: false` → always `false`. No frozen-block change.
 - **defer**: pre-existing `flutter analyze` warning `settings_page.dart:4` unused import `ble_simulator_driver.dart` — recorded in `deferred-work.md`, not caused by this change.
+
+### 2026-09-09 — human renegotiation #4: retire the Developer Options page
+- The user asked to stop duplicating tools across "Settings → Developer" and the "Developer Options" page, and to move the **System Diagnostics** rows into the Settings Developer section. Implemented:
+  - **Deleted** `flutter/lib/ui/pages/developer_options_page.dart`, `flutter/test/ui/developer_options_page_test.dart`, `flutter/lib/ui/organisms/ble_simulator_organism.dart`, `flutter/test/ui/ble_simulator_organism_test.dart`.
+  - **Removed** the `_dev`-gated "Developer" nav row from `settings_page.dart` (its only purpose was to reach the deleted page) and the `developer_options_page.dart` import.
+  - **Added** two inert `System Diagnostics` rows to the Settings Developer card: "Inspect Circular RAM Buffer (10Hz)", "Verify AES-128 BLE Link Encryption" (no backing action — same inert status they had on the page).
+  - `settings_page_test.dart`: dropped the nav-push test; "Developer" nav row now asserted absent; System Diagnostics rows asserted present under `_showDeveloper`; chevron count 5 → 4.
+  - Also removed two long-standing dead imports (`google_fonts` in `main.dart`, `ble_simulator_driver` in `settings_page.dart`) — `flutter analyze` is now **"No issues found!"**; the pre-existing-warnings `deferred-work.md` entry is resolved.
+- **Capability lost (recorded):** the BLE Signal Simulator scenario triggers (`SimulatorScenario.idleBandSample` / `normalRespiration` / `inBandNoExcursion` / `recovery`) no longer have any UI. The scenario code still exists in `SimulatorBloc` / `BleSimulatorDriver` and is still unit-tested; only the trigger UI (Story 1.5's deliverable) is gone. Recoverable from git history if QA needs it back.
 
 ### 2026-09-09 — human renegotiation #3: pull deferred G2 (reset tools) back in
 - The user asked for **Unbind BLE Sensor Device** + **Unregister User Account** directly in the Settings → Developer section (the previously-deferred G2), reusing the existing shipped logic. Implemented:

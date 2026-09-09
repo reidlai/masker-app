@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'core/ble/ble_receiver_service.dart';
 import 'core/ble/i_ble_sensor_driver.dart';
 import 'core/bloc/app_flow/app_flow_bloc.dart';

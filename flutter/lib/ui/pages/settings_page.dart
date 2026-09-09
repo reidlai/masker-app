@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../core/ble/ble_simulator_driver.dart';
 import '../../core/bloc/simulator/simulator_bloc.dart';
 import '../../core/bloc/simulator/simulator_event.dart';
 import '../../core/bloc/simulator/simulator_state.dart';
@@ -11,7 +10,6 @@ import '../developer/developer_reset_actions.dart';
 import '../molecules/settings_menu_row.dart';
 import '../molecules/settings_section_header.dart';
 import 'billing_page.dart';
-import 'developer_options_page.dart';
 import 'language_region_page.dart';
 import 'payment_method_page.dart';
 import 'profile_page.dart';
@@ -193,7 +191,7 @@ class SettingsPage extends StatelessWidget {
                       ),
                     ],
                     // Reset tools — same gate as the rows above; delegate to the
-                    // shared flows also used by DeveloperOptionsPage.
+                    // shared DeveloperResetActions flows.
                     const Divider(height: 1, color: AppColors.cardBorder),
                     SettingsMenuRow(
                       leadingIcon: Icons.bluetooth_disabled,
@@ -208,20 +206,20 @@ class SettingsPage extends StatelessWidget {
                       showChevron: false,
                       onTap: () => DeveloperResetActions.unregisterAccount(context),
                     ),
-                    if (_dev) ...[
-                      const Divider(height: 1, color: AppColors.cardBorder),
-                      SettingsMenuRow(
-                        leadingIcon: Icons.code,
-                        label: "Developer",
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const DeveloperOptionsPage(),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                    // System Diagnostics — inert placeholders, no backing action
+                    // yet (moved here from the retired Developer Options page).
+                    const Divider(height: 1, color: AppColors.cardBorder),
+                    const SettingsMenuRow(
+                      leadingIcon: Icons.memory,
+                      label: "Inspect Circular RAM Buffer (10Hz)",
+                      showChevron: false,
+                    ),
+                    const Divider(height: 1, color: AppColors.cardBorder),
+                    const SettingsMenuRow(
+                      leadingIcon: Icons.security,
+                      label: "Verify AES-128 BLE Link Encryption",
+                      showChevron: false,
+                    ),
                   ],
                 ),
               ],

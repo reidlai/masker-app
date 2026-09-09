@@ -128,5 +128,9 @@ Findings surfaced during build reviews that were intentionally not addressed in 
   RESOLVED 2026-09-09: implemented on branch feature/dev-passkey-simulator-toggle — shared helper `flutter/lib/ui/developer/developer_reset_actions.dart` used by both `settings_page.dart` (new rows in the Developer section) and `developer_options_page.dart` (refactored to it). See spec Change Log "#3".
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-dev-passkey-simulator-toggle.md`
-  summary: Pre-existing `flutter analyze` warnings in flutter/ — `main.dart:4` unused `google_fonts` import, `settings_page.dart:4` unused `ble_simulator_driver.dart` import, `test/ui/developer_options_page_test.dart:5` unused import.
-  evidence: verification-gap review of spec-dev-passkey-simulator-toggle. Confirmed present on baseline e55e4fca. The 4th warning (`developer_options_page.dart:179` use_build_context_synchronously) was incidentally fixed by the G2 reset-helper refactor. Remaining 3 need a focused cleanup that touches files outside this spec's scope.
+  summary: Pre-existing `flutter analyze` warnings in flutter/.
+  evidence: verification-gap review of spec-dev-passkey-simulator-toggle. RESOLVED 2026-09-09 on branch feature/dev-passkey-simulator-toggle: `use_build_context_synchronously` fixed by the reset-helper refactor (#3); `developer_options_page_test.dart` unused import removed with the file (#4); `google_fonts` (main.dart) and `ble_simulator_driver` (settings_page.dart) dead imports removed (#4). `flutter analyze` now reports "No issues found!".
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dev-passkey-simulator-toggle.md`
+  summary: BLE Signal Simulator scenario-trigger UI was removed with `developer_options_page.dart` (Change Log #4). Story 1.5's deliverable no longer has a UI, though `SimulatorBloc` / `BleSimulatorDriver` still implement and unit-test the scenarios. `flutter/README.md:129` still describes the old "Advanced section → Developer menu row" flow (stale — section is "Developer", nav row deleted).
+  evidence: Human-directed deletion 2026-09-09. If QA needs no-hardware apnea/calibration scenario triggers again, restore `ble_simulator_organism.dart` from git and mount it in the Settings Developer section. README doc pass also pending.

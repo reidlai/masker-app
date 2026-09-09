@@ -5,8 +5,7 @@ import '../../core/bloc/auth/auth_bloc.dart';
 import '../../core/bloc/auth/auth_event.dart';
 import '../../core/theme/app_theme.dart';
 
-/// Confirm-and-reset developer flows shared by the Settings → Developer section
-/// and `DeveloperOptionsPage`, so both surfaces run one implementation.
+/// Confirm-and-reset developer flows used by the Settings → Developer section.
 ///
 /// Each flow shows a two-step confirmation `AlertDialog`; on confirm it performs
 /// the reset and shows a success `SnackBar`. Guarded by `context.mounted` across
