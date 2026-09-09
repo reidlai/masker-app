@@ -5,6 +5,7 @@ import '../../core/ble/ble_simulator_driver.dart';
 import '../../core/bloc/simulator/simulator_bloc.dart';
 import '../../core/bloc/simulator/simulator_event.dart';
 import '../../core/bloc/simulator/simulator_state.dart';
+import '../../core/config/passkey_simulator_config.dart';
 import '../../core/theme/app_theme.dart';
 import '../molecules/settings_menu_row.dart';
 import '../molecules/settings_section_header.dart';
@@ -132,12 +133,13 @@ class SettingsPage extends StatelessWidget {
                               final isSimActive = state.isSimulatorActive;
                               return SettingsMenuRow(
                                 leadingIcon: Icons.developer_board,
-                                label: "Simulator",
+                                label: "BLE Simulator",
                                 showChevron: false,
                                 onTap: () {
                                   bContext.read<SimulatorBloc>().add(const SimulatorToggled());
                                 },
                                 trailingWidget: Switch(
+                                  key: const Key('ble-simulator-switch'),
                                   value: isSimActive,
                                   activeThumbColor: AppColors.accentGreen,
                                   onChanged: (val) {
@@ -159,6 +161,28 @@ class SettingsPage extends StatelessWidget {
                         }
                       },
                     ),
+                    if (_dev) ...[
+                      const Divider(height: 1, color: AppColors.cardBorder),
+                      ListenableBuilder(
+                        listenable: PasskeySimulatorConfig.instance,
+                        builder: (context, _) {
+                          final enabled = PasskeySimulatorConfig.instance.isEnabled;
+                          return SettingsMenuRow(
+                            leadingIcon: Icons.fingerprint,
+                            label: "Passkey Simulator",
+                            showChevron: false,
+                            onTap: () =>
+                                PasskeySimulatorConfig.instance.setEnabled(!enabled),
+                            trailingWidget: Switch(
+                              key: const Key('passkey-simulator-switch'),
+                              value: enabled,
+                              activeThumbColor: AppColors.accentGreen,
+                              onChanged: PasskeySimulatorConfig.instance.setEnabled,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                     if (_debug) ...[
                       const Divider(height: 1, color: AppColors.cardBorder),
                       const SettingsMenuRow(

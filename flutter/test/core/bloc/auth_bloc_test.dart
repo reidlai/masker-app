@@ -59,4 +59,54 @@ void main() {
       await sub.cancel();
     });
   });
+
+  group('AuthBloc passkey simulator flag', () {
+    test(
+        'flag On authenticates via the simulated path even when the real authenticator throws',
+        () async {
+      final bloc = AuthBloc(
+        isPasskeySimulatorEnabled: () => true,
+        passkeyAuthenticator: () async => throw StateError('should not run'),
+      );
+      addTearDown(bloc.close);
+
+      expectLater(
+        bloc.stream,
+        emitsInOrder([isA<AuthInProgress>(), isA<AuthAuthenticated>()]),
+      );
+
+      bloc.add(const AuthPasskeySubmitted());
+    });
+
+    test(
+        'flag Off routes to the real authenticator and surfaces its failure as AuthFailure',
+        () async {
+      final bloc = AuthBloc(
+        isPasskeySimulatorEnabled: () => false,
+        passkeyAuthenticator: () async => throw StateError('boom'),
+      );
+      addTearDown(bloc.close);
+
+      expectLater(
+        bloc.stream,
+        emitsInOrder([isA<AuthInProgress>(), isA<AuthFailure>()]),
+      );
+
+      bloc.add(const AuthPasskeySubmitted());
+    });
+
+    test(
+        'flag Off with no authenticator wired still emits AuthAuthenticated (today\'s fallback)',
+        () async {
+      final bloc = AuthBloc(isPasskeySimulatorEnabled: () => false);
+      addTearDown(bloc.close);
+
+      expectLater(
+        bloc.stream,
+        emitsInOrder([isA<AuthInProgress>(), isA<AuthAuthenticated>()]),
+      );
+
+      bloc.add(const AuthPasskeySubmitted());
+    });
+  });
 }

@@ -121,3 +121,11 @@ Findings surfaced during build reviews that were intentionally not addressed in 
 - source_spec: `_bmad-output/implementation-artifacts/spec-fix-apnea-index-labeling-and-severity-bands.md`
   summary: The History filter now shows 5 chips ("All", "Normal (<5)", "Mild (5–15)", "Moderate (15–30)", "Severe (≥30)") in a horizontal scroll row — on a ~375pt phone the "Severe" chip is off-screen until scrolled, and the "(5–15)" / "(15–30)" range labels both print the shared boundary (15) with no inclusive/exclusive marker. Consider shorter, non-overlapping chip labels or a wrap layout.
   evidence: step-04 blind-hunter + edge-case-hunter review. The widget test needed `ensureVisible` before tapping "Moderate"; a UX-copy/layout decision left for the user.
+
+- source_spec: none
+  summary: Surface "Unbind BLE Device" and "Unregister User Account" directly in the Settings page Developer section (not only via the Developer Options sub-page).
+  evidence: Split from the "BLE Simulator rename + Passkey Simulator toggle" intent (2026-09-09) via multi-goal check [S]. These actions already exist on flutter/lib/ui/pages/developer_options_page.dart ("Onboarding & Reset Tools" card, shipped in commit 0353630 / PR #8) and are specced in _bmad-output/implementation-artifacts/spec-dev-unbind-device-unregister-account.md. The user believes there is no DeveloperOptionsPage and asked for these on the Settings page itself — whoever picks this up must reconcile the two surfaces (reuse a shared helper vs relocate vs duplicate) and review the existing implementation first.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dev-passkey-simulator-toggle.md`
+  summary: Pre-existing `flutter analyze` warnings in flutter/ — `main.dart:3` unused `google_fonts` import, `settings_page.dart:4` unused `ble_simulator_driver.dart` import, `developer_options_page.dart:179` use_build_context_synchronously, `test/ui/developer_options_page_test.dart:5` unused import.
+  evidence: step-04 verification-gap review of spec-dev-passkey-simulator-toggle. Confirmed present on baseline e55e4fca (identical list before and after the change via `git stash` + `flutter analyze`). The spec's "flutter analyze clean" criterion cannot be met without touching files this spec's `Never` list forbids; carved out for a focused cleanup.

@@ -9,6 +9,7 @@ import 'core/bloc/app_flow/app_flow_state.dart';
 import 'core/bloc/auth/auth_bloc.dart';
 import 'core/bloc/ble/ble_bloc.dart';
 import 'core/bloc/simulator/simulator_bloc.dart';
+import 'core/config/passkey_simulator_config.dart';
 import 'core/permissions/ble_permission_service.dart';
 import 'core/theme/app_theme.dart';
 import 'ui/atoms/app_button.dart';
@@ -119,7 +120,16 @@ class _MaskerAppState extends State<MaskerApp> {
       create: (_) => BleReceiverService(),
       child: MultiBlocProvider(
         providers: [
-          BlocProvider<AuthBloc>(create: (_) => AuthBloc()),
+          BlocProvider<AuthBloc>(
+            create: (_) => AuthBloc(
+              // Passkey Simulator flag is only honored under DEV_MODE; release
+              // builds always fall through to the real auth path.
+              isPasskeySimulatorEnabled: () => passkeySimulatorActive(
+                devMode: const bool.fromEnvironment('DEV_MODE',
+                    defaultValue: false),
+              ),
+            ),
+          ),
           BlocProvider<SimulatorBloc>(
             create: (ctx) {
               final driver = ctx.read<IBLESensorDriver>();

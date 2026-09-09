@@ -6,8 +6,16 @@ import 'auth_state.dart';
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final Future<void> Function()? _passkeyAuthenticator;
 
-  AuthBloc({Future<void> Function()? passkeyAuthenticator})
-      : _passkeyAuthenticator = passkeyAuthenticator,
+  /// Returns whether the developer "Passkey Simulator" flag is currently on.
+  /// Defaults to always-off so existing callers/tests keep their behavior;
+  /// `main` injects the real `DEV_MODE`-gated [PasskeySimulatorConfig] read.
+  final bool Function() _isPasskeySimulatorEnabled;
+
+  AuthBloc({
+    Future<void> Function()? passkeyAuthenticator,
+    bool Function()? isPasskeySimulatorEnabled,
+  })  : _passkeyAuthenticator = passkeyAuthenticator,
+        _isPasskeySimulatorEnabled = isPasskeySimulatorEnabled ?? (() => false),
         super(const AuthInitial()) {
     on<AuthPasskeySubmitted>(
       _onPasskeySubmitted,
@@ -31,9 +39,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(const AuthInProgress());
     try {
-      if (_passkeyAuthenticator != null) {
+      if (_isPasskeySimulatorEnabled()) {
+        // Simulated passkey path — brief delay, always authenticates. Unchanged.
+        await Future.delayed(const Duration(milliseconds: 800));
+      } else if (_passkeyAuthenticator != null) {
+        // TODO(FIDO): real FIDO2/WebAuthn authenticator.
         await _passkeyAuthenticator!();
       } else {
+        // No real authenticator wired yet — preserve today's behavior so
+        // DEV_MODE-off / release builds keep logging in until FIDO lands.
         await Future.delayed(const Duration(milliseconds: 800));
       }
       emit(const AuthAuthenticated());
