@@ -121,3 +121,16 @@ Findings surfaced during build reviews that were intentionally not addressed in 
 - source_spec: `_bmad-output/implementation-artifacts/spec-fix-apnea-index-labeling-and-severity-bands.md`
   summary: The History filter now shows 5 chips ("All", "Normal (<5)", "Mild (5–15)", "Moderate (15–30)", "Severe (≥30)") in a horizontal scroll row — on a ~375pt phone the "Severe" chip is off-screen until scrolled, and the "(5–15)" / "(15–30)" range labels both print the shared boundary (15) with no inclusive/exclusive marker. Consider shorter, non-overlapping chip labels or a wrap layout.
   evidence: step-04 blind-hunter + edge-case-hunter review. The widget test needed `ensureVisible` before tapping "Moderate"; a UX-copy/layout decision left for the user.
+
+- source_spec: none
+  summary: Surface "Unbind BLE Device" and "Unregister User Account" directly in the Settings page Developer section (not only via the Developer Options sub-page).
+  evidence: Split from the "BLE Simulator rename + Passkey Simulator toggle" intent (2026-09-09) via multi-goal check [S]. These actions already exist on flutter/lib/ui/pages/developer_options_page.dart ("Onboarding & Reset Tools" card, shipped in commit 0353630 / PR #8) and are specced in _bmad-output/implementation-artifacts/spec-dev-unbind-device-unregister-account.md. The user believes there is no DeveloperOptionsPage and asked for these on the Settings page itself — whoever picks this up must reconcile the two surfaces (reuse a shared helper vs relocate vs duplicate) and review the existing implementation first.
+  RESOLVED 2026-09-09: implemented on branch feature/dev-passkey-simulator-toggle — shared helper `flutter/lib/ui/developer/developer_reset_actions.dart` used by both `settings_page.dart` (new rows in the Developer section) and `developer_options_page.dart` (refactored to it). See spec Change Log "#3".
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dev-passkey-simulator-toggle.md`
+  summary: Pre-existing `flutter analyze` warnings in flutter/.
+  evidence: verification-gap review of spec-dev-passkey-simulator-toggle. RESOLVED 2026-09-09 on branch feature/dev-passkey-simulator-toggle: `use_build_context_synchronously` fixed by the reset-helper refactor (#3); `developer_options_page_test.dart` unused import removed with the file (#4); `google_fonts` (main.dart) and `ble_simulator_driver` (settings_page.dart) dead imports removed (#4). `flutter analyze` now reports "No issues found!".
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dev-passkey-simulator-toggle.md`
+  summary: BLE Signal Simulator scenario-trigger UI was removed with `developer_options_page.dart` (Change Log #4). Story 1.5's deliverable no longer has a UI, though `SimulatorBloc` / `BleSimulatorDriver` still implement and unit-test the scenarios. `flutter/README.md:129` still describes the old "Advanced section → Developer menu row" flow (stale — section is "Developer", nav row deleted).
+  evidence: Human-directed deletion 2026-09-09. If QA needs no-hardware apnea/calibration scenario triggers again, restore `ble_simulator_organism.dart` from git and mount it in the Settings Developer section. README doc pass also pending.

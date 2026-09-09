@@ -1,15 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../core/ble/ble_simulator_driver.dart';
 import '../../core/bloc/simulator/simulator_bloc.dart';
 import '../../core/bloc/simulator/simulator_event.dart';
 import '../../core/bloc/simulator/simulator_state.dart';
+import '../../core/config/passkey_simulator_config.dart';
 import '../../core/theme/app_theme.dart';
+import '../developer/developer_reset_actions.dart';
 import '../molecules/settings_menu_row.dart';
 import '../molecules/settings_section_header.dart';
 import 'billing_page.dart';
-import 'developer_options_page.dart';
 import 'language_region_page.dart';
 import 'payment_method_page.dart';
 import 'profile_page.dart';
@@ -132,12 +132,13 @@ class SettingsPage extends StatelessWidget {
                               final isSimActive = state.isSimulatorActive;
                               return SettingsMenuRow(
                                 leadingIcon: Icons.developer_board,
-                                label: "Simulator",
+                                label: "BLE Simulator",
                                 showChevron: false,
                                 onTap: () {
                                   bContext.read<SimulatorBloc>().add(const SimulatorToggled());
                                 },
                                 trailingWidget: Switch(
+                                  key: const Key('ble-simulator-switch'),
                                   value: isSimActive,
                                   activeThumbColor: AppColors.accentGreen,
                                   onChanged: (val) {
@@ -159,6 +160,28 @@ class SettingsPage extends StatelessWidget {
                         }
                       },
                     ),
+                    // Shown whenever the Developer section is (same gate as the
+                    // BLE Simulator row above): _showDeveloper = kDebugMode || DEV_MODE.
+                    const Divider(height: 1, color: AppColors.cardBorder),
+                    ListenableBuilder(
+                      listenable: PasskeySimulatorConfig.instance,
+                      builder: (context, _) {
+                        final enabled = PasskeySimulatorConfig.instance.isEnabled;
+                        return SettingsMenuRow(
+                          leadingIcon: Icons.fingerprint,
+                          label: "Passkey Simulator",
+                          showChevron: false,
+                          onTap: () =>
+                              PasskeySimulatorConfig.instance.setEnabled(!enabled),
+                          trailingWidget: Switch(
+                            key: const Key('passkey-simulator-switch'),
+                            value: enabled,
+                            activeThumbColor: AppColors.accentGreen,
+                            onChanged: PasskeySimulatorConfig.instance.setEnabled,
+                          ),
+                        );
+                      },
+                    ),
                     if (_debug) ...[
                       const Divider(height: 1, color: AppColors.cardBorder),
                       const SettingsMenuRow(
@@ -167,20 +190,36 @@ class SettingsPage extends StatelessWidget {
                         showChevron: false,
                       ),
                     ],
-                    if (_dev) ...[
-                      const Divider(height: 1, color: AppColors.cardBorder),
-                      SettingsMenuRow(
-                        leadingIcon: Icons.code,
-                        label: "Developer",
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const DeveloperOptionsPage(),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                    // Reset tools — same gate as the rows above; delegate to the
+                    // shared DeveloperResetActions flows.
+                    const Divider(height: 1, color: AppColors.cardBorder),
+                    SettingsMenuRow(
+                      leadingIcon: Icons.bluetooth_disabled,
+                      label: "Unbind BLE Sensor Device",
+                      showChevron: false,
+                      onTap: () => DeveloperResetActions.unbindBleDevice(context),
+                    ),
+                    const Divider(height: 1, color: AppColors.cardBorder),
+                    SettingsMenuRow(
+                      leadingIcon: Icons.delete_forever,
+                      label: "Unregister User Account",
+                      showChevron: false,
+                      onTap: () => DeveloperResetActions.unregisterAccount(context),
+                    ),
+                    // System Diagnostics — inert placeholders, no backing action
+                    // yet (moved here from the retired Developer Options page).
+                    const Divider(height: 1, color: AppColors.cardBorder),
+                    const SettingsMenuRow(
+                      leadingIcon: Icons.memory,
+                      label: "Inspect Circular RAM Buffer (10Hz)",
+                      showChevron: false,
+                    ),
+                    const Divider(height: 1, color: AppColors.cardBorder),
+                    const SettingsMenuRow(
+                      leadingIcon: Icons.security,
+                      label: "Verify AES-128 BLE Link Encryption",
+                      showChevron: false,
+                    ),
                   ],
                 ),
               ],

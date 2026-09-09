@@ -1,6 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'core/ble/ble_receiver_service.dart';
 import 'core/ble/i_ble_sensor_driver.dart';
 import 'core/bloc/app_flow/app_flow_bloc.dart';
@@ -9,6 +9,7 @@ import 'core/bloc/app_flow/app_flow_state.dart';
 import 'core/bloc/auth/auth_bloc.dart';
 import 'core/bloc/ble/ble_bloc.dart';
 import 'core/bloc/simulator/simulator_bloc.dart';
+import 'core/config/passkey_simulator_config.dart';
 import 'core/permissions/ble_permission_service.dart';
 import 'core/theme/app_theme.dart';
 import 'ui/atoms/app_button.dart';
@@ -119,7 +120,17 @@ class _MaskerAppState extends State<MaskerApp> {
       create: (_) => BleReceiverService(),
       child: MultiBlocProvider(
         providers: [
-          BlocProvider<AuthBloc>(create: (_) => AuthBloc()),
+          BlocProvider<AuthBloc>(
+            create: (_) => AuthBloc(
+              // Passkey Simulator flag is honored wherever the toggle is shown
+              // (kDebugMode or DEV_MODE); release builds always fall through to
+              // the real auth path.
+              isPasskeySimulatorEnabled: () => passkeySimulatorActive(
+                developerBuild: kDebugMode ||
+                    const bool.fromEnvironment('DEV_MODE', defaultValue: false),
+              ),
+            ),
+          ),
           BlocProvider<SimulatorBloc>(
             create: (ctx) {
               final driver = ctx.read<IBLESensorDriver>();
