@@ -12,6 +12,14 @@ class HealthDemographicsOrganism extends StatelessWidget {
   final double computedBmi;
   final ValueChanged<String>? onChanged;
 
+  // Optional per-field inline error text (Story 1.11). Null → no error shown.
+  final String? nameError;
+  final String? emailError;
+  final String? phoneError;
+  final String? ageError;
+  final String? weightError;
+  final String? heightError;
+
   const HealthDemographicsOrganism({
     super.key,
     this.nameController,
@@ -22,6 +30,12 @@ class HealthDemographicsOrganism extends StatelessWidget {
     required this.heightController,
     required this.computedBmi,
     this.onChanged,
+    this.nameError,
+    this.emailError,
+    this.phoneError,
+    this.ageError,
+    this.weightError,
+    this.heightError,
   });
 
   @override
@@ -45,6 +59,7 @@ class HealthDemographicsOrganism extends StatelessWidget {
               hint: "David Miller",
               controller: nameController!,
               onChanged: onChanged,
+              errorText: nameError,
             ),
           if (emailController != null) ...[
             const SizedBox(height: 12),
@@ -53,6 +68,7 @@ class HealthDemographicsOrganism extends StatelessWidget {
               hint: "david.miller@example.com",
               controller: emailController!,
               onChanged: onChanged,
+              errorText: emailError,
             ),
           ],
           if (phoneController != null) ...[
@@ -62,6 +78,7 @@ class HealthDemographicsOrganism extends StatelessWidget {
               hint: "(555) 019-8234",
               controller: phoneController!,
               onChanged: onChanged,
+              errorText: phoneError,
             ),
           ],
           const SizedBox(height: 20),
@@ -83,6 +100,7 @@ class HealthDemographicsOrganism extends StatelessWidget {
                 hint: "48",
                 controller: ageController,
                 onChanged: onChanged,
+                errorText: ageError,
               ),
             ),
             const SizedBox(width: 12),
@@ -92,6 +110,7 @@ class HealthDemographicsOrganism extends StatelessWidget {
                 hint: "85",
                 controller: weightController,
                 onChanged: onChanged,
+                errorText: weightError,
               ),
             ),
           ],
@@ -105,6 +124,7 @@ class HealthDemographicsOrganism extends StatelessWidget {
                 hint: "178",
                 controller: heightController,
                 onChanged: onChanged,
+                errorText: heightError,
               ),
             ),
             const SizedBox(width: 12),

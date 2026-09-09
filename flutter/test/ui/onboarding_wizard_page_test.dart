@@ -34,7 +34,20 @@ class _CountingRegisterRepository extends SimulatedProfileRepository {
   }
 }
 
+/// `registerUser()` works (needed to reach step 2); `saveUserProfile()` throws.
+class _SaveThrowsRepository extends SimulatedProfileRepository {
+  _SaveThrowsRepository() : super(latency: Duration.zero);
+  @override
+  Future<void> saveUserProfile(UserProfile profile) async =>
+      throw Exception('network');
+}
+
 Future<AppFlowBloc> _pumpAtOnboarding(WidgetTester tester) async {
+  // The Medical Profile step is a tall scrolling form; give it room so its
+  // "Save & Continue" button is on-screen and tappable.
+  await tester.binding.setSurfaceSize(const Size(1000, 2600));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+
   final bloc = AppFlowBloc(permissionService: const _GrantedPermissionService());
   addTearDown(bloc.close);
   bloc.add(const AppFlowLoginSucceeded(needsOnboarding: true));
@@ -54,6 +67,23 @@ Future<void> _completeRegister(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('onboarding-consent-checkbox')));
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(const Key('onboarding-create-account')));
+  await tester.pumpAndSettle();
+}
+
+/// Fill the Medical Profile step with valid values and submit. Assumes the
+/// wizard is already on step 2 (call after [_completeRegister]).
+Future<void> _completeMedicalProfile(WidgetTester tester) async {
+  final f = find.byType(EditableText);
+  await tester.enterText(f.at(0), 'Dana Scully');
+  await tester.enterText(f.at(1), 'dana.scully@example.com');
+  await tester.enterText(f.at(2), '(555) 111-2222');
+  await tester.enterText(f.at(3), '42');
+  await tester.enterText(f.at(4), '68');
+  await tester.enterText(f.at(5), '170');
+  await tester.enterText(f.at(6), 'Fox Mulder');
+  await tester.enterText(f.at(7), '(555) 333-4444');
+  await tester.ensureVisible(find.text('Save & Continue'));
+  await tester.tap(find.text('Save & Continue'));
   await tester.pumpAndSettle();
 }
 
@@ -106,17 +136,61 @@ void main() {
     expect(UserProfileService.instance.current, isNull);
   });
 
-  testWidgets('walk to ready: register, then Continue through the placeholders', (tester) async {
+  testWidgets('walk to ready: register, medical profile, then Finish', (tester) async {
     final bloc = await _pumpAtOnboarding(tester);
     await _completeRegister(tester); // → medicalProfile
-
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle(); // → passkeyEnrollment
+    await _completeMedicalProfile(tester); // → passkeyEnrollment
     expect(find.text('Finish'), findsOneWidget);
 
     await tester.tap(find.text('Finish'));
     await tester.pumpAndSettle();
     expect(bloc.state.stage, AppFlowStage.ready);
+  });
+
+  testWidgets('medical profile step: form shows, no tick, no generic Continue/Back', (tester) async {
+    await _pumpAtOnboarding(tester);
+    await _completeRegister(tester); // → medicalProfile
+
+    expect(find.byKey(const Key('onboarding-step-medicalProfile')), findsOneWidget);
+    expect(find.text('Set up your account  2/3'), findsOneWidget); // still step 2/3
+    expect(find.text('Patient Identification (HIPAA Level 1 PHI)'), findsOneWidget);
+    expect(find.text('Save & Continue'), findsOneWidget);
+    expect(find.text('Continue'), findsNothing);
+    expect(find.text('Back'), findsNothing);
+    expect(find.byIcon(Icons.check), findsNothing);
+  });
+
+  testWidgets('valid profile saves and advances to passkeyEnrollment with no success snackbar', (tester) async {
+    final bloc = await _pumpAtOnboarding(tester);
+    await _completeRegister(tester);
+    await _completeMedicalProfile(tester);
+
+    expect(bloc.state.onboardingStep, OnboardingStep.passkeyEnrollment);
+    expect(UserProfileService.instance.current!.fullName, 'Dana Scully');
+    expect(UserProfileService.instance.current!.email, 'dana.scully@example.com');
+    expect(find.text('Medical profile saved ✓'), findsNothing);
+  });
+
+  testWidgets('invalid profile is blocked: inline error, stays on medicalProfile', (tester) async {
+    final bloc = await _pumpAtOnboarding(tester);
+    await _completeRegister(tester); // → medicalProfile, empty form
+
+    await tester.ensureVisible(find.text('Save & Continue'));
+    await tester.tap(find.text('Save & Continue'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Full name is required'), findsOneWidget);
+    expect(bloc.state.onboardingStep, OnboardingStep.medicalProfile);
+  });
+
+  testWidgets('a save-write failure shows the error snackbar and does not advance', (tester) async {
+    ProfileRepository.instance = _SaveThrowsRepository();
+    final bloc = await _pumpAtOnboarding(tester);
+    await _completeRegister(tester);
+    await _completeMedicalProfile(tester);
+
+    expect(find.text("Couldn't save — try again."), findsOneWidget);
+    expect(bloc.state.onboardingStep, OnboardingStep.medicalProfile);
   });
 
   testWidgets('a second tap while registering is ignored (one registerUser call)', (tester) async {
@@ -136,14 +210,15 @@ void main() {
     expect(bloc.state.onboardingStep, OnboardingStep.medicalProfile);
   });
 
-  testWidgets('Back on the medicalProfile step returns to register', (tester) async {
+  testWidgets('Back on the passkeyEnrollment step returns to medicalProfile', (tester) async {
     final bloc = await _pumpAtOnboarding(tester);
     await _completeRegister(tester); // → medicalProfile
+    await _completeMedicalProfile(tester); // → passkeyEnrollment
 
     await tester.tap(find.text('Back'));
     await tester.pumpAndSettle();
 
-    expect(bloc.state.onboardingStep, OnboardingStep.register);
-    expect(find.byKey(const Key('onboarding-consent-checkbox')), findsOneWidget);
+    expect(bloc.state.onboardingStep, OnboardingStep.medicalProfile);
+    expect(find.byKey(const Key('onboarding-step-medicalProfile')), findsOneWidget);
   });
 }

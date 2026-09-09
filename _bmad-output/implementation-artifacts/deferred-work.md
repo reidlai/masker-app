@@ -163,3 +163,15 @@ Findings surfaced during build reviews that were intentionally not addressed in 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-9-onboarding-wizard-fresh-user-routing.md`
   summary: OnboardingWizardPage (the AppFlowStage.onboarding root) has no back-press / PopScope handling — Android hardware/gesture back backgrounds or exits the app mid-onboarding instead of stepping back or confirming. Also no cross-relaunch resumability (needs the persistence layer). Both belong with the real step screens in Stories 1.10–1.12.
   evidence: step-04 blind-hunter review of spec-1-9-onboarding-wizard-fresh-user-routing. Out of scope for the wizard-shell slice (placeholder steps have no entered data to protect).
+
+- source_spec: none
+  summary: Returning to the Medical Profile onboarding step via "Back" (from Passkey Enrollment) re-reads UserProfileService.instance.current and rebuilds the form's controllers — any entered-but-unsaved edits are lost, violating Story 1.9's "Back returns to the previous step without losing entered data" AC.
+  evidence: Split from Story 1.11 clarification (/bmad-build). 1.11 covers wiring the form into the wizard + save/advance + validation; preserving unsaved draft state across step changes needs the step widget's State kept alive (or the draft hoisted into the store/bloc) and is consistent with Story 1.10's already-deferred step-level resume.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-11-medical-profile-first-run-mode.md`
+  summary: ProfileForm validation only runs on save — a field's inline error stays visible while the user is correcting it and only clears on the next save press; there is no per-field revalidation on change. The shared single `onChanged` on HealthDemographicsOrganism/EmergencyContactOrganism needs per-field plumbing to fix cleanly.
+  evidence: step-04 blind-hunter review of Story 1.11. The spec deliberately scoped "validation runs on save"; live error-clearing is UX polish that needs its own small design (per-field onChanged wiring through the organisms).
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-11-medical-profile-first-run-mode.md`
+  summary: profile_validators positiveNumberError has no upper/plausible-range bound — weight/height accept any value > 0 (e.g. height "0.5" cm or weight "9999" kg), yielding nonsense BMI. Age is bounded 1–149 but weight/height are not.
+  evidence: step-04 blind-hunter review of Story 1.11. The spec scoped weight/height to "positive numerics" only; clinical plausible-range checks (and unit-aware bounds once kg/lb, cm/ft-in land) are a follow-up.

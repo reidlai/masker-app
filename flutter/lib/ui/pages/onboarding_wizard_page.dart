@@ -7,10 +7,11 @@ import '../../core/data/profile_repository.dart';
 import '../../core/profile/user_profile_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../atoms/app_button.dart';
+import '../organisms/profile_form.dart';
 
-/// First-run onboarding wizard shell (Story 1.9). Step 1 (Register) is real
-/// (Story 1.10); Medical Profile (1.11) and Passkey Enrollment (1.12) are still
-/// placeholders.
+/// First-run onboarding wizard shell (Story 1.9). Step 1 (Register, Story 1.10)
+/// and step 2 (Medical Profile, Story 1.11) are real; Passkey Enrollment (1.12)
+/// is still a placeholder.
 class OnboardingWizardPage extends StatelessWidget {
   const OnboardingWizardPage({super.key});
 
@@ -20,9 +21,9 @@ class OnboardingWizardPage extends StatelessWidget {
     OnboardingStep.passkeyEnrollment,
   ];
 
+  // Only steps that still render `_Placeholder` need a label here.
   static const _labels = {
     OnboardingStep.register: 'Register',
-    OnboardingStep.medicalProfile: 'Medical Profile',
     OnboardingStep.passkeyEnrollment: 'Passkey Enrollment',
   };
 
@@ -34,7 +35,10 @@ class OnboardingWizardPage extends StatelessWidget {
             ? flow.onboardingStep
             : OnboardingStep.register;
         final index = _order.indexOf(step);
-        final isRegister = step == OnboardingStep.register;
+        // Register and Medical Profile carry their own primary action; every
+        // other step uses the generic Continue / Back.
+        final selfActioned = step == OnboardingStep.register ||
+            step == OnboardingStep.medicalProfile;
 
         return Scaffold(
           backgroundColor: AppColors.background,
@@ -53,14 +57,15 @@ class OnboardingWizardPage extends StatelessWidget {
                   Expanded(
                     child: KeyedSubtree(
                       key: Key('onboarding-step-${step.name}'),
-                      child: isRegister
-                          ? const _RegisterStep()
-                          : _Placeholder(label: _labels[step]!),
+                      child: switch (step) {
+                        OnboardingStep.register => const _RegisterStep(),
+                        OnboardingStep.medicalProfile =>
+                          const _MedicalProfileStep(),
+                        _ => _Placeholder(label: _labels[step]!),
+                      },
                     ),
                   ),
-                  // The register step carries its own action; every other step
-                  // uses the generic Continue / Back.
-                  if (!isRegister) ...[
+                  if (!selfActioned) ...[
                     if (index > 0) ...[
                       AppButton(
                         label: 'Back',
@@ -114,6 +119,24 @@ class _Placeholder extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Onboarding step 2 (Story 1.11): the medical-profile form in first-run mode.
+/// Reuses [ProfileForm]; on a successful save it advances the wizard. No AppBar
+/// tick and no generic Continue/Back — the form's own "Save & Continue" is the
+/// only action.
+class _MedicalProfileStep extends StatelessWidget {
+  const _MedicalProfileStep();
+
+  @override
+  Widget build(BuildContext context) {
+    return ProfileForm(
+      padding: const EdgeInsets.symmetric(vertical: 20.0),
+      onSaved: () => context
+          .read<AppFlowBloc>()
+          .add(const AppFlowOnboardingStepAdvanced()),
     );
   }
 }
