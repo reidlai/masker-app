@@ -8,11 +8,17 @@ void main() {
     expect(ProfileRepository.instance, isA<SimulatedProfileRepository>());
   });
 
-  test('SimulatedProfileRepository completes both calls without throwing',
+  test('SimulatedProfileRepository completes both mutations without throwing',
       () async {
     final repo = SimulatedProfileRepository(latency: Duration.zero);
     await expectLater(repo.unbindDevice(), completes);
     await expectLater(repo.unregisterUser(), completes);
+  });
+
+  test('SimulatedProfileRepository fetch* returns the demo payloads', () async {
+    final repo = SimulatedProfileRepository(latency: Duration.zero);
+    expect(await repo.fetchUserProfile(), demoUserProfile);
+    expect(await repo.fetchDeviceProfile(), demoDeviceProfile);
   });
 
   test('instance is substitutable and reset restores the default', () {

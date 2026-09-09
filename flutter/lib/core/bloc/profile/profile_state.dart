@@ -1,9 +1,10 @@
 import 'package:equatable/equatable.dart';
+import '../../profile/user_profile.dart';
 
 /// State for [ProfileBloc] — the medical-profile field values and the derived
-/// BMI. Seed values that used to be literals inside `_ProfilePageState` are the
-/// initial state here; the `TextEditingController`s stay in the view and feed
-/// their values in via `ProfileFieldChanged`.
+/// BMI. Starts empty; `ProfileBloc` seeds it from a `UserProfile` (via
+/// [ProfileState.fromProfile]) when one is available. The `TextEditingController`s
+/// stay in the view and feed values in via `ProfileFieldChanged`.
 class ProfileState extends Equatable {
   final String name;
   final String email;
@@ -16,16 +17,35 @@ class ProfileState extends Equatable {
   final double computedBmi;
 
   const ProfileState({
-    this.name = 'David Miller',
-    this.email = 'david.miller@example.com',
-    this.phone = '(555) 019-8234',
-    this.age = '48',
-    this.weight = '85',
-    this.height = '178',
-    this.caregiverName = 'Maria Chen',
-    this.emergencyPhone = '(555) 019-2244',
-    this.computedBmi = 26.8,
+    this.name = '',
+    this.email = '',
+    this.phone = '',
+    this.age = '',
+    this.weight = '',
+    this.height = '',
+    this.caregiverName = '',
+    this.emergencyPhone = '',
+    this.computedBmi = 0,
   });
+
+  /// Seed the form from a loaded [UserProfile]. Numeric fields render without a
+  /// trailing `.0`; `computedBmi` is taken straight from the profile.
+  factory ProfileState.fromProfile(UserProfile p) => ProfileState(
+        name: p.fullName,
+        email: p.email,
+        phone: p.phone,
+        age: p.age == 0 ? '' : p.age.toString(),
+        weight: _num(p.weightKg),
+        height: _num(p.heightCm),
+        caregiverName: p.caregiverName,
+        emergencyPhone: p.caregiverPhone,
+        computedBmi: p.computedBmi,
+      );
+
+  static String _num(double d) {
+    if (d == 0) return '';
+    return d % 1 == 0 ? d.toInt().toString() : d.toString();
+  }
 
   ProfileState copyWith({
     String? name,

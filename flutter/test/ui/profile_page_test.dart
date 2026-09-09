@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:masker_app/core/data/profile_repository.dart';
+import 'package:masker_app/core/profile/user_profile_service.dart';
 import 'package:masker_app/ui/pages/profile_page.dart';
 
 void main() {
@@ -8,33 +10,40 @@ void main() {
         (w) => w is EditableText && w.controller.text == value,
       );
 
-  testWidgets('ProfilePage renders David demographics and dynamically updates computed BMI', (WidgetTester tester) async {
+  setUp(UserProfileService.instance.reset);
+
+  testWidgets('ProfilePage hydrates the form from the profile store and updates BMI live', (WidgetTester tester) async {
+    UserProfileService.instance.set(demoUserProfile);
+
     await tester.pumpWidget(
-      const MaterialApp(
-        home: ProfilePage(),
-      ),
+      const MaterialApp(home: ProfilePage()),
     );
 
-    // Verify Title & User Card
     expect(find.text("Medical Profile"), findsOneWidget);
-    expect(find.text("David (Persona A)"), findsOneWidget);
+    expect(find.text("David Miller"), findsWidgets); // header title + name field
 
-    // Verify Initial Demographics & Identity
-    expect(fieldWithValue("David Miller"), findsOneWidget); // Patient Name
-    expect(fieldWithValue("david.miller@example.com"), findsOneWidget); // Patient Email
-    expect(fieldWithValue("(555) 019-8234"), findsOneWidget); // Patient Phone
-    expect(fieldWithValue("48"), findsOneWidget); // Age
-    expect(fieldWithValue("85"), findsOneWidget); // Weight
-    expect(fieldWithValue("178"), findsOneWidget); // Height
-    expect(fieldWithValue("Maria Chen"), findsOneWidget); // Caregiver Name
-
-    // Verify Computed BMI (85 / (1.78 * 1.78) = 26.8)
+    expect(fieldWithValue("David Miller"), findsOneWidget);
+    expect(fieldWithValue("david.miller@example.com"), findsOneWidget);
+    expect(fieldWithValue("(555) 019-8234"), findsOneWidget);
+    expect(fieldWithValue("48"), findsOneWidget);
+    expect(fieldWithValue("85"), findsOneWidget);
+    expect(fieldWithValue("178"), findsOneWidget);
+    expect(fieldWithValue("Maria Chen"), findsOneWidget);
     expect(find.text("26.8"), findsOneWidget);
 
-    // Update Weight to 90kg and verify re-calculation (90 / (1.78 * 1.78) = 28.4)
     await tester.enterText(fieldWithValue("85"), "90");
     await tester.pump();
-
     expect(find.text("28.4"), findsOneWidget);
+  });
+
+  testWidgets('ProfilePage with an empty store shows a blank form + placeholder header', (WidgetTester tester) async {
+    // store already reset to null in setUp
+    await tester.pumpWidget(
+      const MaterialApp(home: ProfilePage()),
+    );
+
+    expect(find.text("Complete your profile"), findsOneWidget);
+    expect(fieldWithValue("David Miller"), findsNothing);
+    expect(find.text("26.8"), findsNothing);
   });
 }

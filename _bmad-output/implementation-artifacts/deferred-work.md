@@ -146,3 +146,11 @@ Findings surfaced during build reviews that were intentionally not addressed in 
 - source_spec: `_bmad-output/implementation-artifacts/spec-profile-stores-reset-seam.md`
   summary: SettingsActions.logOut clears the profile stores + auth + app-flow, but does NOT stop an active nocturnal monitoring session or tear down the always-on BLE foreground service. A logged-out user can still have a live BLE receiver running.
   evidence: step-04 blind-hunter review of spec-profile-stores-reset-seam. Out of scope for that slice (spec scoped logout to stores/auth/app-flow only). Belongs with the multi-phase onboarding work (deferred G3) or a dedicated session-teardown-on-logout follow-up; unbindBleDevice already does the BLE reset, logOut should likely call the same path.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-profile-store-wiring.md`
+  summary: G3 — the multi-phase onboarding flow (Task_PatientRegister → Task_CreateUserProfile → Task_RegisterPasskey → bedtime-ready). Route to epic/story planning, NOT a single bmad-build spec — it is Epic-1-sized ("Mobile App Foundation, Settings & Biometric Passkey Onboarding") with existing planning in epics.md §Epic 1, ARCHITECTURE-SPINE §Epic 0/1, and the UX design docs (State_HomeEmpty / onboarding wizard chain / MOB_DEVICE_PAIRING).
+  evidence: Multi-goal split 2026-09-09 [S]. User confirmed "G2 as a bmad-build spec now; G3 → epic/story planning". Until G3 exists, logout / unregister route to the existing single-screen passkey LoginPage as the interim.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-profile-store-wiring.md`
+  summary: ProfilePage "Save & Continue" / check-icon buttons still only show a snackbar — edits are not written back to UserProfileService or the repository, so reopening ProfilePage discards them. Also ProfileState.fromProfile shows BMI 0.0 when a fetched profile carries weight/height but no computedBmi (recompute on load).
+  evidence: step-04 blind-hunter review of spec-profile-store-wiring. Out of scope for that slice (spec only hydrated the existing read form; edit/save is "Ask First"). Belongs with a profile-edit-persistence spec, likely alongside the real ProfileRepository write path.

@@ -11,6 +11,7 @@ import 'core/bloc/ble/ble_bloc.dart';
 import 'core/bloc/simulator/simulator_bloc.dart';
 import 'core/config/passkey_simulator_config.dart';
 import 'core/permissions/ble_permission_service.dart';
+import 'core/profile/profile_session.dart';
 import 'core/theme/app_theme.dart';
 import 'ui/atoms/app_button.dart';
 import 'ui/pages/ble_permission_primer_page.dart';
@@ -63,7 +64,10 @@ class _MaskerAppState extends State<MaskerApp> {
     switch (flow.stage) {
       case AppFlowStage.loggedOut:
         return LoginPage(
-          onLoginSuccess: () {
+          onLoginSuccess: () async {
+            // Pull the user + device profile into the reactive stores before
+            // the tab shell mounts.
+            await ProfileSession.hydrate();
             _appFlowBloc.add(const AppFlowLoginSucceeded());
           },
         );

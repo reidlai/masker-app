@@ -3,6 +3,7 @@
 // based on live permission status (never a persisted flag).
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:masker_app/core/data/profile_repository.dart';
 import 'package:masker_app/core/permissions/ble_permission_service.dart';
 import 'package:masker_app/main.dart';
 
@@ -42,6 +43,13 @@ Future<void> _loginAndSettle(WidgetTester tester) async {
 }
 
 void main() {
+  setUp(() {
+    // Keep the post-login ProfileSession.hydrate() instant so _loginAndSettle's
+    // fixed pump budget still reaches the flow gate.
+    ProfileRepository.instance = SimulatedProfileRepository(latency: Duration.zero);
+  });
+  tearDown(ProfileRepository.reset);
+
   testWidgets('primer is shown after login when permission is not granted', (tester) async {
     await tester.pumpWidget(MaskerApp(
       permissionService: const _FakeBlePermissionService(

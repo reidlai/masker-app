@@ -1,12 +1,19 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../profile/user_profile.dart';
 import 'profile_event.dart';
 import 'profile_state.dart';
 
 /// Owns the medical-profile field values and the derived BMI — the domain math
 /// (`_calculateBmi()`) lifted out of `_ProfilePageState` unchanged. A
 /// non-numeric weight/height leaves the last valid BMI in place.
+///
+/// Seeded from [initial] when the profile store has a value; otherwise starts
+/// empty (a blank "complete your profile" form).
 class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
-  ProfileBloc() : super(const ProfileState()) {
+  ProfileBloc({UserProfile? initial})
+      : super(initial != null
+            ? ProfileState.fromProfile(initial)
+            : const ProfileState()) {
     on<ProfileFieldChanged>(_onFieldChanged);
   }
 
