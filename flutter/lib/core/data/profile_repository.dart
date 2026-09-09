@@ -29,6 +29,10 @@ abstract class ProfileRepository {
 
   /// Persist the edited user profile server-side.
   Future<void> saveUserProfile(UserProfile profile);
+
+  /// Create a new account: mint a `UserProfile` with a fresh id and no PHI,
+  /// store it, and return it. Onboarding step 1.
+  Future<UserProfile> registerUser();
 }
 
 /// Demo identity used until a real backend is wired — the values that used to
@@ -106,5 +110,14 @@ class SimulatedProfileRepository implements ProfileRepository {
   Future<void> saveUserProfile(UserProfile profile) async {
     await Future<void>.delayed(latency);
     _user = profile;
+  }
+
+  @override
+  Future<UserProfile> registerUser() async {
+    await Future<void>.delayed(latency);
+    final user =
+        UserProfile(userId: 'user-${DateTime.now().microsecondsSinceEpoch}');
+    _user = user;
+    return user;
   }
 }

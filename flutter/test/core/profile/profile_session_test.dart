@@ -17,6 +17,8 @@ class _NullProfileRepository implements ProfileRepository {
   Future<DeviceProfile?> fetchDeviceProfile() async => null;
   @override
   Future<void> saveUserProfile(UserProfile profile) async {}
+  @override
+  Future<UserProfile> registerUser() async => throw UnimplementedError();
 }
 
 class _ThrowingFetchRepository implements ProfileRepository {
@@ -30,6 +32,8 @@ class _ThrowingFetchRepository implements ProfileRepository {
   Future<DeviceProfile?> fetchDeviceProfile() async => throw Exception('network');
   @override
   Future<void> saveUserProfile(UserProfile profile) async {}
+  @override
+  Future<UserProfile> registerUser() async => throw UnimplementedError();
 }
 
 void main() {

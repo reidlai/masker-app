@@ -44,6 +44,17 @@ void main() {
     expect(await repo.fetchDeviceProfile(), isNull);
   });
 
+  test('registerUser mints an id-only profile and stores it', () async {
+    final repo = SimulatedProfileRepository(latency: Duration.zero);
+    final user = await repo.registerUser();
+
+    expect(user.userId, isNotEmpty);
+    expect(user.fullName, isEmpty);
+    expect(user.email, isEmpty);
+    expect(user.age, 0);
+    expect(await repo.fetchUserProfile(), user); // persisted
+  });
+
   test('instance is substitutable and reset restores the default', () {
     final fake = SimulatedProfileRepository(latency: Duration.zero);
     ProfileRepository.instance = fake;
