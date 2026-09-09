@@ -24,6 +24,9 @@ class _ThrowingProfileRepository implements ProfileRepository {
   Future<UserProfile?> fetchUserProfile() async => throw Exception('network');
   @override
   Future<DeviceProfile?> fetchDeviceProfile() async => throw Exception('network');
+  @override
+  Future<void> saveUserProfile(UserProfile profile) async =>
+      throw Exception('network');
 }
 
 void main() {

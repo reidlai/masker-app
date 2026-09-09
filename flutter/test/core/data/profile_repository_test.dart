@@ -21,6 +21,11 @@ void main() {
     expect(await repo.fetchDeviceProfile(), demoDeviceProfile);
   });
 
+  test('SimulatedProfileRepository.saveUserProfile completes', () async {
+    final repo = SimulatedProfileRepository(latency: Duration.zero);
+    await expectLater(repo.saveUserProfile(demoUserProfile), completes);
+  });
+
   test('instance is substitutable and reset restores the default', () {
     final fake = SimulatedProfileRepository(latency: Duration.zero);
     ProfileRepository.instance = fake;

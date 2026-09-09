@@ -349,6 +349,53 @@ So that my sleep data cannot be recovered from the device.
 - **And** the app returns to `LoginPage` with no cached session.
 - *(The self-service web portal that originates the revocation is Epic 7 / UNPLANNED; this story covers only the on-device execution.)*
 
+#### Story 1.9: First-Run Onboarding Wizard & Fresh-User Routing
+As a new patient,
+I want a guided multi-step setup after my first passkey sign-in,
+So that my account, medical profile, and passkey exist before I reach the dashboard.
+
+**Acceptance Criteria:**
+- **Given** login succeeds and `ProfileRepository.fetchUserProfile()` returns `null` (new or just-unregistered user), **when** `AppFlowBloc` resolves, **then** it enters a new `AppFlowStage.onboarding` rendering `OnboardingWizardPage` — **not** `MainContainerPage`.
+- **Given** a `UserProfile` exists (returning user), **when** login succeeds, **then** the app goes straight to `ready` / `MOB_HOME` (current behaviour); onboarding is skipped.
+- **Given** the wizard, **then** it renders an ordered stepper — (1) Register, (2) Medical Profile, (3) Passkey Enrollment, (4) Ready — with a progress indicator and **no** bottom nav (UX-DR14); the ‹ back affordance moves between steps.
+- **Given** a step's "Save & Continue", **then** the wizard persists that step and advances; "Back" returns to the previous step without losing entered data.
+- **Given** the "Ready" step completes, **then** `AppFlowBloc` transitions to `ready` and the app lands on `MOB_HOME`.
+- **Given** the app is killed mid-onboarding and relaunched, **then** login returns the user to the first incomplete step (onboarding is resumable).
+- **Given** `SettingsActions.unregisterAccount` has run (or a first-ever launch), **then** `SimulatedProfileRepository` tracks the account as unregistered so `fetchUserProfile()` returns `null` — the demo `demoUserProfile` payload is returned only for a "seeded returning user" test fixture, never by default. This replaces the current G2 behaviour where `ProfileSession.hydrate()` always re-seeds the demo profile.
+- **Depends on:** Story 1.1 (auth), Story 1.2 (profile form), Story 1.10, Story 1.12.
+
+#### Story 1.10: Patient Account Registration (`Task_PatientRegister`)
+As a new patient,
+I want to create my account identity as onboarding step 1,
+So that a `PatientUser` record exists to attach my profile and passkey to.
+
+**Acceptance Criteria:**
+- **Given** onboarding step 1, **when** I accept the HIPAA §164.312 consent and confirm, **then** `ProfileRepository.registerUser()` (new — simulated: returns a `UserProfile` with a fresh `userId` and empty PHI) is called, `UserProfileService.instance.set()` stores it, and the wizard advances to Medical Profile.
+- **Given** `registerUser()` fails, **then** an error is shown and the step does not advance.
+- **Given** a returning user (Story 1.9 routed them past onboarding), this step never renders.
+
+#### Story 1.11: Medical Profile — First-Run Mode
+As a new patient,
+I want onboarding step 2 to be the `MOB_USER_PROFILE` form in first-run mode,
+So that I set my identity, demographics, and caregiver contact before monitoring.
+
+**Acceptance Criteria:**
+- **Given** onboarding step 2, **then** it renders the Story 1.2 profile form in first-run mode: primary CTA "Save & Continue" (advances the wizard), no AppBar tick, no back-to-Settings.
+- **Given** "Save & Continue", **then** the entered profile is saved via `ProfileRepository.saveUserProfile()` and the wizard advances to Passkey Enrollment.
+- **Given** required fields are empty or invalid (RFC 5322 email, formatted phone), **then** "Save & Continue" is blocked with inline errors.
+- **Note:** this is the first-run half of Story 1.2; the Settings edit-mode half already ships (with `_save` persistence).
+
+#### Story 1.12: Passkey Enrollment Step (`Task_RegisterPasskey`)
+As a new patient,
+I want to enroll a FIDO2 passkey during onboarding,
+So that later sign-ins use my device biometrics.
+
+**Acceptance Criteria:**
+- **Given** onboarding step 3, **when** I tap "Create Passkey" with the **Passkey Simulator** flag ON (dev), **then** a simulated enrollment succeeds after a brief delay; with the flag OFF, real WebAuthn registration runs (the FIDO path the Passkey Simulator toggle scaffolds).
+- **Given** enrollment succeeds, **then** `ProfileRepository.enrollPasskey()` (new — simulated) records `passkey_credential_id` on `PatientUser` and the wizard advances to "Ready".
+- **Given** enrollment fails or the biometric prompt is cancelled, **then** the step shows a retry and does not advance.
+- **Given** a returning user, this step never renders.
+
 ---
 
 ### Epic 2: BLE Sensor Discovery, Pairing & IDLE Band Calibration

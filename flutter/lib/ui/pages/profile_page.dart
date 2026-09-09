@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/bloc/profile/profile_bloc.dart';
 import '../../core/bloc/profile/profile_event.dart';
 import '../../core/bloc/profile/profile_state.dart';
+import '../../core/data/profile_repository.dart';
+import '../../core/profile/user_profile.dart';
 import '../../core/profile/user_profile_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../atoms/app_button.dart';
@@ -65,6 +67,57 @@ class _ProfilePageState extends State<ProfilePage> {
     _bloc.add(ProfileFieldChanged(ProfileField.height, _heightController.text));
   }
 
+  bool _saving = false;
+
+  void _snack(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: color),
+    );
+  }
+
+  /// Persist the form. Shared by the AppBar tick and the "Save & Continue"
+  /// button. Optimistic: the in-memory store is updated first, then the
+  /// (simulated) server write; a write failure leaves the optimistic value and
+  /// surfaces an error. Re-entrant taps while a save is in flight are ignored.
+  Future<void> _save() async {
+    if (_saving) return;
+    _saving = true;
+    try {
+      await _persist();
+    } finally {
+      _saving = false;
+    }
+  }
+
+  Future<void> _persist() async {
+    final current = UserProfileService.instance.current;
+    final updated = UserProfile(
+      userId: current?.userId ?? 'demo-user',
+      fullName: _nameController.text.trim(),
+      email: _emailController.text.trim(),
+      phone: _phoneController.text.trim(),
+      age: int.tryParse(_ageController.text.trim()) ?? 0,
+      gender: current?.gender ?? '',
+      weightKg: double.tryParse(_weightController.text.trim()) ?? 0,
+      heightCm: double.tryParse(_heightController.text.trim()) ?? 0,
+      computedBmi: _bloc.state.computedBmi,
+      caregiverName: _caregiverNameController.text.trim(),
+      caregiverPhone: _emergencyPhoneController.text.trim(),
+    );
+
+    UserProfileService.instance.set(updated);
+    // Keep the header (name ↔ "Complete your profile") in sync without a reopen.
+    _bloc.add(ProfileFieldChanged(ProfileField.name, updated.fullName));
+
+    try {
+      await ProfileRepository.instance.saveUserProfile(updated);
+    } catch (_) {
+      if (mounted) _snack("Couldn't save — try again.", Colors.redAccent);
+      return;
+    }
+    if (mounted) _snack("Medical profile saved ✓", AppColors.accentGreen);
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ProfileBloc, ProfileState>(
@@ -77,14 +130,7 @@ class _ProfilePageState extends State<ProfilePage> {
             actions: [
               IconButton(
                 icon: const Icon(Icons.check, color: AppColors.accentGreen),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Health profile saved ✓"),
-                      backgroundColor: AppColors.surface,
-                    ),
-                  );
-                },
+                onPressed: _save,
               ),
             ],
           ),
@@ -134,13 +180,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   AppButton(
                     label: "Save & Continue",
                     variant: AppButtonVariant.primary,
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text("Medical profile updated ✓"),
-                            backgroundColor: AppColors.accentGreen),
-                      );
-                    },
+                    onPressed: _save,
                   ),
                 ],
               ),
