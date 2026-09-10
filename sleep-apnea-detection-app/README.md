@@ -1,4 +1,4 @@
-# Sleep Apnea Detection App (D-BAND Integrated Platform) 🫁📱
+# D-BAND Sleep Apnea Detection App 🫁📱
 
 Cross-platform mobile application (Flutter / Dart) for at-home nocturnal sleep apnea monitoring, real-time AASM breathing event detection, thermal BLE sensor calibration, and HIPAA-compliant Passkey authentication.
 

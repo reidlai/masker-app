@@ -8,7 +8,7 @@ class BrandHeaderOrganism extends StatelessWidget {
 
   const BrandHeaderOrganism({
     super.key,
-    this.title = "Sleep Apnea App",
+    this.title = "D-BAND Sleep Apnea Detection App",
     this.subtitle = "D-BAND Integrated Respiratory Platform",
     this.icon = Icons.air,
   });

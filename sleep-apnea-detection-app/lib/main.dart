@@ -157,7 +157,7 @@ class _MaskerAppState extends State<MaskerApp> {
           ),
         ],
         child: MaterialApp(
-          title: 'Sleep Apnea Detection App',
+          title: 'D-BAND Sleep Apnea Detection App',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.darkTheme,
           home: BlocBuilder<AppFlowBloc, AppFlowState>(

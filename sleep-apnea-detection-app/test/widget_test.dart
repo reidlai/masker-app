@@ -13,6 +13,6 @@ void main() {
     await tester.pumpWidget(const MaskerApp());
 
     expect(find.byType(MaterialApp), findsOneWidget);
-    expect(find.text('Sleep Apnea App'), findsOneWidget);
+    expect(find.text('D-BAND Sleep Apnea Detection App'), findsOneWidget);
   });
 }

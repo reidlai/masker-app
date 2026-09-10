@@ -1,9 +1,13 @@
 <!-- bmad:context -->
 <!-- Verified 2026-09-08 against c085354. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
-## masker-app
+## dband-platform
 
-Cross-platform Flutter/Dart application for at-home nocturnal sleep apnea monitoring, real-time AASM breathing event detection, thermal BLE sensor calibration, and WebAuthn/Passkey authentication. Stack: `flutter_bloc: ^8.1.3`, `rxdart: ^0.28.0`, `flutter_blue_plus`. Planning specs live in `_bmad-output/` and `docs/`.
+Generic platform and hardware integration suite for d-band thermal/ink sensor technology. Built to support diverse monitoring use cases powered by d-band telemetry.
+
+### masker-app (`sleep-apnea-detection-app/`)
+
+Cross-platform Flutter/Dart mobile client application for at-home nocturnal sleep apnea monitoring, real-time AASM breathing event detection, thermal BLE sensor calibration, and WebAuthn/Passkey authentication. Stack: `flutter_bloc: ^8.1.3`, `rxdart: ^0.28.0`, `flutter_blue_plus`. Planning specs live in `_bmad-output/` and `docs/`.
 
 ## Policy
 
@@ -13,13 +17,13 @@ Cross-platform Flutter/Dart application for at-home nocturnal sleep apnea monito
 
 ## Where things are
 
-- BLE hardware driver & simulation: [`flutter/lib/core/ble/`](flutter/lib/core/ble/) (`flutter_blue_sensor_driver.dart`, `ble_simulator_driver.dart`, `mock_ble_sensor_driver.dart`)
-- Sleep monitoring & signal processing: [`flutter/lib/core/bloc/monitoring/`](flutter/lib/core/bloc/monitoring/), [`flutter/lib/core/monitoring/`](flutter/lib/core/monitoring/)
+- BLE hardware driver & simulation: [`sleep-apnea-detection-app/lib/core/ble/`](sleep-apnea-detection-app/lib/core/ble/) (`flutter_blue_sensor_driver.dart`, `ble_simulator_driver.dart`, `mock_ble_sensor_driver.dart`)
+- Sleep monitoring & signal processing: [`sleep-apnea-detection-app/lib/core/bloc/monitoring/`](sleep-apnea-detection-app/lib/core/bloc/monitoring/), [`sleep-apnea-detection-app/lib/core/monitoring/`](sleep-apnea-detection-app/lib/core/monitoring/)
 - Project specifications & planning docs: [`_bmad-output/`](_bmad-output/) and [`docs/`](docs/)
 
 ## Running and verifying
 
-- Execute `flutter test` from the `flutter/` directory to run all 181 unit & widget tests across BLoCs, UI organisms, and drivers.
+- Execute `flutter test` from the `sleep-apnea-detection-app/` directory to run all 181 unit & widget tests across BLoCs, UI organisms, and drivers.
 - Enable developer mode in Flutter via `--dart-define=DEV_MODE=true`.
 
 ## Conventions that differ from defaults

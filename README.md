@@ -1,6 +1,9 @@
-# Documentation
+# dband-platform
 
-Project specifications, planning documents, and architectural guides for the **masker-app** platform.
+Project specifications, planning documents, and architectural guides for **dband-platform** — the overarching platform for **d-band** thermal/ink sensor technology and telemetry integrations.
 
-- Planning & Sprint Specs: [`_bmad-output/`](_bmad-output/)
-- Mobile App Architecture: [`flutter/README.md`](flutter/README.md)
+## Core Components & Applications
+
+- **Platform Specs & Artifacts**: [`_bmad-output/`](_bmad-output/)
+- **`masker-app` (Sleep Apnea Mobile App)**: [`flutter/`](flutter/) (Cross-platform Flutter app for sleep apnea breathing event monitoring & BLE calibration)
+
