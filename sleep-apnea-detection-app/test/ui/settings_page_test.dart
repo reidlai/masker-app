@@ -9,6 +9,7 @@ import 'package:masker_app/core/bloc/auth/auth_state.dart';
 import 'package:masker_app/core/bloc/simulator/simulator_bloc.dart';
 import 'package:masker_app/core/config/passkey_simulator_config.dart';
 import 'package:masker_app/core/data/profile_repository.dart';
+import 'package:masker_app/core/onboarding/onboarding_gate.dart';
 import 'package:masker_app/core/profile/device_profile.dart';
 import 'package:masker_app/core/profile/device_profile_service.dart';
 import 'package:masker_app/core/profile/user_profile.dart';
@@ -33,13 +34,31 @@ class _ThrowingProfileRepository implements ProfileRepository {
   Future<UserProfile> enrollPasskey() async => throw UnimplementedError();
 }
 
+class _FakeOnboardingGate implements OnboardingGate {
+  bool complete = true;
+  int clearCalls = 0;
+  @override
+  Future<bool> isComplete() async => complete;
+  @override
+  Future<void> markComplete() async => complete = true;
+  @override
+  Future<void> clear() async {
+    clearCalls++;
+    complete = false;
+  }
+}
+
 void main() {
+  late _FakeOnboardingGate gate;
+
   setUp(() {
     BleSimulatorDriver().resetForTest();
     PasskeySimulatorConfig.instance.reset();
     UserProfileService.instance.reset();
     DeviceProfileService.instance.reset();
     ProfileRepository.instance = SimulatedProfileRepository(latency: Duration.zero);
+    gate = _FakeOnboardingGate();
+    OnboardingGate.instance = gate;
   });
 
   Future<void> pumpSettings(
@@ -279,7 +298,9 @@ void main() {
     expect(find.text("Couldn't unbind device — try again."), findsOneWidget);
   });
 
-  testWidgets('Unregister: repo success clears both stores, resets AuthBloc, logs out', (tester) async {
+  testWidgets(
+      'Unregister: repo success clears both stores, resets AuthBloc, clears the '
+      'onboarding gate, and re-resolves to the wizard', (tester) async {
     UserProfileService.instance.set(const UserProfile(userId: 'u1'));
     DeviceProfileService.instance.set(const DeviceProfile(bindingId: 'b1'));
     final authBloc = AuthBloc();
@@ -310,7 +331,9 @@ void main() {
     expect(UserProfileService.instance.current, isNull);
     expect(DeviceProfileService.instance.current, isNull);
     expect(authBloc.state, isA<AuthInitial>());
-    expect(appFlowBloc.state.stage, AppFlowStage.loggedOut);
+    expect(gate.clearCalls, 1);
+    expect(appFlowBloc.state.stage, AppFlowStage.onboarding);
+    expect(appFlowBloc.state.onboardingStep, OnboardingStep.register);
   });
 
   testWidgets('Log out: confirm empties both stores and drives auth + app-flow to logged-out', (tester) async {
@@ -346,6 +369,7 @@ void main() {
     expect(DeviceProfileService.instance.current, isNull);
     expect(authBloc.state, isA<AuthInitial>());
     expect(appFlowBloc.state.stage, AppFlowStage.loggedOut);
+    expect(gate.clearCalls, 0); // log out keeps the user onboarded
   });
 
   testWidgets('Log out: Cancel keeps the stores', (tester) async {

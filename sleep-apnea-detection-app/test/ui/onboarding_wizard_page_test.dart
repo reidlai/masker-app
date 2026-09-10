@@ -2,16 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:masker_app/core/bloc/app_flow/app_flow_bloc.dart';
-import 'package:masker_app/core/bloc/app_flow/app_flow_event.dart';
 import 'package:masker_app/core/bloc/app_flow/app_flow_state.dart';
 import 'package:masker_app/core/bloc/auth/auth_state.dart'
     show passkeyUnavailableMessage;
 import 'package:masker_app/core/config/passkey_simulator_config.dart';
 import 'package:masker_app/core/data/profile_repository.dart';
+import 'package:masker_app/core/onboarding/onboarding_gate.dart';
 import 'package:masker_app/core/permissions/ble_permission_service.dart';
 import 'package:masker_app/core/profile/user_profile.dart';
 import 'package:masker_app/core/profile/user_profile_service.dart';
 import 'package:masker_app/ui/pages/onboarding_wizard_page.dart';
+
+/// Onboarding not complete → `AppFlowBloc` resolves straight to the wizard.
+class _IncompleteOnboardingGate implements OnboardingGate {
+  @override
+  Future<bool> isComplete() async => false;
+  @override
+  Future<void> markComplete() async {}
+  @override
+  Future<void> clear() async {}
+}
 
 class _GrantedPermissionService extends BlePermissionService {
   const _GrantedPermissionService();
@@ -70,9 +80,11 @@ Future<AppFlowBloc> _pumpAtOnboarding(WidgetTester tester) async {
   await tester.binding.setSurfaceSize(const Size(1000, 2600));
   addTearDown(() => tester.binding.setSurfaceSize(null));
 
-  final bloc = AppFlowBloc(permissionService: const _GrantedPermissionService());
+  final bloc = AppFlowBloc(
+    permissionService: const _GrantedPermissionService(),
+    onboardingGate: _IncompleteOnboardingGate(),
+  );
   addTearDown(bloc.close);
-  bloc.add(const AppFlowLoginSucceeded(needsOnboarding: true));
   await tester.pumpWidget(
     MaterialApp(
       home: BlocProvider<AppFlowBloc>.value(

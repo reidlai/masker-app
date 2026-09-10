@@ -1,12 +1,26 @@
 import 'package:equatable/equatable.dart';
 
-/// Events for [AppFlowBloc] — the three transitions the root widget used to
-/// drive with `setState`.
+/// Events for [AppFlowBloc] — the boot resolve, the onboarding-wizard steps,
+/// login success, logout / unregister, and the permission-primer transitions.
 abstract class AppFlowEvent extends Equatable {
   const AppFlowEvent();
 
   @override
   List<Object?> get props => const [];
+}
+
+/// Dispatched by `AppFlowBloc` on construction (and after an unregister): read
+/// the persisted `OnboardingGate` flag and route `resolving` → `loggedOut`
+/// (returning user) or `onboarding` (fresh install).
+class AppFlowResolveRequested extends AppFlowEvent {
+  const AppFlowResolveRequested();
+}
+
+/// The user unregistered their account. Distinct from [AppFlowLogoutRequested]:
+/// the onboarding flag has been cleared, so the flow re-resolves to
+/// `onboarding`, not `loggedOut`.
+class AppFlowUnregistered extends AppFlowEvent {
+  const AppFlowUnregistered();
 }
 
 /// The user completed passkey login. [needsOnboarding] is set by `main` after
