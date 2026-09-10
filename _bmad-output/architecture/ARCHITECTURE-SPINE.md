@@ -1,17 +1,17 @@
 ---
-title: Enterprise Architecture Specification — BPMN.js XML & PlantUML Data Architecture
-status: draft
-version: 21.0.0
+title: Enterprise Architecture Specification — D-BAND Platform
+status: final
+version: 22.0.0
 created: 2026-08-31
-updated: 2026-09-06
+updated: 2026-09-10
 author: Winston (System Architect) & Mary (Business Analyst)
 ---
 
 # 🏛️ Enterprise Architecture Specification
-## Sleep Apnea Detection App & Emergency Command Platform
+## D-BAND Platform (Bio-Telemetry & Hardware Integration Suite)
 
 > **Diagramming Standard:** Standard **BPMN 2.0 XML (BPMN.js / Camunda compatible)** for Section 2 Process Modeling + **PlantUML** for C4 Context, C4 Container & Conceptual Data Models.  
-> **Target Scope:** Global Platform Scaling to Millions of Concurrent Devices  
+> **Target Scope:** Extensible Bio-Telemetry Hardware Integration Suite & Global Cloud Telemetry Engine  
 
 ---
 
@@ -19,7 +19,7 @@ author: Winston (System Architect) & Mary (Business Analyst)
 
 ### 1.1 C4 Level 1: System Context Diagram
 
-The System Context diagram establishes the high-level boundary of the **Sleep Apnea Detection & Respiratory Health Platform** and defines how external human actors interact with the unified platform.
+The System Context diagram establishes the high-level boundary of the **D-BAND Platform** and defines how human actors, sensor hardware arrays, and external systems interact with the unified platform.
 
 ```plantuml
 @startuml C4_Level1_System_Context
@@ -27,27 +27,27 @@ The System Context diagram establishes the high-level boundary of the **Sleep Ap
 
 LAYOUT_WITH_LEGEND()
 
-title C4 Level 1: System Context Diagram — Sleep Apnea Detection & Respiratory Health Platform
+title C4 Level 1: System Context Diagram — D-BAND Platform
 
-Person(patient, "Patient / At-Home & Athletic User", "Wears lightweight D-BAND ductless thermal sensor at home during sleep or exercise; authenticates via Passkey.")
-Person(caregiver, "Caregiver / Family Member", "Receives Tier-2 emergency SMS/Voice calls when patient apnea alarm is unacknowledged.")
-Person(dispatcher, "Emergency Center Dispatcher", "Monitors 24/7 real-time emergency dashboard for unacknowledged 30s apnea alerts.")
-Person(doctor, "Attending Physician / Clinical Researcher", "Reviews morning Apnea Index scores, respiration wave graphs, and AI big data clinical research analytics.")
+Person(patient, "Patient / Direct Consumer", "Wears lightweight D-BAND ductless thermal/ink sensor array at home during sleep or exercise; authenticates via Passkey.")
+Person(caregiver, "Caregiver / Family Member", "Receives Tier-2 emergency notifications when patient apnea alarms remain unacknowledged.")
+Person(doctor, "Attending Physician / Clinical Partner", "Reviews morning Apnea Index scores, raw respiration wave graphs, and clinical telemetry exports.")
+Person(oem_partner, "Hardware OEM / Integrator", "Integrates custom thermal/ink sensors or health apps via D-BAND Platform driver interfaces.")
 
-System(system, "Sleep Apnea Detection Platform", "Monitors the nocturnal breathing signal, learns a per-session Sensor Baseline Drift & Noise Floor Envelope, detects apnea as the absence of band excursions for ≥ 10 s, triggers Tier-1 local alarms, and logs the Tier-2 cloud safety signal (outbound dispatch is MVP2).")
+System(system, "D-BAND Platform", "Monitors high-frequency sensor telemetry (10Hz BLE stream), manages reactive signal pipelines, learns per-session Sensor Baseline Drift & Noise Floor Envelopes, evaluates real-time apnea events (≥10s quiescence), triggers Tier-1 local mobile alarms, and dispatches Tier-2 cloud safety telemetry.")
 
-Rel(patient, system, "Interfaces via BLE 5.0 & Mobile App (Passkey, 4-Mode UX, Noise Floor Envelope Calibration, 'I'm Safe' Tap)", "BLE / HTTPS")
-Rel(system, caregiver, "Sends Tier-2 Emergency SMS & Voice Alerts", "HTTPS / Telephony")
-Rel(system, dispatcher, "Broadcasts Sub-1.5s High-Priority Apnea Alarms", "WSS / WebSockets")
-Rel(system, doctor, "Delivers Morning Sleep Summaries & EHR/Big Data Reports", "HTTPS / HL7 FHIR")
+Rel(patient, system, "Interfaces via BLE 5.0 & Mobile App (Passkey, Noise Floor Envelope Calibration, 'I'm Safe' Tap)", "BLE / HTTPS")
+Rel(system, caregiver, "Dispatches Tier-2 Emergency Alerts (MVP2 Outbound)", "HTTPS / Telephony")
+Rel(system, doctor, "Delivers Morning Sleep Summaries & EHR Clinical Reports", "HTTPS / HL7 FHIR")
+Rel(oem_partner, system, "Connects OEM Telemetry & Custom Sensor Drivers", "BLE SDK / REST APIs")
 
 @enduml
 ```
 
 #### 📖 Architectural Context & Operational Boundary
 
-* **Patient / At-Home & Athletic User:** Connects the **D-BAND (Ductless-Breath ANalysis Device)** lightweight conducting polymer thermal sensor array via Bluetooth Low Energy (BLE 5.0+). Unlike traditional CPAP machines requiring uncomfortable masks, tubes, or turbines, D-BAND is a **ductless, maskless, portable, battery-operated, and quiet** sensor worn at home. Through the Flutter mobile app, the user authenticates passwordlessly via FIDO2 Passkeys, selects from 4 operational modes (Sleep Monitoring, Athletic Training, Health Check, Meditation), completes a **single-stage Sensor Baseline Drift & Noise Floor Envelope calibration** (a worn ~10 s idle sample that learns the resting signal's min/max, followed by a wear check), and sleeps while the app evaluates the raw signal against that band every 100 ms. If no valid band excursion occurs for ≥ 10 s, the patient receives a sub-200 ms Tier-1 local mobile alarm.
-* **Caregiver / Family Member:** Acts as the designated secondary contact. If the patient does not acknowledge a Tier-1 mobile alarm within 30 seconds, the cloud emergency dispatch worker automatically triggers Tier-2 high-priority SMS and automated voice telephony calls to the caregiver.
+* **Patient / Direct Consumer:** Connects the **D-BAND (Ductless-Breath ANalysis Device)** lightweight conducting polymer thermal/ink sensor array via Bluetooth Low Energy (BLE 5.0+). Unlike traditional CPAP machines requiring uncomfortable masks, tubes, or turbines, D-BAND is a **ductless, maskless, portable, battery-operated, and quiet** sensor array worn at home. Through the Flutter client app (`masker-app`), the user authenticates passwordlessly via FIDO2 Passkeys, completes a **single-stage Sensor Baseline Drift & Noise Floor Envelope calibration** (a worn ~10 s idle sample that learns the resting signal's min/max, followed by a wear check), and sleeps while the app evaluates the raw signal against that band every 100 ms. If no valid band excursion occurs for ≥ 10 s, the patient receives a sub-200 ms Tier-1 local mobile alarm.
+* **Caregiver / Family Member:** Acts as the designated secondary contact. If the patient does not acknowledge a Tier-1 mobile alarm within 30 seconds, the cloud emergency dispatch worker logs the unacknowledged safety event (and in MVP2 dispatches priority SMS/Voice calls).
 * **Emergency Center Dispatcher:** Operators in a 24/7 command center monitor an active web portal displaying real-time WebSocket alert feeds (sub-1.5s latency). Unacknowledged 30-second apnea stops instantly pop up on the dashboard with patient GPS coordinates, allowing dispatchers to verify emergency status and alert local EMS responders.
 * **Attending Physician / Clinical Researcher:** Clinicians and researchers access morning sleep summaries and the **Apnea Index (AI)** — apnea-only (the airflow-only D-BAND does not score hypopneas), with the standard AHI severity bands (Normal < 5, Mild 5–15, Moderate 15–30, Severe ≥ 30) applied to the AI and an apnea-only caveat on every surface — plus time-series respiration wave exports and de-identified cloud big data analytics for AI model refinement (PolyU / CUHK clinical research platform).
 

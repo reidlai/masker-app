@@ -1,43 +1,46 @@
 ---
-title: Product Requirements Document — Sleep Apnea Detection App
-status: draft
-version: 2.5.0
+title: Product Requirements Document — D-BAND Platform
+status: final
+version: 3.0.0
 created: 2026-08-31
-updated: 2026-09-06
+updated: 2026-09-10
 author: Mary (Business Analyst) & Winston (System Architect)
 ---
 
-# 🫁 Product Requirements Document (PRD)
-## Sleep Apnea Detection App (D-BAND Integrated Platform)
+# ⚡ Product Requirements Document (PRD)
+## D-BAND Platform (Bio-Telemetry & Hardware Integration Suite)
 
 ---
 
 ## 1. Executive Summary & Goals
 
 ### 1.1 Product Overview
-The **Sleep Apnea Detection App** is a specialized consumer health mobile application and cloud platform designed to interface wirelessly via **Bluetooth Low Energy (BLE 4.0, 4.1, 4.2, and 5.0+)** with the **D-BAND (Ductless-Breath ANalysis Device)**, a patented conducting polymer thermal sensor hardware device manufactured by OM Sciences (機質科學). 
+**D-BAND Platform** is an extensible, high-performance hardware integration suite and bio-telemetry platform designed for **d-band thermal and ink sensor technology** (manufactured in partnership with OM Sciences / 機質科學). The platform provides continuous wireless telemetry acquisition via **Bluetooth Low Energy (BLE 4.0, 4.1, 4.2, and 5.0+)**, sensor baseline drift calibration, edge signal processing, reactive data stream dispatching, and multi-tier emergency escalation.
 
-Unlike traditional Continuous Positive Airway Pressure (CPAP) machines or turbine spirometers that require uncomfortable masks, headgear, mouthpieces, and noisy machinery, D-BAND is a **ductless, lightweight, portable, battery-operated, and quiet** sensor array worn comfortably at home. The application reads the raw 10Hz inhale/exhale thermal signal, learns a per-session resting **IDLE Band** for that signal, and detects apnea as the absence of breath excursions beyond that band — delivering overnight apnea insights without an expensive hospital polysomnography visit.
+Built with a modular, plug-and-play architecture (`flutter_bloc`, RxDart 10Hz-throttled BLE driver, reactive data sinks), D-BAND Platform is engineered to support a broad array of bio-telemetry and thermal/ink sensor applications — including continuous vital sign tracking, athletic respiratory performance, and clinical telemetry. 
 
-Access is secured via passwordless **Passkey (FIDO2/WebAuthn)** biometrics and strictly compliant with **HIPAA Security & Privacy Rules** for Protected Health Information (PHI). When severe or prolonged breathing stops are detected during sleep, the application initiates an active **Two-Tier Emergency Response**:
+The premier flagship solution launched on the platform is **At-Home Nocturnal Sleep Apnea Detection** (via the cross-platform client application `masker-app`). Instead of requiring costly, uncomfortable hospital polysomnography visits or intrusive CPAP masks, D-BAND Platform reads continuous 10Hz thermal airflow telemetry from a lightweight sensor worn comfortably at home. The platform establishes a per-session **Sensor Baseline Drift & Noise Floor Envelope** `[lower_bound, upper_bound]` and detects nocturnal apnea episodes as the absence of breath excursions beyond resting thresholds.
+
+Access is secured via passwordless **Passkey (FIDO2/WebAuthn)** biometrics and strictly compliant with **HIPAA Security & Privacy Rules** for Protected Health Information (PHI). When severe or prolonged breathing stops are detected during sleep, the application initiates an active **Two-Tier Emergency Response System**:
 1. **Tier-1 Primary App & Device Wake-Up Alert:** Escalating smartphone audio alarms & haptics (and future device micro-electrical stimulation) to wake the patient and restore breathing. *(MVP1.)*
 2. **Tier-2 Cloud Safety Signal (MVP1) & Outbound Dispatch (MVP2):** Real-time signal transmission to the cloud backend. In **MVP1** the cloud **logs** the event — a "Patient Awake & Safe" signal on an "I'm Safe" tap, or an unacknowledged-timeout signal after 30 seconds — with **no outbound contact**. **Tier-2 outbound dispatch** (priority SMS/voice to designated caregivers, and region-aware EMS CAD gateways routed by the patient's country/location) is a **Premium capability deferred to MVP2** — see FR-3.5.
 
 ### 1.2 Strategic Business Goals
-* **At-Home Ductless Accessibility:** Provide a comfortable, maskless alternative to clinical CPAP machines and hospital sleep studies.
-* **Multi-Domain Respiratory Platform:** Support nocturnal sleep monitoring, athletic respiration training, individual respiratory health checks, and meditation.
+* **Extensible Bio-Telemetry Platform:** Provide a standardized hardware integration layer, reactive telemetry queue, and plug-and-play signal processing framework for d-band thermal and ink sensor technology across direct-consumer, clinical, and OEM hardware ecosystem partners.
+* **At-Home Non-Invasive Accessibility:** Provide a comfortable, ductless alternative to clinical CPAP machines and hospital sleep studies.
+* **Multi-Domain Telemetry Suite:** Support nocturnal sleep monitoring (Phase 1 flagship), athletic respiration training (Phase 2), individual respiratory health checks, and extended ink/thermal sensor telemetry (Phase 3).
 * **Frictionless HIPAA Security:** Passwordless **Passkey** onboarding and hardware-encrypted local/cloud PHI storage.
 * **Proactive Patient Safety:** Move from passive morning data logging to active overnight intervention during critical apnea episodes.
-* **Big Data & Clinical Integration:** Aggregated cloud big data analytics for AI model training (PolyU/CUHK clinical research) and extensible EHR/EMR physician chart sharing.
-* **Sustainable Subscription Revenue:** A free tier delivers the full safety-critical local monitoring path to every user; a paid **Premium** subscription (monthly and discounted annual) funds the cloud analytics, long-term history/archive, doctor-sharing, and monitored emergency-dispatch tier, and sustains platform operations. Revenue growth is measured without regressing the share of nights monitored (see §5).
+* **Big Data & Ecosystem Integration:** Aggregated cloud big data analytics for AI model training (PolyU/CUHK clinical research), extensible EHR/EMR physician chart sharing, and open OEM driver SDKs.
+* **Sustainable Subscription Model:** A free tier delivers the full safety-critical local monitoring path to every user; a paid **Premium** subscription funds cloud analytics, long-term history/archive, doctor-sharing, and monitored emergency-dispatch tier.
 
 ### 1.3 MVP1 Project Scope Statement (UJ-1 Focus)
 
 > [!IMPORTANT]
-> **MVP1 Release Scope Boundary:** MVP1 focuses **exclusively on User Journey 1 (UJ-1)**—delivering a production-grade, HIPAA-compliant at-home nocturnal monitoring system for David (Persona A). Advanced multi-mode applications and secondary external integrations are explicitly deferred to MVP2+.
+> **MVP1 Release Scope Boundary:** MVP1 focuses **exclusively on User Journey 1 (UJ-1)**—delivering a production-grade, HIPAA-compliant at-home nocturnal sleep apnea monitoring solution on the D-BAND Platform for David (Persona A). Advanced multi-mode applications, clinical portals, and OEM driver SDKs are deferred to Phase 2/3.
 
 #### 🎯 Primary MVP1 Objective
-To deliver a production-ready mobile application (iOS & Android) and supporting backend cloud infrastructure that enables high-risk sleep apnea patients to perform passwordless biometric onboarding, wirelessly pair their **D-BAND thermal sensor**, complete the single-stage **Sensor Baseline Drift & Noise Floor Envelope** calibration, undergo 8+ hours of continuous nocturnal sleep apnea monitoring, receive instant Tier-1 local sirens (<200ms) with a 30s "I'm Safe" safety tap, record the Tier-2 cloud safety signal (log only — acknowledged or unacknowledged-timeout), and view a morning **Apnea Index** sleep summary and a daily Home dashboard. **Tier-2 outbound dispatch (caregiver telephony and region-aware EMS) is deferred to MVP2.**
+To deliver a production-ready mobile application (iOS & Android) and supporting backend cloud infrastructure that enables high-risk sleep apnea patients to perform passwordless biometric onboarding, wirelessly pair their **D-BAND sensor array**, complete the single-stage **Sensor Baseline Drift & Noise Floor Envelope** calibration, undergo 8+ hours of continuous nocturnal sleep apnea monitoring, receive instant Tier-1 local sirens (<200ms) with a 30s "I'm Safe" safety tap, record the Tier-2 cloud safety signal (log only — acknowledged or unacknowledged-timeout), and view a morning **Apnea Index** sleep summary and a daily Home dashboard. **Tier-2 outbound dispatch (caregiver telephony and region-aware EMS) is deferred to MVP2.**
 
 #### ✅ In-Scope Capabilities for MVP1 (UJ-1 Only):
 1. **Biometric Onboarding & Passkey Auth:** FIDO2 passwordless authentication (Face ID / Touch ID / BiometricPrompt) and HIPAA health profile setup (Patient Full Name, Email Address, Phone Number, Age, Weight, Height, computed BMI, Caregiver Name, Caregiver Emergency Phone) under HIPAA 45 CFR § 164.312 & FDA SaMD technical access, encryption, and audit compliance rules.
@@ -64,11 +67,12 @@ To deliver a production-ready mobile application (iOS & Android) and supporting 
 
 ## 2. Target Personas & Primary User Journey
 
-### 2.1 Target Personas & Customer Segments
-* **Persona A: David (At-Home High-Risk Sleep Patient - Age 48):** Suffers from severe loud snoring, morning fatigue, and unmonitored nocturnal breathing pauses. Cannot tolerate CPAP masks or pressure.
-* **Persona B: Post-COVID & Chronic Lung Disease Sufferers:** Patients recovering from COVID-19 or living with COPD, asthma, or pulmonary fibrosis requiring 24-hour continuous respiratory trend tracking.
-* **Persona C: Pulmonary Exercisers & Athletes:** Users utilizing real-time respiration metrics during running, athletic workouts, or meditation.
-* **Persona D: Elderly Tech Users:** Seniors requiring simple, non-invasive, low-friction respiratory monitoring at home.
+### 2.1 Target Personas & Platform Ecosystem Segments
+* **Persona A: David (At-Home High-Risk Sleep Patient - Age 48) — Primary Direct Consumer (MVP1):** Suffers from severe loud snoring, morning fatigue, and unmonitored nocturnal breathing pauses. Cannot tolerate CPAP masks or pressure. Needs immediate local wake-up alarms and 30-second "I'm Safe" dismissal.
+* **Persona B: At-Home Health Seeker / Snorer — Direct Consumer (MVP1):** Individuals experiencing chronic snoring or morning exhaustion seeking non-invasive at-home monitoring, simple calibration, and morning sleep quality metrics.
+* **Persona C: Relatives & Caregivers — Support Ecosystem (MVP1/MVP2):** Relatives monitoring vulnerable patients remotely who require automated cloud emergency alerts when alarms go unacknowledged after 30 seconds.
+* **Persona D: Sleep Physicians & Clinical Partners — Clinical Ecosystem (Phase 2):** Sleep specialists and pulmonology researchers who require standardized export of raw respiratory waveforms, historical trend analytics, and EHR chart integration.
+* **Persona E: Hardware OEMs & Telehealth Integrators — Platform Partners (Phase 3):** Device manufacturers and digital health developers building custom wearables or telehealth apps on the D-BAND Platform BLE driver and reactive telemetry pipeline.
 
 ### 2.2 User Journey 1 (UJ-1): Bedtime Monitoring, Calibration & Emergency Response Lifecycle
 

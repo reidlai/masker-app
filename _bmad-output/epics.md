@@ -6,26 +6,26 @@ stepsCompleted:
   - step-04-final-validation
 status: complete
 inputDocuments:
-  - _bmad-output/prd/prd.md  # v2.5.0
-  - _bmad-output/architecture/ARCHITECTURE-SPINE.md  # v21.0.0
+  - _bmad-output/prd/prd.md  # v3.0.0
+  - _bmad-output/architecture/ARCHITECTURE-SPINE.md  # v22.0.0
   - _bmad-output/ux/ux-design-masker-app-2026-09-01/DESIGN.md  # v1.3.0
   - _bmad-output/ux/ux-design-masker-app-2026-09-01/EXPERIENCE.md  # v1.3.0
-revision: "2026-09-07 in-place reconciliation — Patient Identification (Name, Email, Phone) + Caregiver Contact (Name, Phone) added under HIPAA §164.312 & FDA SaMD compliance rules. Reconciled against PRD v2.5.0, EXPERIENCE.md/DESIGN.md v1.3.1, and ARCHITECTURE-SPINE.md v21.0.0."
+revision: "2026-09-10 D-BAND Platform Rebranding Reconciliation — Reconciled against PRD v3.0.0, ARCHITECTURE-SPINE.md v22.0.0, and UX DESIGN/EXPERIENCE specs v1.3.0."
 ---
 
-# Sleep Apnea Detection App (D-BAND Integrated Platform) - Epic Breakdown
+# D-BAND Platform (Bio-Telemetry & Hardware Integration Suite) - Epic Breakdown
 
 ## Overview
 
-This document provides the complete epic and story breakdown for Sleep Apnea Detection App (D-BAND Integrated Platform), decomposing the requirements from the PRD and Architecture requirements into implementable stories.
+This document provides the complete epic and story breakdown for **D-BAND Platform (Bio-Telemetry & Hardware Integration Suite)**, decomposing the requirements from PRD v3.0.0 and Architecture v22.0.0 into actionable, implementable stories.
 
 > [!IMPORTANT]
 > **MVP1 Scope & Implementation Directive:**  
-> In accordance with product owner strategy, **MVP1 focuses exclusively on the Mobile Application (Flutter) and Bluetooth Device Connection (BLE 4.0, 4.1, 4.2, and 5.0+)** for at-home sleep apnea monitoring (Epics 1–4). All web portal backoffice, physician EHR sync, multi-mode athletic/meditation applications, and cloud big data exports (Epics 5–8) are categorized as **UNPLANNED** and will remain deferred until further instruction.
+> In accordance with product owner strategy, **MVP1 focuses exclusively on the Mobile Application (Flutter) and Bluetooth Device Connection (BLE 4.0, 4.1, 4.2, and 5.0+)** for at-home nocturnal sleep apnea monitoring (Epics 1–4, via `masker-app`). All web portal backoffice, physician EHR sync, multi-mode athletic/meditation applications, and cloud big data exports (Epics 5–8) are categorized as **UNPLANNED** and will remain deferred until further instruction.
 
 ## Requirements Inventory
 
-> **Reconciled against PRD v2.5.0 + EXPERIENCE.md/DESIGN.md v1.3.0 + ARCHITECTURE-SPINE.md v21.0.0.** Two change rounds folded in since the prior epic breakdown: **(A) Subscription & Billing** (new FR-4.6, FR-5.7, FR-5.8, FR-6.1–6.10; FR-2.5 / FR-4.2 / FR-5.3 gated Premium; FR-3.5 deferred to MVP2; FR-4.3 split Free/Premium) and **(B) Sensor Baseline Drift & Noise Floor Envelope signal model** (FR-1.4–1.8 rewritten, FR-1.5 removed, "AHI" → "Apnea Index (AI)", waveform is raw-signal + envelope bounds). All three artifacts are now consistent.
+> **Reconciled against PRD v3.0.0 + EXPERIENCE.md/DESIGN.md v1.3.0 + ARCHITECTURE-SPINE.md v22.0.0.** Aligned with the rebranded **D-BAND Platform** for generic thermal/ink sensor telemetry, maintaining full traceability across all Functional Requirements (FR-1.1–FR-6.10) and Non-Functional Requirements (NFR-1–NFR-6.4).
 
 ### Functional Requirements
 
