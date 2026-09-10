@@ -43,6 +43,27 @@ class LoginPage extends StatelessWidget {
                       context.read<AuthBloc>().add(const AuthPasskeySubmitted());
                     },
                   ),
+                  // Non-success outcomes surface directly under the button that
+                  // triggered them. AuthUnavailable = "not wired yet" (amber,
+                  // not a fault); AuthFailure = a real authenticator error (red).
+                  if (state is AuthUnavailable || state is AuthFailure) ...[
+                    const SizedBox(height: 12),
+                    Semantics(
+                      liveRegion: true,
+                      child: Text(
+                        state is AuthUnavailable
+                            ? state.message
+                            : (state as AuthFailure).errorMessage,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: state is AuthUnavailable
+                              ? AppColors.warningAmber
+                              : AppColors.dangerRed,
+                        ),
+                      ),
+                    ),
+                  ],
                   const Spacer(),
                   // Security Badge Organism
                   const SecurityBadgeOrganism(),

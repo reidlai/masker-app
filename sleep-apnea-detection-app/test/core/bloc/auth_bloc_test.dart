@@ -96,9 +96,26 @@ void main() {
     });
 
     test(
-        'flag Off with no authenticator wired still emits AuthAuthenticated (today\'s fallback)',
+        'flag Off with no authenticator wired emits AuthUnavailable, never AuthAuthenticated',
         () async {
       final bloc = AuthBloc(isPasskeySimulatorEnabled: () => false);
+      addTearDown(bloc.close);
+
+      expectLater(
+        bloc.stream,
+        emitsInOrder([isA<AuthInProgress>(), isA<AuthUnavailable>()]),
+      );
+
+      bloc.add(const AuthPasskeySubmitted());
+    });
+
+    test(
+        'flag Off with a non-throwing authenticator wired authenticates for real',
+        () async {
+      final bloc = AuthBloc(
+        isPasskeySimulatorEnabled: () => false,
+        passkeyAuthenticator: () async {},
+      );
       addTearDown(bloc.close);
 
       expectLater(

@@ -128,6 +128,13 @@ flutter run --dart-define=DEV_MODE=true
 1. Navigate to **Settings** (Tab 4 on the bottom navigation bar).
 2. The **Advanced** section card (`SettingsGroupCardOrganism`) will automatically render the **Developer** (`Icons.code`) menu row.
 
+### Passkey Simulator (Settings → Developer)
+
+Real FIDO2/WebAuthn is not implemented yet (`// TODO(FIDO)`). The **Passkey Simulator** toggle (default **on**) controls what "Sign in with Passkey" and the onboarding "Create Passkey" step do:
+
+- **On** — simulated success: sign-in authenticates after a brief delay; onboarding records a placeholder credential and advances.
+- **Off** — routes to the (unimplemented) real FIDO2 seam: sign-in shows "Passkey sign-in isn't available yet" and does **not** log in; onboarding's "Create Passkey" shows the same and does not advance. This applies in **all** builds — a true release build (flag forced off, no toggle) cannot passkey-sign-in until a real authenticator is wired.
+
 ---
 
 ## 🐛 How to Start Debugging Mode (`debuggingEnabled`)

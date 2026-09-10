@@ -40,17 +40,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(const AuthInProgress());
     try {
       if (_isPasskeySimulatorEnabled()) {
-        // Simulated passkey path — brief delay, always authenticates. Unchanged.
+        // Simulated passkey path — brief delay, always authenticates.
         await Future.delayed(const Duration(milliseconds: 800));
+        emit(const AuthAuthenticated());
       } else if (_passkeyAuthenticator != null) {
         // TODO(FIDO): real FIDO2/WebAuthn authenticator.
         await _passkeyAuthenticator!();
+        emit(const AuthAuthenticated());
       } else {
-        // No real authenticator wired yet — preserve today's behavior so
-        // DEV_MODE-off / release builds keep logging in until FIDO lands.
-        await Future.delayed(const Duration(milliseconds: 800));
+        // Simulator off and no real authenticator wired: there is no way to
+        // authenticate. Surface an explicit unavailable state — never a fake
+        // session. A real FIDO2 ceremony replaces this branch. TODO(FIDO).
+        emit(const AuthUnavailable());
       }
-      emit(const AuthAuthenticated());
     } catch (e) {
       emit(AuthFailure(e.toString()));
     }
