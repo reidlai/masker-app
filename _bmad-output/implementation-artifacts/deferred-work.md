@@ -195,3 +195,7 @@ Findings surfaced during build reviews that were intentionally not addressed in 
 - source_spec: `_bmad-output/implementation-artifacts/spec-passkey-signin-unavailable-when-simulator-off.md`
   summary: The `developerBuild` expression `kDebugMode || const bool.fromEnvironment('DEV_MODE', defaultValue: false)` is inlined in at least three places (`main.dart`'s `AuthBloc` wiring, `onboarding_wizard_page.dart`'s `_simulated` getter, and `settings_page.dart`). Consolidate into a single `developerBuild` helper (or a zero-arg `passkeySimulatorActive()`).
   evidence: step-04 blind-hunter lens. Pre-existing duplication (the `_simulated` getter predates this change); cheap to unify next time that area is touched.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-passkey-simulator-toggle-on-login.md`
+  summary: Now that the "Passkey Simulator" auth-bypass toggle is reachable pre-auth on the sign-in screen (not just the post-login Settings tab), the DEV_MODE build story needs a hardening pass — a warning treatment louder than the amber caption, an audit-trail entry when the flag is flipped, and an explicit decision on whether `--dart-define=DEV_MODE=true` release APKs should still ship to QA with a one-tap sign-in bypass on the first screen.
+  evidence: step-04 blind-hunter lens. Pre-existing concern (the Settings-tab toggle already bypasses auth in DEV_MODE builds and has no audit trail); this change surfaces it earlier in the flow. Out of scope for a UI-placement story; the app has no audit-logging or analytics infrastructure today.
