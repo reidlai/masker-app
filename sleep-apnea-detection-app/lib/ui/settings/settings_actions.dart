@@ -110,7 +110,9 @@ class SettingsActions {
     UserProfileService.instance.clear();
     DeviceProfileService.instance.clear();
     context.read<AuthBloc>().add(const AuthUnregisterRequested());
-    context.read<AppFlowBloc>().add(const AppFlowLogoutRequested());
+    // AppFlowBloc clears the onboarding flag and re-resolves to the wizard
+    // (not the sign-in screen).
+    context.read<AppFlowBloc>().add(const AppFlowUnregistered());
   }
 
   /// Log out: empty both profile stores, clear auth, and drive the app flow

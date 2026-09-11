@@ -1,11 +1,14 @@
 import 'package:equatable/equatable.dart';
 
-/// The post-login flow gate. A login success does not jump straight to the tab
-/// shell — a new / just-unregistered user is routed through the onboarding
-/// wizard; a returning user has its live Bluetooth permission checked and, if
-/// not yet granted, routes through the one-time priming screen. Gating is
-/// always a live status check, never a persisted "seen it" flag.
+/// The app-flow gate. On boot [resolving] reads the `OnboardingGate` flag and
+/// routes to [loggedOut] (returning user → sign-in) or [onboarding] (fresh
+/// install → wizard, no sign-in screen). Post-`loggedOut`, a login success does
+/// not jump straight to the tab shell — a returning user has its live Bluetooth
+/// permission checked and, if not yet granted, routes through the one-time
+/// priming screen. Permission gating is always a live status check.
 enum AppFlowStage {
+  /// Boot-time: reading the persisted onboarding flag. Renders a spinner.
+  resolving,
   loggedOut,
   onboarding,
   checkingPermission,
@@ -23,7 +26,7 @@ class AppFlowState extends Equatable {
   final OnboardingStep onboardingStep;
 
   const AppFlowState({
-    this.stage = AppFlowStage.loggedOut,
+    this.stage = AppFlowStage.resolving,
     this.onboardingStep = OnboardingStep.register,
   });
 

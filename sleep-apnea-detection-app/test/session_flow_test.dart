@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:masker_app/core/data/profile_repository.dart';
+import 'package:masker_app/core/onboarding/onboarding_gate.dart';
 import 'package:masker_app/core/permissions/ble_permission_service.dart';
 import 'package:masker_app/core/profile/device_profile_service.dart';
 import 'package:masker_app/core/profile/user_profile_service.dart';
@@ -19,6 +20,18 @@ class _GrantedPermissionService extends BlePermissionService {
       const BlePermissionStatus(BlePermissionResult.granted, []);
 }
 
+/// Returning user by default; `clear()` (unregister) flips it so the next
+/// resolve lands on onboarding.
+class _OnboardingGate implements OnboardingGate {
+  bool complete = true;
+  @override
+  Future<bool> isComplete() async => complete;
+  @override
+  Future<void> markComplete() async => complete = true;
+  @override
+  Future<void> clear() async => complete = false;
+}
+
 Future<void> _tick(WidgetTester tester) async {
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 400));
@@ -29,7 +42,8 @@ Future<void> _login(WidgetTester tester) async {
   await tester.pumpWidget(
     const MaskerApp(permissionService: _GrantedPermissionService()),
   );
-  await tester.pump();
+  await tester.pump(); // process AppFlowResolveRequested
+  await tester.pump(const Duration(milliseconds: 50)); // land off resolving
   await tester.tap(find.text('Sign in with Passkey'));
   await tester.pump();
   await tester.pump(const Duration(seconds: 1)); // 800ms fake auth + hydrate
@@ -48,6 +62,7 @@ void main() {
         SimulatedProfileRepository.seededReturningUser(latency: Duration.zero);
     UserProfileService.instance.reset();
     DeviceProfileService.instance.reset();
+    OnboardingGate.instance = _OnboardingGate();
   });
   tearDown(ProfileRepository.reset);
 
@@ -82,7 +97,8 @@ void main() {
     expect(DeviceProfileService.instance.current, isNull);
   });
 
-  testWidgets('Unregister returns to the passkey login screen', (tester) async {
+  testWidgets('Unregister clears the gate and drops straight into onboarding',
+      (tester) async {
     await _login(tester);
     await _openSettings(tester);
 
@@ -92,28 +108,10 @@ void main() {
     await tester.tap(find.text('Confirm Reset'));
     await _tick(tester);
 
-    expect(find.text('Sign in with Passkey'), findsOneWidget);
+    // Onboarding flag cleared → re-resolves to the wizard, no sign-in screen.
+    expect(find.text('Set up your account  1/3'), findsOneWidget);
+    expect(find.text('Sign in with Passkey'), findsNothing);
     expect(UserProfileService.instance.current, isNull);
     expect(DeviceProfileService.instance.current, isNull);
-  });
-
-  testWidgets('after Unregister, signing in again enters the onboarding wizard', (tester) async {
-    await _login(tester);
-    await _openSettings(tester);
-
-    await tester.ensureVisible(find.text('Unregister User Account'));
-    await tester.tap(find.text('Unregister User Account'));
-    await _tick(tester);
-    await tester.tap(find.text('Confirm Reset'));
-    await _tick(tester);
-
-    // Back on the login screen — sign in again.
-    await tester.tap(find.text('Sign in with Passkey'));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 1));
-    await _tick(tester);
-
-    expect(find.text('Set up your account  1/3'), findsOneWidget);
-    expect(find.text('12 nights monitored'), findsNothing);
   });
 }
