@@ -116,16 +116,6 @@ The app uses **both native Dart Streams and RxDart together** in a 3-step reacti
 
 Developer Mode exposes developer menu rows, internal state inspection, and manual BLE simulation tools inside the **Settings** tab.
 
-The **Passkey Simulator** toggle is additionally surfaced on the **sign-in
-screen**, between the passkey card and the HIPAA security badge, under the same
-`kDebugMode || DEV_MODE` gate (absent in a true release build). It selects the
-simulated always-succeeds passkey path vs. the real FIDO2 path once a FIDO2
-authenticator is wired — until then both paths authenticate. The flag is
-in-memory (default **on**, resets each launch); the sign-in-screen switch and the
-Settings → Developer row read and write the one `PasskeySimulatorConfig`
-singleton, so toggling either keeps the other in sync. While the flag is on, the
-sign-in screen shows a "Simulated authentication — not real FIDO2" caption.
-
 ### Enabling via Compile-Time Flag (Recommended)
 
 Pass the `DEV_MODE=true` environment flag when launching or building the Flutter application:
