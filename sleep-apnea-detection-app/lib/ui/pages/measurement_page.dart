@@ -82,9 +82,24 @@ class _MeasurementPageState extends State<MeasurementPage>
   /// Fires on every developer/QA simulator on/off toggle — the bloc re-runs the
   /// connect flow so the BLE status tracks the swapped driver. Null when a test
   /// forces [MeasurementPage.developerEnabled] (that override wins, so the
-  /// stream must not fight it) or when no [SimulatorBloc] is in scope.
+  /// stream must not fight it) or when neither an ancestor-independent
+  /// [BleReceiverService] driver nor a [SimulatorBloc] ancestor is available.
+  ///
+  /// Priority (per spec-fix-ble-real-driver-synthetic-connected-status):
+  /// (1) `_bleDriver` is the process-wide [BleReceiverService] — its own
+  /// singleton-backed stream, sourced directly from [BleSimulatorDriver]'s
+  /// singleton rather than `SimulatorBloc`'s intent-latched state, which can
+  /// desync from the actually-bound driver at boot (see the spec's `##
+  /// Intent`). Production always injects a [BleReceiverService] here, so this
+  /// branch always wins in the real app; (2) a `SimulatorBloc` ancestor —
+  /// exercised only by tests that inject a non-[BleReceiverService] driver
+  /// alongside a `SimulatorBloc` ancestor; (3) neither — `null`, unchanged.
   Stream<bool>? _simulatorActiveStream() {
     if (widget.developerEnabled != null) return null;
+    final driver = _bleDriver;
+    if (driver is BleReceiverService) {
+      return driver.simulatorActiveStream;
+    }
     try {
       return context
           .read<SimulatorBloc>()
