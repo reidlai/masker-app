@@ -54,6 +54,15 @@ class BleReceiverService implements IBLESensorDriver {
     return d is BleSimulatorDriver && d.isSimulatorActive;
   }
 
+  /// Ancestor-independent "is the developer/QA simulator toggle on" signal,
+  /// delegating to the process-wide [BleSimulatorDriver.instance] singleton —
+  /// the same source every screen's own `SimulatorBloc` already mirrors. Lets
+  /// a consumer that has no `SimulatorBloc` in its widget-tree ancestry (e.g.
+  /// [MeasurementPage] mounted as an `IndexedStack` sibling of wherever the
+  /// toggle lives) still react to the toggle live.
+  Stream<bool> get simulatorActiveStream =>
+      BleSimulatorDriver.instance.isSimulatorStream;
+
   void setActiveDriver(IBLESensorDriver driver) {
     _driverSubscription?.cancel();
     _activeDriver = driver;

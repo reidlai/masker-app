@@ -65,5 +65,36 @@ void main() {
 
       hardwareDriver.disconnect();
     });
+
+    test('simulatorActiveStream mirrors BleSimulatorDriver.instance.isSimulatorStream regardless of activeDriver', () async {
+      // Ancestor-independent: even bound to a non-simulator driver, the
+      // getter still tracks the process-wide singleton toggle (AD spec-fix-
+      // ble-real-driver-synthetic-connected-status). Collapse with distinct()
+      // — scanAndConnect()/startSimulationScenario() each re-assert `true`
+      // on toggle-on, an unrelated BleSimulatorDriver internal this test
+      // must not couple to; only the resulting value transitions matter.
+      receiverService.setActiveDriver(MockBLESensorDriver());
+      BleSimulatorDriver.instance.setSimulatorEnabled(false);
+
+      final values = <bool>[];
+      final sub =
+          receiverService.simulatorActiveStream.distinct().listen(values.add);
+      await Future.delayed(const Duration(milliseconds: 20));
+
+      // BehaviorSubject replays its current value on subscribe.
+      expect(values, equals([false]));
+
+      BleSimulatorDriver.instance.setSimulatorEnabled(true);
+      await Future.delayed(const Duration(milliseconds: 20));
+      expect(values, equals([false, true]));
+
+      BleSimulatorDriver.instance.setSimulatorEnabled(false);
+      await Future.delayed(const Duration(milliseconds: 20));
+      expect(values, equals([false, true, false]));
+      expect(BleSimulatorDriver.instance.isSimulatorStream.value, isFalse);
+
+      await sub.cancel();
+      BleSimulatorDriver.instance.resetForTest();
+    });
   });
 }

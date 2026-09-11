@@ -539,6 +539,54 @@ void main() {
     driver.disconnect();
     await tester.pump(const Duration(milliseconds: 300));
   });
+
+  testWidgets(
+      'toggling BleSimulatorDriver.instance externally (no SimulatorBloc '
+      'ancestor) still re-verifies isBleConnected — the IndexedStack-sibling '
+      'gap spec-fix-ble-real-driver-synthetic-connected-status.md closes',
+      (tester) async {
+    // Mirrors MainContainerPage's real structure: MeasurementPage mounted with
+    // NO SimulatorBloc ancestor (Home/Settings each own a separate instance
+    // this page cannot see) and an injected BleReceiverService — the exact
+    // gap that let "D-BAND Sensor Connected" survive a Settings toggle-off.
+    BleSimulatorDriver().resetForTest();
+    addTearDown(() => BleSimulatorDriver().resetForTest());
+    BleSimulatorDriver().setSimulatorEnabled(true);
+
+    final fake = _ToggleableFakeDriver()..connectResult = true;
+    addTearDown(fake.dispose);
+    final receiver = BleReceiverService.withDriver(fake);
+    addTearDown(receiver.dispose);
+
+    await tester.pumpWidget(MaterialApp(
+      home: MeasurementPage(
+        sensorDriver: receiver,
+        permissionService: _FakeBlePermissionService(
+          const BlePermissionStatus(BlePermissionResult.granted, []),
+        ),
+      ),
+    ));
+    await tester.pump();
+    await tester.pump();
+
+    // Real driver connected -> setup screen shows the connected banner.
+    expect(find.text("D-BAND Sensor Connected ✓"), findsOneWidget);
+    expect(find.text("Scanning for D-BAND (BLE 5.0+)..."), findsNothing);
+
+    // No real hardware present (AVD scenario): the real driver's
+    // scanAndConnect() now resolves false, mirroring "BLE Simulator" being
+    // turned off in Settings with nothing left to connect to.
+    fake.connectResult = false;
+    BleSimulatorDriver.instance.setSimulatorEnabled(false);
+    await tester.pump();
+    await tester.pump();
+
+    // isBleConnected re-verified against the real driver via the
+    // ancestor-independent BleReceiverService.simulatorActiveStream — the
+    // banner flips even though no SimulatorBloc is in this widget's ancestry.
+    expect(find.text("Scanning for D-BAND (BLE 5.0+)..."), findsOneWidget);
+    expect(find.text("D-BAND Sensor Connected ✓"), findsNothing);
+  });
 }
 
 /// Stays the injected driver for the whole test — the `SimulatorBloc` here has

@@ -187,3 +187,11 @@ Findings surfaced during build reviews that were intentionally not addressed in 
 - source_spec: `_bmad-output/implementation-artifacts/spec-fix-ble-simulator-toggle-off.md`
   summary: No integration test exercises the real toggle-off loop end to end — SimulatorBloc state → MeasurementPage._simulatorActiveStream → SleepMonitoringBloc(DevModeChanged) → _connect → receiver.scanAndConnect(). The fix's widget test uses emitSignal(isSimulator:true) as a proxy for the reconnect; the receiver-swap half is only bloc-tested. A regression that re-couples them could slip past.
   evidence: step-04 verification-gap lens on spec-fix-ble-simulator-toggle-off.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-fix-ble-real-driver-synthetic-connected-status.md`
+  summary: SimulatorBloc's `_intendedEnabled` / `SimulatorState.isSimulatorActive` is seeded from `BleSimulatorDriver.instance.isSimulatorActive`'s own pristine flag, which desyncs from whichever driver `BleReceiverService._activeDriver` actually booted onto in a DEV_MODE build — so Settings' "BLE Simulator" switch and Home's device-status card (both reading `SimulatorState.isSimulatorActive` directly via `BlocBuilder`) can show a stale "off" at boot even when the app is genuinely running on the simulator, until the user's first explicit toggle.
+  evidence: Verification-gap review of spec-fix-ble-real-driver-synthetic-connected-status (2026-09-11), confirmed via a scratch widget test reproducing main.dart's exact provider composition. User decision: fix MeasurementPage's symptom only for now (verified working); defer the deeper SimulatorBloc boot-seeding fix.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-fix-ble-real-driver-synthetic-connected-status.md`
+  summary: No test exercises `_simulatorActiveStream()`'s priority ordering when BOTH a `BleReceiverService` driver and a `SimulatorBloc` ancestor are present together (confirms branch 1 wins, branch 2 doesn't double-subscribe), or the round-trip (off→on) transition through the new BleReceiverService-sourced path in the actual widget (only the service-level unit test covers the round-trip).
+  evidence: blind-hunter + edge-case-hunter review of spec-fix-ble-real-driver-synthetic-connected-status (2026-09-11).
