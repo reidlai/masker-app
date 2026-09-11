@@ -116,6 +116,15 @@ The app uses **both native Dart Streams and RxDart together** in a 3-step reacti
 
 Developer Mode exposes developer menu rows, internal state inspection, and manual BLE simulation tools inside the **Settings** tab.
 
+The **Passkey Simulator** toggle is also surfaced on the **sign-in screen**
+(between the passkey card and the HIPAA badge), under the same
+`kDebugMode || DEV_MODE` gate — absent in a true release build. The sign-in
+switch and the Settings → Developer row share one in-memory
+`PasskeySimulatorConfig` singleton (default **on**, resets each launch), so
+toggling either keeps the other in sync; while it is on, the sign-in screen
+shows a "Simulated authentication — not real FIDO2" caption. What the on / off
+states actually do is in **Passkey Simulator (Settings → Developer)** below.
+
 ### Enabling via Compile-Time Flag (Recommended)
 
 Pass the `DEV_MODE=true` environment flag when launching or building the Flutter application:
@@ -127,6 +136,13 @@ flutter run --dart-define=DEV_MODE=true
 ### Verification
 1. Navigate to **Settings** (Tab 4 on the bottom navigation bar).
 2. The **Advanced** section card (`SettingsGroupCardOrganism`) will automatically render the **Developer** (`Icons.code`) menu row.
+
+### Passkey Simulator (Settings → Developer)
+
+Real FIDO2/WebAuthn is not implemented yet (`// TODO(FIDO)`). The **Passkey Simulator** toggle (default **on**) controls what "Sign in with Passkey" and the onboarding "Create Passkey" step do:
+
+- **On** — simulated success: sign-in authenticates after a brief delay; onboarding records a placeholder credential and advances.
+- **Off** — routes to the (unimplemented) real FIDO2 seam: sign-in shows "Passkey sign-in isn't available yet" and does **not** log in; onboarding's "Create Passkey" shows the same and does not advance. This applies in **all** builds — a true release build (flag forced off, no toggle) cannot passkey-sign-in until a real authenticator is wired.
 
 ---
 

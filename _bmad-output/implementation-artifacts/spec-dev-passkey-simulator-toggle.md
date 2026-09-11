@@ -86,6 +86,15 @@ _Scope note (Change Log #4): `developer_options_page.dart` and `ble_simulator_or
 
 ## Spec Change Log
 
+### 2026-09-10 — superseded in part by `spec-passkey-signin-unavailable-when-simulator-off.md`
+
+Human-renegotiated. Two items in the frozen block above no longer hold:
+
+- **Retired** — the "Always" line *"Flag Off with no real authenticator wired must still emit `AuthAuthenticated` — release builds must keep logging in until FIDO lands."*
+- **I/O matrix row replaced** — *old:* `Sign-in, flag Off, no authenticator → AuthInProgress → ~800ms → AuthAuthenticated`. *new:* `Sign-in, flag Off, no authenticator → AuthInProgress → AuthUnavailable` (no delay, no session), in **every** build including release. The onboarding "Create Passkey" step likewise shows an inline "not wired up" message and does not advance.
+
+A real authenticator wired into the `else` branch of `AuthBloc._onPasskeySubmitted` restores sign-in. Everything else here is unchanged: row gating on `_showDeveloper`, `passkeySimulatorActive(developerBuild: false)` always `false`, the flag gating nothing but the passkey-submit / enrollment branches, and simulator-**on** behavior. This frozen block is left as-is per the "do not modify" rule; `spec-passkey-signin-unavailable-when-simulator-off.md` is the authority for the flag-off contract.
+
 ### 2026-09-09 — review pass (patch only, no loopback)
 - **patch** (verification-gap): the "never simulate auth outside `DEV_MODE`" rule existed only as an inline `&&` in `main.dart` with no test. Extracted to `passkeySimulatorActive({required bool devMode})` in `passkey_simulator_config.dart` and added `passkey_simulator_config_test.dart` pinning `devMode: false` → always `false`. No frozen-block change.
 - **defer**: pre-existing `flutter analyze` warning `settings_page.dart:4` unused import `ble_simulator_driver.dart` — recorded in `deferred-work.md`, not caused by this change.

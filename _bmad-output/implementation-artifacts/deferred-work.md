@@ -195,3 +195,31 @@ Findings surfaced during build reviews that were intentionally not addressed in 
 - source_spec: `_bmad-output/implementation-artifacts/spec-fix-ble-real-driver-synthetic-connected-status.md`
   summary: No test exercises `_simulatorActiveStream()`'s priority ordering when BOTH a `BleReceiverService` driver and a `SimulatorBloc` ancestor are present together (confirms branch 1 wins, branch 2 doesn't double-subscribe), or the round-trip (off→on) transition through the new BleReceiverService-sourced path in the actual widget (only the service-level unit test covers the round-trip).
   evidence: blind-hunter + edge-case-hunter review of spec-fix-ble-real-driver-synthetic-connected-status (2026-09-11).
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-passkey-signin-unavailable-when-simulator-off.md`
+  summary: `AuthBloc`'s `_passkeyAuthenticator` is `Future<void> Function()?` — success/failure is signalled only by return-vs-throw. When real FIDO2/WebAuthn is implemented, an authenticator that *returns* on a declined/aborted ceremony (rather than throwing) would mint an authenticated session. The contract should become explicit (e.g. `Future<bool>` or a result type) before a real authenticator is wired.
+  evidence: step-04 edge-case lens on this spec. Pre-existing `void` signature; not exploitable today (no authenticator is wired), but a latent hazard for the FIDO epic.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-passkey-signin-unavailable-when-simulator-off.md`
+  summary: The `developerBuild` expression `kDebugMode || const bool.fromEnvironment('DEV_MODE', defaultValue: false)` is inlined in at least three places (`main.dart`'s `AuthBloc` wiring, `onboarding_wizard_page.dart`'s `_simulated` getter, and `settings_page.dart`). Consolidate into a single `developerBuild` helper (or a zero-arg `passkeySimulatorActive()`).
+  evidence: step-04 blind-hunter lens. Pre-existing duplication (the `_simulated` getter predates this change); cheap to unify next time that area is touched.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-passkey-simulator-toggle-on-login.md`
+  summary: Now that the "Passkey Simulator" auth-bypass toggle is reachable pre-auth on the sign-in screen (not just the post-login Settings tab), the DEV_MODE build story needs a hardening pass — a warning treatment louder than the amber caption, an audit-trail entry when the flag is flipped, and an explicit decision on whether `--dart-define=DEV_MODE=true` release APKs should still ship to QA with a one-tap sign-in bypass on the first screen.
+  evidence: step-04 blind-hunter lens. Pre-existing concern (the Settings-tab toggle already bypasses auth in DEV_MODE builds and has no audit trail); this change surfaces it earlier in the flow. Out of scope for a UI-placement story; the app has no audit-logging or analytics infrastructure today.
+
+- source_spec: none (split from the boot-resolve intent, 2026-09-10)
+  summary: Reorder the onboarding wizard to passkey-first (Create Passkey → Profile, with the Profile step skipped when a profile is already cached), and relocate the HIPAA §164.312 consent gate accordingly. Amends Epic 1 Stories 1.9 / 1.10 / 1.12 (currently `review`), whose ACs pin the order as Register+consent → Medical Profile → Passkey Enrollment and route onboarding *after* a passkey sign-in.
+  evidence: User-requested boot/onboarding flow (2026-09-10). Split from Goal A because it is a wizard redesign that changes in-review epic stories and the `AppFlowBloc` step machine (linear `_steps` walk → conditional/branching). Needs `bmad-correct-course` on Stories 1.9/1.10/1.12 first, or an explicit renegotiation.
+
+- source_spec: none (split from the boot-resolve intent, 2026-09-10)
+  summary: Replace the "onboarding complete" boolean flag (Goal A) with a real "is a FIDO2 passkey present on THIS device" check via the platform credential store (iOS Keychain / Android Credential Manager, WebAuthn). This is what the user actually asked for ("check if passkey exists in device cache"); Goal A approximates it with a local flag because no real FIDO2 authenticator or credential store exists yet (`// TODO(FIDO)`).
+  evidence: User-requested boot/onboarding flow (2026-09-10). Depends on the FIDO2 epic (no `webauthn`/`passkeys` package, no backend ceremony). Split from Goal A because Goal A must not block on FIDO.
+
+- source_spec: none (split from the boot-resolve intent, 2026-09-10)
+  summary: Security verification gate — when the device has no passkey/onboarding flag but an account/profile already exists server-side (reinstall, cleared credential), require identity verification before re-enrolling a passkey and reaching the dashboard. As-is, the flow lets anyone holding the device re-enroll against the existing account and read the patient's PHI.
+  evidence: step-04-style review of the user-requested flow (2026-09-10). Depends on the onboarding reorder (Goal B) and the real device-passkey check (Goal C); latent PHI-access-takeover vector for a HIPAA app.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-boot-resolve-skip-login-for-new-users.md`
+  summary: With the "Sign in with Passkey" screen removed for fresh installs (Goal A), a fresh install now lands directly in the onboarding wizard — but in a build where the Passkey Simulator is off and real FIDO2 is unwired, the "Create Passkey" step (3/3) blocks and there is no logout / back-past-step-1 / sign-in fallback, so the app cannot reach `ready`. Goal A removes the front door before Goal B/C make the wizard completable. Also: wizard progress is not persisted (boot always resolves to `onboardingStep: register`), so a force-quit mid-wizard re-runs `registerUser()` / `enrollPasskey()` on the next launch. Both are closed by Goals B/C/D.
+  evidence: step-04 blind-hunter + edge-case lenses on Goal A. Not a Goal-A regression in dev builds (simulator defaults on); a real gap for release / simulator-off builds, tracked with Goals B/C/D.

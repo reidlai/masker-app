@@ -1,6 +1,7 @@
-// Covers the post-login gate in `MaskerApp`/`_AppFlowState`: whether the
-// one-time Bluetooth permission primer is shown or skipped after login,
-// based on live permission status (never a persisted flag).
+// Covers the post-login gate in `MaskerApp`/`AppFlowBloc`: whether the one-time
+// Bluetooth permission primer is shown or skipped after login, based on a live
+// permission status check. (The boot-time onboarding routing — which does read a
+// persisted flag — is covered in app_flow_bloc_test.dart / widget_test.dart.)
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:masker_app/core/data/profile_repository.dart';
@@ -34,6 +35,9 @@ class _ThrowsOnceBlePermissionService extends BlePermissionService {
 }
 
 Future<void> _loginAndSettle(WidgetTester tester) async {
+  // Land off the boot-time AppFlowStage.resolving spinner first.
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 50));
   await tester.tap(find.text("Sign in with Passkey"));
   await tester.pump();
   // AuthBloc's default (unmocked) passkey delay is 800ms.

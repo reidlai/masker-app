@@ -63,6 +63,9 @@ class _MaskerAppState extends State<MaskerApp> {
 
   Widget _buildHome(AppFlowState flow) {
     switch (flow.stage) {
+      case AppFlowStage.resolving:
+        // Boot-time: reading the persisted onboarding flag.
+        return const _TransientSpinner();
       case AppFlowStage.loggedOut:
         return LoginPage(
           onLoginSuccess: () async {
@@ -78,10 +81,7 @@ class _MaskerAppState extends State<MaskerApp> {
         return const OnboardingWizardPage();
       case AppFlowStage.checkingPermission:
         // Brief native-call wait — a minimal spinner, not a full loading screen.
-        return const Scaffold(
-          backgroundColor: AppColors.background,
-          body: Center(child: CircularProgressIndicator()),
-        );
+        return const _TransientSpinner();
       case AppFlowStage.permissionCheckFailed:
         return Scaffold(
           backgroundColor: AppColors.background,
@@ -165,6 +165,22 @@ class _MaskerAppState extends State<MaskerApp> {
             builder: (context, flow) => _buildHome(flow),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The shared minimal spinner for the brief `resolving` / `checkingPermission`
+/// waits — a plain progress indicator, not a full loading screen.
+class _TransientSpinner extends StatelessWidget {
+  const _TransientSpinner();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: AppColors.background,
+      body: Center(
+        child: CircularProgressIndicator(semanticsLabel: 'Loading'),
       ),
     );
   }

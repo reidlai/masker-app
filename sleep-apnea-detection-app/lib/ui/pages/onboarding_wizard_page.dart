@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/bloc/app_flow/app_flow_bloc.dart';
 import '../../core/bloc/app_flow/app_flow_event.dart';
 import '../../core/bloc/app_flow/app_flow_state.dart';
+import '../../core/bloc/auth/auth_state.dart' show passkeyUnavailableMessage;
 import '../../core/config/passkey_simulator_config.dart';
 import '../../core/data/profile_repository.dart';
 import '../../core/profile/user_profile_service.dart';
@@ -114,10 +115,14 @@ class _PasskeyEnrollmentStepState extends State<_PasskeyEnrollmentStep> {
       _error = null;
     });
     try {
-      // Flag ON → simulated enrollment. Flag OFF → real FIDO2/WebAuthn
-      // registration (TODO(FIDO)); until that authenticator is wired, fall
-      // through to the same simulated path so a DEV_MODE-off build can still
-      // finish onboarding — mirrors AuthBloc's passkey-login handling.
+      if (!_simulated) {
+        // Real FIDO2/WebAuthn enrollment is not wired yet (TODO(FIDO)). With
+        // the simulator off there is no way to create a passkey — surface an
+        // explicit unavailable state instead of recording a fake credential.
+        setState(() => _error = passkeyUnavailableMessage);
+        return;
+      }
+      // Simulated enrollment: record a credential and advance the wizard.
       final user = await ProfileRepository.instance.enrollPasskey();
       if (!mounted) return;
       UserProfileService.instance.set(user);
@@ -149,16 +154,20 @@ class _PasskeyEnrollmentStepState extends State<_PasskeyEnrollmentStep> {
           _simulated
               ? 'Simulated enrollment · developer. A passkey credential is '
                   'recorded on your account without a biometric prompt.'
-              : "You'll be prompted for your device biometrics (Face ID / "
-                  'Touch ID / fingerprint) to create a passkey for future '
-                  'sign-ins.',
+              : "Real FIDO2 passkey enrollment isn't wired up in this build.",
           style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
         ),
         if (_error != null) ...[
           const SizedBox(height: 8),
           Text(
             _error!,
-            style: const TextStyle(fontSize: 13, color: AppColors.dangerRed),
+            style: TextStyle(
+              fontSize: 13,
+              // "Not wired up" is expected, not a fault — amber, not red.
+              color: _error == passkeyUnavailableMessage
+                  ? AppColors.warningAmber
+                  : AppColors.dangerRed,
+            ),
           ),
         ],
         const Spacer(),
