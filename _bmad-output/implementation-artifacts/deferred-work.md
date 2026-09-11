@@ -187,3 +187,15 @@ Findings surfaced during build reviews that were intentionally not addressed in 
 - source_spec: `_bmad-output/implementation-artifacts/spec-fix-ble-simulator-toggle-off.md`
   summary: No integration test exercises the real toggle-off loop end to end — SimulatorBloc state → MeasurementPage._simulatorActiveStream → SleepMonitoringBloc(DevModeChanged) → _connect → receiver.scanAndConnect(). The fix's widget test uses emitSignal(isSimulator:true) as a proxy for the reconnect; the receiver-swap half is only bloc-tested. A regression that re-couples them could slip past.
   evidence: step-04 verification-gap lens on spec-fix-ble-simulator-toggle-off.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-passkey-signin-unavailable-when-simulator-off.md`
+  summary: `AuthBloc`'s `_passkeyAuthenticator` is `Future<void> Function()?` — success/failure is signalled only by return-vs-throw. When real FIDO2/WebAuthn is implemented, an authenticator that *returns* on a declined/aborted ceremony (rather than throwing) would mint an authenticated session. The contract should become explicit (e.g. `Future<bool>` or a result type) before a real authenticator is wired.
+  evidence: step-04 edge-case lens on this spec. Pre-existing `void` signature; not exploitable today (no authenticator is wired), but a latent hazard for the FIDO epic.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-passkey-signin-unavailable-when-simulator-off.md`
+  summary: The `developerBuild` expression `kDebugMode || const bool.fromEnvironment('DEV_MODE', defaultValue: false)` is inlined in at least three places (`main.dart`'s `AuthBloc` wiring, `onboarding_wizard_page.dart`'s `_simulated` getter, and `settings_page.dart`). Consolidate into a single `developerBuild` helper (or a zero-arg `passkeySimulatorActive()`).
+  evidence: step-04 blind-hunter lens. Pre-existing duplication (the `_simulated` getter predates this change); cheap to unify next time that area is touched.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-passkey-simulator-toggle-on-login.md`
+  summary: Now that the "Passkey Simulator" auth-bypass toggle is reachable pre-auth on the sign-in screen (not just the post-login Settings tab), the DEV_MODE build story needs a hardening pass — a warning treatment louder than the amber caption, an audit-trail entry when the flag is flipped, and an explicit decision on whether `--dart-define=DEV_MODE=true` release APKs should still ship to QA with a one-tap sign-in bypass on the first screen.
+  evidence: step-04 blind-hunter lens. Pre-existing concern (the Settings-tab toggle already bypasses auth in DEV_MODE builds and has no audit trail); this change surfaces it earlier in the flow. Out of scope for a UI-placement story; the app has no audit-logging or analytics infrastructure today.

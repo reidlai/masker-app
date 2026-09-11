@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:masker_app/core/bloc/app_flow/app_flow_bloc.dart';
 import 'package:masker_app/core/bloc/app_flow/app_flow_event.dart';
 import 'package:masker_app/core/bloc/app_flow/app_flow_state.dart';
+import 'package:masker_app/core/bloc/auth/auth_state.dart'
+    show passkeyUnavailableMessage;
 import 'package:masker_app/core/config/passkey_simulator_config.dart';
 import 'package:masker_app/core/data/profile_repository.dart';
 import 'package:masker_app/core/permissions/ble_permission_service.dart';
@@ -118,8 +120,12 @@ void main() {
   setUp(() {
     ProfileRepository.instance = SimulatedProfileRepository(latency: Duration.zero);
     UserProfileService.instance.reset();
+    PasskeySimulatorConfig.instance.reset(); // process-global singleton
   });
-  tearDown(ProfileRepository.reset);
+  tearDown(() {
+    ProfileRepository.reset();
+    PasskeySimulatorConfig.instance.reset();
+  });
 
   testWidgets('register step: consent + disabled Create account, no Continue/Back', (tester) async {
     await _pumpAtOnboarding(tester);
@@ -213,16 +219,28 @@ void main() {
     expect(bloc.state.stage, AppFlowStage.onboarding);
   });
 
-  testWidgets('passkey step shows the biometric copy when the simulator flag is off', (tester) async {
-    addTearDown(PasskeySimulatorConfig.instance.reset);
+  testWidgets(
+      'passkey step, simulator off: shows the unavailable copy and Create Passkey is blocked',
+      (tester) async {
     PasskeySimulatorConfig.instance.setEnabled(false);
+    final repo = _CountingEnrollRepository();
+    ProfileRepository.instance = repo;
 
-    await _pumpAtOnboarding(tester);
+    final bloc = await _pumpAtOnboarding(tester);
     await _completeRegister(tester);
     await _completeMedicalProfile(tester); // → passkeyEnrollment
 
-    expect(find.textContaining('device biometrics'), findsOneWidget);
+    // Resting copy is the "not wired up" line, not a biometric prompt.
+    expect(find.textContaining("isn't wired up in this build"), findsOneWidget);
     expect(find.textContaining('Simulated enrollment'), findsNothing);
+
+    // Tapping "Create Passkey" surfaces the shared unavailable message, calls
+    // no repo, and does not advance the wizard.
+    await _completePasskey(tester);
+    expect(find.text(passkeyUnavailableMessage), findsOneWidget);
+    expect(repo.calls, 0);
+    expect(bloc.state.stage, AppFlowStage.onboarding);
+    expect(bloc.state.onboardingStep, OnboardingStep.passkeyEnrollment);
   });
 
   testWidgets('a second tap while enrolling is ignored (one enrollPasskey call)', (tester) async {
